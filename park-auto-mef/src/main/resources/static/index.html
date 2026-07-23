@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Park Auto MEF — Royaume du Maroc</title>
+    
+    <!-- Google Fonts: Outfit, Plus Jakarta Sans, Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome 6 Pro Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- ================================================================= -->
+    <!-- PART 1: ULTRA-PREMIUM LOGIN VIEW (Matching MEF Moroccan Theme) -->
+    <!-- ================================================================= -->
+    <main id="login-view" class="login-view-container">
+        <!-- Background Image & Atmospheric Overlays -->
+        <div class="login-bg-image" style="background-image: url('assets/bg_mef.jpg');"></div>
+        <div class="login-bg-overlay"></div>
+        <div class="moroccan-pattern-overlay"></div>
+
+        <div class="login-content-wrapper">
+            <!-- Left Side: Kingdom Presentation & Features -->
+            <div class="login-left-panel">
+                <div class="left-top-brand">
+                    <img src="assets/logo.png" alt="Royaume du Maroc - MEF" class="mef-transparent-logo">
+                </div>
+
+                <div class="left-hero-text">
+                    <div class="gold-badge-tag">
+                        <i class="fa-solid fa-crown"></i> ROYAUME DU MAROC
+                    </div>
+                    <h1 class="hero-title">PARK AUTO <span>MEF</span></h1>
+                    <p class="hero-subtitle">Système centralisé de gestion et de suivi du parc automobile du Ministère de l'Économie et des Finances</p>
+                </div>
+
+                <div class="features-grid-2x2">
+                    <div class="feature-card-glow">
+                        <div class="feature-icon-gold"><i class="fa-solid fa-car-side"></i></div>
+                        <div class="feature-info">
+                            <h4>Gestion en temps réel</h4>
+                            <p>Suivi complet des véhicules et état du parc</p>
+                        </div>
+                    </div>
+
+                    <div class="feature-card-glow">
+                        <div class="feature-icon-emerald"><i class="fa-solid fa-shield-halved"></i></div>
+                        <div class="feature-info">
+                            <h4>Sécurité & Conformité</h4>
+                            <p>Contrôle rigoureux des habilitations et audits</p>
+                        </div>
+                    </div>
+
+                    <div class="feature-card-glow">
+                        <div class="feature-icon-blue"><i class="fa-solid fa-chart-line"></i></div>
+                        <div class="feature-info">
+                            <h4>Analytique Avancée</h4>
+                            <p>Indicateurs de coûts, consommations & rapports</p>
+                        </div>
+                    </div>
+
+                    <div class="feature-card-glow">
+                        <div class="feature-icon-amber"><i class="fa-solid fa-bell"></i></div>
+                        <div class="feature-info">
+                            <h4>Alertes Intelligentes</h4>
+                            <p>Rappels automatiques d'assurances & entretiens</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="left-security-notice">
+                    <div class="notice-shield"><i class="fa-solid fa-lock"></i></div>
+                    <div class="notice-text">
+                        <strong>Accès Sécurisé — Direction du Budget</strong>
+                        <span>Portail officiel réservé exclusivement aux agents et responsables habilités du MEF</span>
+                    </div>
+                </div>
+
+                <div class="left-footer">
+                    <p>© 2026 Ministère de l'Économie et des Finances — Royaume du Maroc</p>
+                </div>
+            </div>
+
+            <!-- Right Side: Frosted Glass Login Panel with Gold Accents -->
+            <div class="login-right-panel">
+                <div class="login-glass-card">
+                    <div class="card-header-badge">
+                        <div class="shield-badge-icon">
+                            <i class="fa-solid fa-user-shield"></i>
+                        </div>
+                        <h2>Espace Connexion</h2>
+                        <p>Identifiez-vous pour accéder à votre session</p>
+                        <div class="gold-accent-bar"></div>
+                    </div>
+
+                    <form id="form-login" class="official-login-form">
+                        <div class="form-group">
+                            <label for="login-email"><i class="fa-solid fa-envelope"></i> Adresse Email Professionnelle</label>
+                            <div class="input-with-icon">
+                                <input type="email" id="login-email" placeholder="ex: admin@mef.gov.ma" value="admin@mef.gov.ma" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="login-password"><i class="fa-solid fa-lock"></i> Mot de Passe</label>
+                            <div class="input-with-icon">
+                                <input type="password" id="login-password" placeholder="••••••••••••" value="Admin@2026" required>
+                                <button type="button" class="btn-toggle-eye" onclick="togglePasswordVisibility('login-password')">
+                                    <i class="fa-regular fa-eye-slash" id="eye-icon-login-password"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-options">
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="remember-me" checked>
+                                <span class="checkmark"></span>
+                                <span class="cb-label">Rester connecté</span>
+                            </label>
+                            <a href="#" class="forgot-link" onclick="showToast('Contactez l\'administrateur réseau MEF pour réinitialiser vos accès.', 'info'); return false;">Mot de passe oublié ?</a>
+                        </div>
+
+                        <button type="submit" id="btn-submit-login" class="btn-gold-submit">
+                            <span>Se Connecter</span>
+                            <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                        </button>
+
+                        <div class="sso-divider">
+                            <span>OU</span>
+                        </div>
+
+                        <button type="button" class="btn-sso-login" onclick="showToast('Redirection vers l\'authentification SSO MEF...', 'info')">
+                            <i class="fa-solid fa-landmark"></i>
+                            <span>Authentification SSO MEF</span>
+                        </button>
+
+                        <div class="card-footer-security">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>Session chiffrée SSL / TLS — Connexion surveillée</span>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ================================================================= -->
+    <!-- MAIN NAVBAR HEADER (Dashboard Top Header) -->
+    <!-- ================================================================= -->
+    <header id="main-header" class="main-header hidden">
+        <div class="header-container">
+            <div class="header-left">
+                <button id="btn-toggle-sidebar" class="btn-icon-menu">
+                    <i class="fa-solid fa-bars-staggered"></i>
+                </button>
+                <div class="header-page-title">
+                    <h3 id="current-page-title">Tableau de Bord Général</h3>
+                </div>
+            </div>
+
+            <div class="header-center-search">
+                <div class="header-search-bar">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="global-search" placeholder="Recherche rapide (immatriculation, marque, inventaire...)...">
+                </div>
+            </div>
+
+            <div class="header-right-actions">
+                <div class="live-clock-pill">
+                    <i class="fa-regular fa-clock"></i>
+                    <span id="header-time-display">--:--:--</span>
+                </div>
+
+                <button class="header-action-btn" title="Alertes">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="badge-count">12</span>
+                </button>
+                
+                <div class="header-user-profile">
+                    <div class="user-avatar-gold" id="user-avatar-initials">AD</div>
+                    <div class="profile-info">
+                        <span class="profile-name" id="user-display-name">Youssef EL Amrani</span>
+                        <span class="profile-role" id="user-display-role">ADMINISTRATEUR</span>
+                    </div>
+                </div>
+
+                <button id="btn-logout" class="btn-logout-header" title="Déconnexion">
+                    <i class="fa-solid fa-power-off"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ================================================================= -->
+    <!-- PART 2: DASHBOARD VIEW (Royal Navy & Gold Theme) -->
+    <!-- ================================================================= -->
+    <div id="dashboard-layout" class="dashboard-layout hidden">
+        <!-- Left Sidebar Navigation -->
+        <aside id="main-sidebar" class="main-sidebar">
+            <div class="sidebar-header">
+                <img src="assets/logo.png" alt="MEF Logo" class="sidebar-transparent-logo">
+                <div class="sidebar-gold-line"></div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-view="dashboard">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Tableau de bord</span>
+                </a>
+                <a href="#" class="nav-item" data-view="vehicules">
+                    <i class="fa-solid fa-car"></i>
+                    <span>Gestion des Véhicules</span>
+                    <i class="fa-solid fa-chevron-right nav-arrow"></i>
+                </a>
+                <a href="#" class="nav-item" data-view="affectations">
+                    <i class="fa-solid fa-users-gear"></i>
+                    <span>Affectations</span>
+                </a>
+                <a href="#" class="nav-item" data-view="conducteurs">
+                    <i class="fa-solid fa-id-card"></i>
+                    <span>Conducteurs</span>
+                </a>
+                <a href="#" class="nav-item" data-view="carburant">
+                    <i class="fa-solid fa-gas-pump"></i>
+                    <span>Gestion Carburant</span>
+                </a>
+                <a href="#" class="nav-item" data-view="entretiens">
+                    <i class="fa-solid fa-screwdriver-wrench"></i>
+                    <span>Entretiens & Réparations</span>
+                </a>
+                <a href="#" class="nav-item" data-view="assurances">
+                    <i class="fa-solid fa-shield-heart"></i>
+                    <span>Assurances</span>
+                </a>
+                <a href="#" class="nav-item" data-view="visites">
+                    <i class="fa-solid fa-calendar-check"></i>
+                    <span>Visites Techniques</span>
+                </a>
+                <a href="#" class="nav-item" data-view="taxes">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                    <span>Taxes Automobiles</span>
+                </a>
+                <a href="#" class="nav-item" data-view="sinistres">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>Sinistres & Pannes</span>
+                </a>
+                <a href="#" class="nav-item" data-view="depenses">
+                    <i class="fa-solid fa-wallet"></i>
+                    <span>Dépenses & Budget</span>
+                </a>
+                <a href="#" class="nav-item" data-view="rapports">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    <span>Rapports & Exports</span>
+                </a>
+                <a href="#" class="nav-item" data-view="alertes">
+                    <i class="fa-solid fa-bell"></i>
+                    <span>Alertes & Notifications</span>
+                    <span class="nav-badge red">12</span>
+                </a>
+                <a href="#" class="nav-item" data-view="utilisateurs">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <span>Utilisateurs & Droits</span>
+                </a>
+                <a href="#" class="nav-item" data-view="parametres">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span>Paramètres Système</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-user-footer">
+                <div class="footer-status-dot"></div>
+                <div class="footer-user-details">
+                    <span class="footer-user-name">Administrateur MEF</span>
+                    <span class="footer-user-role">Rabat — Direction du Budget</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace Area -->
+        <main class="main-content-area">
+            <div class="workspace-container">
+
+                <!-- Top Date & Export Toolbar -->
+                <div class="top-meta-bar">
+                    <div class="date-picker-badge">
+                        <i class="fa-regular fa-calendar-days"></i>
+                        <span>Aujourd'hui — 23 juillet 2026</span>
+                    </div>
+
+                    <div class="top-export-actions">
+                        <button class="btn-export-gold">
+                            <i class="fa-solid fa-file-export"></i>
+                            <span>Exporter le Rapport du Parc</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 5 Stat Cards Row -->
+                <section class="metrics-row-5">
+                    <div class="stat-card-gold">
+                        <div class="stat-icon blue"><i class="fa-solid fa-car"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-title">Total Véhicules</span>
+                            <span class="stat-number" id="stat-total">0</span>
+                            <span class="stat-sub">Parc automobile MEF</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card-gold">
+                        <div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-title">Disponibles</span>
+                            <span class="stat-number" id="stat-disponibles">0</span>
+                            <span class="stat-sub green-text">Prêts pour affectation</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card-gold">
+                        <div class="stat-icon orange"><i class="fa-solid fa-wrench"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-title">En Maintenance</span>
+                            <span class="stat-number" id="stat-entretien">0</span>
+                            <span class="stat-sub orange-text">Entretiens en cours</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card-gold">
+                        <div class="stat-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-title">Hors Service</span>
+                            <span class="stat-number" id="stat-hors-service">0</span>
+                            <span class="stat-sub red-text">Immobilisés / Pannes</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card-gold">
+                        <div class="stat-icon gray"><i class="fa-solid fa-box-archive"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-title">Archivés</span>
+                            <span class="stat-number" id="stat-archives">0</span>
+                            <span class="stat-sub gray-text">Réformés & sortis</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Important Alerts Banner -->
+                <div class="alerts-banner-card">
+                    <div class="alerts-header">
+                        <div class="banner-title"><i class="fa-solid fa-triangle-exclamation"></i> Échéances & Alertes Prioritaires</div>
+                        <a href="#" class="banner-link">Centre d'alertes <i class="fa-solid fa-arrow-right"></i></a>
+                    </div>
+                    <div class="alerts-items-row">
+                        <div class="alert-item-box red">
+                            <i class="fa-solid fa-shield-triangle-exclamation"></i>
+                            <div>
+                                <strong>3 assurances expirent</strong>
+                                <span>Échéance dans 7 jours</span>
+                            </div>
+                        </div>
+                        <div class="alert-item-box orange">
+                            <i class="fa-solid fa-calendar-days"></i>
+                            <div>
+                                <strong>5 visites techniques</strong>
+                                <span>À renouveler ce mois</span>
+                            </div>
+                        </div>
+                        <div class="alert-item-box amber">
+                            <i class="fa-solid fa-wrench"></i>
+                            <div>
+                                <strong>7 entretiens requis</strong>
+                                <span>Vidanges & révisions</span>
+                            </div>
+                        </div>
+                        <div class="alert-item-box blue">
+                            <i class="fa-solid fa-gas-pump"></i>
+                            <div>
+                                <strong>Suivi Carburant</strong>
+                                <span>Consommation mensuelle conforme</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vehicles Management Toolbar (CRUD + Filters) -->
+                <div class="vehicles-management-toolbar">
+                    <div class="vm-search-group">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="filter-search" placeholder="Rechercher par immatriculation, marque, modèle, inventaire...">
+                    </div>
+
+                    <div class="vm-filter-select">
+                        <select id="filter-statut">
+                            <option value="">Tous les statuts</option>
+                            <option value="DISPONIBLE">Disponible</option>
+                            <option value="AFFECTE">Affecté</option>
+                            <option value="EN_ENTRETIEN">En Entretien</option>
+                            <option value="EN_REPARATION">En Réparation</option>
+                            <option value="IMMOBILISE">Immobilisé</option>
+                            <option value="ARCHIVE">Archivé</option>
+                        </select>
+                    </div>
+
+                    <button id="btn-open-create-modal" class="btn-create-vehicle">
+                        <i class="fa-solid fa-plus-circle"></i>
+                        <span>Nouveau Véhicule</span>
+                    </button>
+                </div>
+
+                <!-- Vehicles Grid -->
+                <section class="vehicles-section">
+                    <div id="vehicles-grid" class="vehicles-grid">
+                        <!-- Dynamic Cards Rendered by app.js -->
+                    </div>
+
+                    <div id="empty-state" class="empty-state hidden">
+                        <i class="fa-solid fa-car-burst"></i>
+                        <h3>Aucun véhicule trouvé</h3>
+                        <p>Modifiez vos critères de recherche ou ajoutez un nouveau véhicule.</p>
+                    </div>
+                </section>
+
+                <footer class="dashboard-footer">
+                    <p>© 2026 Ministère de l'Économie et des Finances — Royaume du Maroc — Tous droits réservés</p>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL 1: Mandatory Change Password -->
+    <div id="modal-change-password" class="modal-overlay hidden">
+        <div class="modal-card glassmorphism warning-modal">
+            <div class="modal-header">
+                <div class="warn-header-group">
+                    <i class="fa-solid fa-triangle-exclamation modal-icon-warn"></i>
+                    <div>
+                        <h3>Changement de Mot de Passe Obligatoire</h3>
+                        <p class="modal-subtitle">Première connexion détectée — Sécurité MEF</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="notice-box warning">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>Vous utilisez un mot de passe généré par le système. Veuillez le modifier avant d'accéder au portail.</span>
+                </div>
+                
+                <form id="form-change-password">
+                    <div class="input-group">
+                        <label>Ancien mot de passe (actuel)</label>
+                        <input type="password" id="pw-ancien" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Nouveau mot de passe sécurisé</label>
+                        <input type="password" id="pw-nouveau" required>
+                    </div>
+                    <button type="submit" class="btn-gold-submit btn-full">
+                        <i class="fa-solid fa-key"></i> Valider et Accéder au Portail
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Create / Edit Vehicle Form -->
+    <div id="modal-vehicule-form" class="modal-overlay hidden">
+        <div class="modal-card modal-large glassmorphism">
+            <div class="modal-header">
+                <h3 id="modal-vehicule-title"><i class="fa-solid fa-car"></i> Nouveau Véhicule</h3>
+                <button class="btn-close-modal" onclick="closeModal('modal-vehicule-form')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="form-vehicule">
+                    <input type="hidden" id="vehicule-id">
+                    
+                    <div class="form-grid">
+                        <div class="input-group">
+                            <label>Immatriculation *</label>
+                            <input type="text" id="v-immatriculation" placeholder="ex: 12345-A-1" required>
+                        </div>
+                        <div class="input-group">
+                            <label>N° Inventaire *</label>
+                            <input type="text" id="v-numeroInventaire" placeholder="ex: INV-2026-001" required>
+                        </div>
+                        <div class="input-group">
+                            <label>N° Châssis *</label>
+                            <input type="text" id="v-numeroChassis" placeholder="ex: CH-987654321" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Marque *</label>
+                            <input type="text" id="v-marque" placeholder="ex: Dacia" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Modèle *</label>
+                            <input type="text" id="v-modele" placeholder="ex: Duster" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Carburant *</label>
+                            <select id="v-typeCarburant" required>
+                                <option value="DIESEL">Diesel</option>
+                                <option value="ESSENCE">Essence</option>
+                                <option value="HYBRIDE">Hybride</option>
+                                <option value="ELECTRIQUE">Électrique</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Kilométrage Initial *</label>
+                            <input type="number" id="v-kilometrageInitial" value="0" min="0" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Kilométrage Actuel *</label>
+                            <input type="number" id="v-kilometrageActuel" value="1000" min="0" required>
+                        </div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" onclick="closeModal('modal-vehicule-form')">Annuler</button>
+                        <button type="submit" class="btn-gold-submit"><i class="fa-solid fa-floppy-disk"></i> Enregistrer le Véhicule</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: Change Status Modal -->
+    <div id="modal-status-change" class="modal-overlay hidden">
+        <div class="modal-card glassmorphism">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-rotate"></i> Changement de Statut du Véhicule</h3>
+                <button class="btn-close-modal" onclick="closeModal('modal-status-change')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="form-status-change">
+                    <input type="hidden" id="status-vehicule-id">
+                    
+                    <div class="input-group">
+                        <label>Nouveau Statut Administratif *</label>
+                        <select id="status-nouveau-admin" required>
+                            <option value="DISPONIBLE">Disponible</option>
+                            <option value="AFFECTE">Affecté</option>
+                            <option value="RESERVE">Réservé</option>
+                            <option value="EN_ENTRETIEN">En Entretien</option>
+                            <option value="EN_REPARATION">En Réparation</option>
+                            <option value="IMMOBILISE">Immobilisé</option>
+                            <option value="TRANSFERE">Transféré</option>
+                            <option value="REFORME">Réformé</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Nouvel État Technique *</label>
+                        <select id="status-nouveau-tech" required>
+                            <option value="NEUF">Neuf</option>
+                            <option value="BON_ETAT">Bon état</option>
+                            <option value="ETAT_MOYEN">État moyen</option>
+                            <option value="ENTRETIEN_NECESSAIRE">Entretien nécessaire</option>
+                            <option value="ACCIDENTE">Accidenté</option>
+                            <option value="EN_REPARATION">En réparation</option>
+                            <option value="HORS_SERVICE">Hors service</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Motif de la transition</label>
+                        <textarea id="status-motif" rows="3" placeholder="ex: Révision et vidange programmées des 15 000 km..."></textarea>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" onclick="closeModal('modal-status-change')">Annuler</button>
+                        <button type="submit" class="btn-gold-submit"><i class="fa-solid fa-check"></i> Valider la Transition</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: Status History Timeline -->
+    <div id="modal-history-timeline" class="modal-overlay hidden">
+        <div class="modal-card modal-large glassmorphism">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-clock-rotate-left"></i> Historique des Statuts</h3>
+                <button class="btn-close-modal" onclick="closeModal('modal-history-timeline')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="timeline-container" class="timeline">
+                    <!-- Dynamic timeline items -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript App -->
+    <script src="js/app.js"></script>
+</body>
+</html>

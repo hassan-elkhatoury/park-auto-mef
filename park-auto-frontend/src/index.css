@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-navy-dark: #070D1B;
+  --color-navy-card: #0F172A;
+  --color-navy-sidebar: #090F1F;
+  --color-gold: #C5A059;
+  --color-gold-bright: #E5C17C;
+  --color-gold-dark: #9B783E;
+  --gold-gradient: linear-gradient(135deg, #E5C17C 0%, #C5A059 50%, #9B783E 100%);
+}
+
+body {
+  background-color: #F1F5F9;
+  color: #0F172A;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  overflow-x: hidden;
+}
+
+.gold-gradient-bg {
+  background: var(--gold-gradient);
+}
+
+.gold-glow {
+  box-shadow: 0 6px 20px rgba(197, 160, 89, 0.35);
+}
+
+.glass-panel {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(197, 160, 89, 0.25);
+}
+
+.moroccan-bg-overlay {
+  background-image: radial-gradient(rgba(197, 160, 89, 0.15) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
