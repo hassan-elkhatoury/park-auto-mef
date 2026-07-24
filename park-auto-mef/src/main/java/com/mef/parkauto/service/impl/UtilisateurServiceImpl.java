@@ -119,12 +119,12 @@ public class UtilisateurServiceImpl implements UtilisateurService {
         user.setStatut(UserStatus.ACTIVE);
         user.setDoitChangerMotDePasse(true);
 
-        // Génération et encodage du mot de passe
-        String tempPassword = generateSecurePassword();
-        log.info("Mot de passe temporaire généré pour {}: {}", request.email(), tempPassword);
-        String encodedPassword = passwordEncoder.encode(tempPassword);
+        // Encodage du mot de passe initial (MEF@2026!Sec par défaut)
+        String rawPassword = "MEF@2026!Sec";
+        log.info("Mot de passe initial configuré pour {}: {}", request.email(), rawPassword);
+        String encodedPassword = passwordEncoder.encode(rawPassword);
         String[] parts = encodedPassword.split("\\$");
-        user.setSel(parts[0]);
+        user.setSel(parts.length > 0 ? parts[0] : "");
         user.setMotDePasse(encodedPassword);
 
         // Association du rôle unique

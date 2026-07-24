@@ -23,9 +23,11 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    if (error.response && error.response.status === 401) {
+    // If JWT token expired or 401 unauthorized on authenticated endpoint, trigger login redirection
+    const isLoginRequest = error.config && error.config.url && error.config.url.includes('/auth/login');
+    if (error.response && error.response.status === 401 && !isLoginRequest) {
       localStorage.clear();
-      window.location.reload();
+      window.dispatchEvent(new Event('auth:expired'));
     }
     return Promise.reject(error.response ? error.response.data : error);
   }

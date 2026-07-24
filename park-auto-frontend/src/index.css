@@ -3,38 +3,251 @@
 @tailwind utilities;
 
 :root {
-  --color-navy-dark: #070D1B;
-  --color-navy-card: #0F172A;
-  --color-navy-sidebar: #090F1F;
-  --color-gold: #C5A059;
-  --color-gold-bright: #E5C17C;
-  --color-gold-dark: #9B783E;
-  --gold-gradient: linear-gradient(135deg, #E5C17C 0%, #C5A059 50%, #9B783E 100%);
+  --navy-900: #0A1628;
+  --navy-800: #0F1D32;
+  --navy-700: #142640;
+  --gold: #C5A059;
+  --gold-light: #F5ECDA;
+  --green: #059669;
+  --orange: #D97706;
+  --red: #DC2626;
 }
 
+/* ═══ Base ═══ */
 body {
-  background-color: #F1F5F9;
-  color: #0F172A;
-  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  background-color: #F8F9FB;
+  color: #1E293B;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
+/* ═══ Gold Accent (minimal usage) ═══ */
 .gold-gradient-bg {
-  background: var(--gold-gradient);
+  background: linear-gradient(135deg, #D4B370 0%, #C5A059 50%, #A8843D 100%);
+}
+
+.gold-gradient-text {
+  background: linear-gradient(135deg, #E5C17C 0%, #C5A059 50%, #9B783E 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .gold-glow {
-  box-shadow: 0 6px 20px rgba(197, 160, 89, 0.35);
+  box-shadow: 0 0 24px rgba(197, 160, 89, 0.35);
 }
 
+.text-gold {
+  color: #C5A059;
+}
+
+/* ═══ Vehicle Status Badges ═══ */
+.status-disponible    { background-color: #10B981; color: #FFFFFF; }
+.status-affecte       { background-color: #3B82F6; color: #FFFFFF; }
+.status-en-entretien  { background-color: #D97706; color: #FFFFFF; }
+.status-hors-service  { background-color: #DC2626; color: #FFFFFF; }
+.status-archive       { background-color: #64748B; color: #FFFFFF; }
+.status-reserve       { background-color: #7C3AED; color: #FFFFFF; }
+
+/* ═══ Moroccan License Plate ═══ */
+.moroccan-plate {
+  display: inline-flex;
+  background: #FFFFFF;
+  border: 2px solid #0F172A;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.moroccan-plate .plate-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  font-family: 'Outfit', 'Inter', sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  color: #0F172A;
+  font-variant-numeric: tabular-nums;
+}
+
+.moroccan-plate .plate-separator {
+  color: #C5A059;
+  font-weight: 400;
+}
+
+/* ═══ Enterprise Card ═══ */
+.enterprise-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.enterprise-card:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+/* ═══ Status Dots ═══ */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.status-dot-disponible { background-color: #059669; }
+.status-dot-affecte { background-color: #3B82F6; }
+.status-dot-entretien { background-color: #D97706; }
+.status-dot-hors-service { background-color: #DC2626; }
+.status-dot-archive { background-color: #94A3B8; }
+.status-dot-reserve { background-color: #7C3AED; }
+
+/* ═══ KPI Card Left Border Accents ═══ */
+.kpi-accent-total { border-left: 3px solid #C5A059; }
+.kpi-accent-disponible { border-left: 3px solid #059669; }
+.kpi-accent-entretien { border-left: 3px solid #D97706; }
+.kpi-accent-hors-service { border-left: 3px solid #DC2626; }
+.kpi-accent-archive { border-left: 3px solid #94A3B8; }
+
+/* ═══ Enterprise Table ═══ */
+.enterprise-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.enterprise-table thead th {
+  background: #F8FAFC;
+  border-bottom: 1px solid #E2E8F0;
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.enterprise-table tbody td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #F1F5F9;
+  font-size: 14px;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.enterprise-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.enterprise-table tbody tr:hover {
+  background-color: #F8FAFC;
+}
+
+.enterprise-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ═══ Scrollbar ═══ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* ═══ Sidebar scrollbar ═══ */
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.15);
+}
+
+/* ═══ Focus ═══ */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: #C5A059;
+  box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.1);
+}
+
+/* ═══ Transitions (enterprise: 150-200ms) ═══ */
+button, a, input, select {
+  transition: all 0.15s ease;
+}
+
+/* ═══ Glass Panel (Login only) ═══ */
 .glass-panel {
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(15, 29, 50, 0.88);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(197, 160, 89, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* ═══ Moroccan BG overlay (Login only) ═══ */
 .moroccan-bg-overlay {
-  background-image: radial-gradient(rgba(197, 160, 89, 0.15) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(197, 160, 89, 0.12) 1px, transparent 1px);
   background-size: 28px 28px;
+}
+
+/* ═══ Floating particles (Login only) ═══ */
+@keyframes floatParticle {
+  0%, 100% { transform: translateY(0) translateX(0); opacity: 0.2; }
+  50% { transform: translateY(-20px) translateX(10px); opacity: 0.4; }
+}
+
+.floating-particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: rgba(197, 160, 89, 0.25);
+  border-radius: 50%;
+  animation: floatParticle 8s ease-in-out infinite;
+}
+
+/* ═══ Pagination ═══ */
+.pagination-btn {
+  min-width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748B;
+  border: 1px solid #E2E8F0;
+  background: white;
+  cursor: pointer;
+}
+
+.pagination-btn:hover {
+  background: #F8FAFC;
+  border-color: #CBD5E1;
+}
+
+.pagination-btn.active {
+  background: #C5A059;
+  color: white;
+  border-color: #C5A059;
 }

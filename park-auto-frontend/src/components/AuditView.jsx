@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, ShieldCheck, RotateCw, Search, Clock } from 'lucide-react';
+import { FileText, ShieldCheck, RotateCw, Search, Clock, Plus, Pencil, Trash2, Eye, Scale } from 'lucide-react';
 import api from '../services/api';
+
+const actionConfig = {
+  'CREATE': { style: 'bg-emerald-50 text-emerald-700', icon: Plus, label: 'Création' },
+  'UPDATE': { style: 'bg-amber-50 text-amber-700', icon: Pencil, label: 'Modification' },
+  'DELETE': { style: 'bg-red-50 text-red-700', icon: Trash2, label: 'Suppression' },
+  'READ': { style: 'bg-blue-50 text-blue-700', icon: Eye, label: 'Lecture' },
+};
 
 export default function AuditView() {
   const [logs, setLogs] = useState([]);
@@ -8,82 +15,79 @@ export default function AuditView() {
   const [search, setSearch] = useState('');
 
   const fetchLogs = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get('/journal?size=50');
-      if (res && res.data) {
-        setLogs(res.data.content || []);
-      }
-    } catch (err) {
-      console.error('Erreur chargement journal audit:', err);
-    } finally {
-      setLoading(false);
+    try { 
+      setLoading(true); 
+      const res = await api.get('/journal?size=50'); 
+      if (res?.data) setLogs(res.data.content || []); 
+    } catch (err) { 
+      console.error(err); 
+    } finally { 
+      setLoading(false); 
     }
   };
 
-  useEffect(() => {
-    fetchLogs();
-  }, []);
+  useEffect(() => { fetchLogs(); }, []);
 
-  const filteredLogs = logs.filter(l => 
-    !search || 
-    (l.username && l.username.toLowerCase().includes(search.toLowerCase())) ||
-    (l.module && l.module.toLowerCase().includes(search.toLowerCase())) ||
-    (l.action && l.action.toLowerCase().includes(search.toLowerCase())) ||
-    (l.entityName && l.entityName.toLowerCase().includes(search.toLowerCase()))
+  const filteredLogs = logs.filter(l => !search ||
+    l.username?.toLowerCase().includes(search.toLowerCase()) ||
+    l.module?.toLowerCase().includes(search.toLowerCase()) ||
+    l.action?.toLowerCase().includes(search.toLowerCase()) ||
+    l.entityName?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <div className="flex-1 p-7 overflow-y-auto">
-      <div className="max-w-[1380px] mx-auto flex flex-col gap-6">
+    <div className="flex-1 p-8 overflow-y-auto">
+      <div className="max-w-[1400px] mx-auto space-y-6">
         
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-black font-['Outfit'] text-slate-900">Journal d'Audit Système (Sprint 1)</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Traçabilité et auditabilité conformément à la Section 30 du Cahier des Charges (`/api/journal`)</p>
+        {/* Page Header */}
+        <div className="flex justify-between items-start">
+          <div className="flex items-start gap-4">
+            <img src="/assets/mef_seal_gold.jpg" alt="Sceau MEF" className="w-12 h-12 rounded-lg object-cover border border-gray-200" />
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Journal d'Audit Système</h1>
+              <p className="text-description text-gray-500 mt-1">Traçabilité et auditabilité — Section 30 du Cahier des Charges</p>
+            </div>
           </div>
-          <button 
-            onClick={fetchLogs}
-            className="bg-white border border-slate-300 px-4 py-2 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-2 shadow-sm hover:bg-slate-50 cursor-pointer"
-          >
-            <RotateCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            <span>Actualiser le Journal</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-md">
+              <Scale className="w-3.5 h-3.5 text-amber-600" />
+              <span className="text-[11px] font-semibold text-amber-700">Section 30 — Conforme</span>
+            </div>
+            <button onClick={fetchLogs} className="h-9 px-3 bg-white border border-gray-200 rounded-lg text-[13px] font-medium text-gray-600 flex items-center gap-1.5 hover:bg-gray-50 shadow-xs cursor-pointer">
+              <RotateCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Actualiser
+            </button>
+          </div>
         </div>
 
         {/* Info Banner */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center gap-3 bg.amber-500/10 border border-[#C5A059]/30 p-4 rounded-xl text-xs text-[#9B783E]">
-            <ShieldCheck className="w-5 h-5 flex-shrink-0 text-[#C5A059]" />
-            <div>
-              <strong className="block font-bold">Traçabilité & Immuabilité des Écritures (Section 30 Cahier des Charges)</strong>
-              <span>Chaque création, modification de véhicule, mise à jour de rôle ou changement de statut enregistre une ligne d'audit avec horodatage, utilisateur et IP.</span>
+        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center gap-3 bg-amber-50/70 border border-amber-200/60 p-4 rounded-lg">
+            <ShieldCheck className="w-5 h-5 text-amber-600 flex-shrink-0" />
+            <div className="text-[13px]">
+              <strong className="text-gray-900 block font-semibold">Traçabilité & Immuabilité des Écritures</strong>
+              <span className="text-gray-600">Chaque opération d'écriture enregistre une ligne d'audit avec horodatage, utilisateur et adresse IP source.</span>
             </div>
           </div>
         </div>
 
-        {/* Toolbar */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 flex justify-between items-center shadow-sm">
-          <div className="relative flex-1 max-w-[400px]">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input 
-              type="text" 
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Rechercher par utilisateur, module, action, entité..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs outline-none"
-            />
+        {/* Filter Bar */}
+        <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between gap-4 shadow-sm">
+          <div className="relative flex-1 max-w-[360px]">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder="Rechercher par utilisateur, module, action..."
+              className="w-full h-9 pl-9 pr-3 bg-gray-50 border border-gray-200 rounded-lg text-[13px] placeholder:text-gray-400 outline-none focus:border-[#C5A059]" />
           </div>
-          <div className="text-xs font-bold text-slate-500">
-            Lignes d'audit enregistrées: <span className="text-[#9B783E]">{logs.length}</span>
-          </div>
+          <span className="text-[13px] text-gray-500 font-medium">{filteredLogs.length} entrée{filteredLogs.length !== 1 ? 's' : ''}</span>
         </div>
 
-        {/* Audit Table */}
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+        {/* Table */}
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
           {filteredLogs.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 text-xs">
-              {loading ? 'Chargement du journal d\'audit...' : 'Aucune entrée d\'audit trouvée pour le moment.'}
+            <div className="p-16 text-center">
+              <FileText className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+              <p className="text-[14px] font-medium text-gray-600">{loading ? 'Chargement...' : 'Aucune entrée d\'audit'}</p>
+              <p className="text-description text-gray-400 mt-1">{!loading && 'Les opérations d\'écriture seront automatiquement tracées ici.'}</p>
             </div>
           ) : (
             <table className="w-full text-left text-xs">
@@ -97,32 +101,27 @@ export default function AuditView() {
                   <th className="p-3.5">Adresse IP</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
-                {filteredLogs.map((l) => (
-                  <tr key={l.id} className="hover:bg-slate-50">
-                    <td className="p-3.5 font-mono text-slate-600 flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-[#9B783E]" />
-                      {new Date(l.timestamp).toLocaleString('fr-FR')}
-                    </td>
-                    <td className="p-3.5 font-bold text-slate-900">{l.username}</td>
-                    <td className="p-3.5 font-semibold text-slate-700">{l.module}</td>
-                    <td className="p-3.5">
-                      <span className={`px-2 py-0.5 rounded-md font-bold text-[10px] uppercase ${
-                        l.action === 'CREATE' ? 'bg-emerald-50 text-emerald-600 border border-emerald-300' :
-                        l.action === 'UPDATE' ? 'bg-amber-50 text-amber-600 border border-amber-300' : 'bg-blue-50 text-blue-600 border border-blue-300'
-                      }`}>
-                        {l.action}
-                      </span>
-                    </td>
-                    <td className="p-3.5 text-slate-700">{l.entityName} #{l.entityId}</td>
-                    <td className="p-3.5 font-mono text-slate-500">{l.ipAddress || '127.0.0.1'}</td>
-                  </tr>
-                ))}
+              <tbody className="divide-y divide-gray-100">
+                {filteredLogs.map((l) => {
+                  const cfg = actionConfig[l.action] || actionConfig['READ'];
+                  const ActionIcon = cfg.icon;
+                  return (
+                    <tr key={l.id} className="hover:bg-gray-50/80">
+                      <td className="p-3.5 font-mono text-[12px] text-gray-500">
+                        <div className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-gray-400" />{new Date(l.timestamp).toLocaleString('fr-FR')}</div>
+                      </td>
+                      <td className="p-3.5 font-medium text-gray-900">{l.username}</td>
+                      <td className="p-3.5"><span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[11px] font-semibold">{l.module}</span></td>
+                      <td className="p-3.5"><span className={`${cfg.style} px-2 py-0.5 rounded text-[11px] font-semibold inline-flex items-center gap-1`}><ActionIcon className="w-3 h-3" />{cfg.label}</span></td>
+                      <td className="p-3.5"><span className="font-medium text-gray-700">{l.entityName}</span> <span className="text-gray-400">#{l.entityId}</span></td>
+                      <td className="p-3.5 font-mono text-[12px] text-gray-400">{l.ipAddress || '127.0.0.1'}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
         </div>
-
       </div>
     </div>
   );

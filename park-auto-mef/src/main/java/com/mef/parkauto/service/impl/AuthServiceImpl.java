@@ -49,6 +49,13 @@ public class AuthServiceImpl implements AuthService {
     public LoginResponse login(LoginRequest request) {
         log.info("Tentative de connexion de l'utilisateur : {}", request.email());
 
+        // Check if user exists and is active before authenticating
+        Utilisateur existingUser = utilisateurRepository.findByEmail(request.email()).orElse(null);
+        if (existingUser != null && existingUser.getStatut() == com.mef.parkauto.entity.UserStatus.INACTIVE) {
+            log.warn("Tentative de connexion sur un compte désactivé : {}", request.email());
+            throw new UnauthorizedException("Ce compte agent est désactivé. Accès refusé par l'Administrateur MEF.");
+        }
+
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.email(), request.motDePasse())
@@ -75,6 +82,8 @@ public class AuthServiceImpl implements AuthService {
             log.info("Connexion réussie pour l'utilisateur : {}", request.email());
             return new LoginResponse(accessToken, refreshToken, userResponse);
 
+        } catch (UnauthorizedException ue) {
+            throw ue;
         } catch (Exception e) {
             log.warn("Échec de connexion pour l'utilisateur {} : {}", request.email(), e.getMessage());
             throw new UnauthorizedException("Adresse email ou mot de passe incorrect");
