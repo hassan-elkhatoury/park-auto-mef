@@ -32,10 +32,10 @@ public interface VehiculeRepository extends JpaRepository<Vehicule, Long> {
     Page<Vehicule> findByEtatTechnique(EtatTechnique etatTechnique, Pageable pageable);
 
     @Query("SELECT v FROM Vehicule v WHERE " +
-           "(:search IS NULL OR LOWER(v.immatriculation) LIKE LOWER(CONCAT('%', :search, '%')) " +
-           "OR LOWER(v.numeroInventaire) LIKE LOWER(CONCAT('%', :search, '%')) " +
-           "OR LOWER(v.marque) LIKE LOWER(CONCAT('%', :search, '%')) " +
-           "OR LOWER(v.modele) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+           "(:search IS NULL OR LOWER(v.immatriculation) LIKE :search " +
+           "OR LOWER(v.numeroInventaire) LIKE :search " +
+           "OR LOWER(v.marque) LIKE :search " +
+           "OR LOWER(v.modele) LIKE :search) " +
            "AND (:direction IS NULL OR v.direction = :direction) " +
            "AND (:statut IS NULL OR v.statutAdministratif = :statut)")
     Page<Vehicule> searchVehicules(

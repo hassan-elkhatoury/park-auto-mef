@@ -1,18 +1,25 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Car, Users, FileText, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { LayoutDashboard, Car, Users, FileText, Send, Key, UserCheck, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
 const menuItems = [
-  { id: 'dashboard', path: '/dashboard', label: 'Analytics & Indicateurs', icon: LayoutDashboard, category: 'Pilotage' },
-  { id: 'vehicules', path: '/vehicules', label: 'Flotte Automobile', icon: Car, category: 'Gestion Parc' },
-  { id: 'utilisateurs', path: '/utilisateurs', label: 'Gestion Utilisateurs & Rôles', icon: Users, category: 'Administration' },
-  { id: 'audit', path: '/audit', label: 'Journal d\'Audit Système', icon: FileText, category: 'Sécurité' },
+  { id: 'dashboard', path: '/dashboard', label: 'Analytics & Indicateurs', icon: LayoutDashboard, category: 'Pilotage', roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONDUCTEUR', 'CONSULTATION'] },
+  { id: 'vehicules', path: '/vehicules', label: 'Flotte Automobile', icon: Car, category: 'Gestion Parc', roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONDUCTEUR', 'CONSULTATION'] },
+  { id: 'demandes', path: '/demandes', label: 'Demandes & Missions', icon: Send, category: 'Réservation', roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONDUCTEUR', 'CONSULTATION'] },
+  { id: 'affectations', path: '/affectations', label: 'Affectations & Restitutions', icon: Key, category: 'Missions', roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_SERVICE'] },
+  { id: 'conducteurs', path: '/conducteurs', label: 'Conducteurs & Chauffeurs', icon: UserCheck, category: 'Gestion Parc', roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_SERVICE'] },
+  { id: 'utilisateurs', path: '/utilisateurs', label: 'Gestion Utilisateurs & Rôles', icon: Users, category: 'Administration', roles: ['ADMIN'] },
+  { id: 'audit', path: '/audit', label: 'Journal d\'Audit Système', icon: FileText, category: 'Sécurité', roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL'] },
 ];
 
-export default function Sidebar({ collapsed, onToggleCollapse }) {
+export default function Sidebar({ user, collapsed, onToggleCollapse }) {
   const location = useLocation();
   const navigate = useNavigate();
   const syncTime = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) + ' ' + new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+  const roleName = user?.role?.nom || user?.role || 'CONSULTATION';
+
+  const visibleMenuItems = menuItems.filter((item) => item.roles.includes(roleName));
 
   return (
     <aside className={`${
@@ -58,7 +65,7 @@ export default function Sidebar({ collapsed, onToggleCollapse }) {
 
       {/* Menu Items */}
       <nav className="flex-1 px-2.5 py-3 flex flex-col gap-1.5 overflow-y-auto">
-        {menuItems.map((item) => {
+        {visibleMenuItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path || (item.path === '/vehicules' && location.pathname.startsWith('/vehicules/'));
           

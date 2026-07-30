@@ -25,7 +25,7 @@ export default function ForceChangePasswordModal({ user, onPasswordChanged }) {
     try {
       setLoading(true);
       await api.post('/auth/change-password', {
-        ancientMotDePasse: ancientMotDePasse || 'MEF@2026!Sec',
+        ancientMotDePasse: ancientMotDePasse,
         nouveauMotDePasse: nouveauMotDePasse
       });
 

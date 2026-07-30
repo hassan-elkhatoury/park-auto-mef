@@ -39,7 +39,7 @@ export default function LoginView({ onLoginSuccess }) {
         onLoginSuccess(res.data.utilisateur);
       }
     } catch (err) {
-      const msg = err.response?.data?.message || err.message || 'Email ou mot de passe incorrect. Veuillez réinstaller votre saisie.';
+      const msg = err.response?.data?.message || err.message || 'Email ou mot de passe incorrect. Veuillez vérifier votre saisie.';
       setError(msg);
       toast.error(msg);
     } finally {

@@ -111,4 +111,11 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new Sha256PasswordEncoder();
     }
+
+    @Bean
+    public org.springframework.boot.web.server.WebServerFactoryCustomizer<org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory> tomcatHeaderCustomizer() {
+        return factory -> factory.addConnectorCustomizers(connector -> {
+            connector.setProperty("maxHttpRequestHeaderSize", "65536");
+        });
+    }
 }
