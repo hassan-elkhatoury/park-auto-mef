@@ -8,8 +8,11 @@ import DashboardView from './components/DashboardView';
 import VehiculesListView from './components/VehiculesListView';
 import VehiculeDetailView from './components/VehiculeDetailView';
 import UtilisateursView from './components/UtilisateursView';
-import AuditView from './components/AuditView';
+import DemandesView from './components/DemandesView';
+import AffectationsView from './components/AffectationsView';
+import ConducteursView from './components/ConducteursView';
 import ForceChangePasswordModal from './components/ForceChangePasswordModal';
+import AuditView from './components/AuditView';
 
 export default function App() {
   const [user, setUser] = useState(() => {
@@ -27,6 +30,7 @@ export default function App() {
   });
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [selectedDemandeForAffectation, setSelectedDemandeForAffectation] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -44,6 +48,11 @@ export default function App() {
   const handleLogout = () => {
     localStorage.clear();
     setUser(null);
+  };
+
+  const handleOpenAffectationModal = (demande) => {
+    setSelectedDemandeForAffectation(demande);
+    navigate('/affectations');
   };
 
   if (!user) {
@@ -72,6 +81,7 @@ export default function App() {
       <Navbar user={user} onLogout={handleLogout} />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar 
+          user={user}
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
@@ -82,6 +92,9 @@ export default function App() {
             <Route path="/dashboard" element={<DashboardView />} />
             <Route path="/vehicules" element={<VehiculesListView />} />
             <Route path="/vehicules/:id" element={<VehiculeDetailView />} />
+            <Route path="/demandes" element={<DemandesView onOpenAffectationModal={handleOpenAffectationModal} />} />
+            <Route path="/affectations" element={<AffectationsView selectedDemandeForAffectation={selectedDemandeForAffectation} onCloseDemandeSelection={() => setSelectedDemandeForAffectation(null)} />} />
+            <Route path="/conducteurs" element={<ConducteursView />} />
             <Route path="/utilisateurs" element={<UtilisateursView />} />
             <Route path="/audit" element={<AuditView />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

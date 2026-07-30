@@ -24,8 +24,9 @@ export default function VehiculesListView() {
     try {
       setLoading(true);
       const res = await api.get('/vehicules?size=100');
-      if (res && res.data) {
-        setVehicules(res.data.content || []);
+      if (res) {
+        const list = res.data?.content || res.content || res.data || (Array.isArray(res) ? res : []);
+        setVehicules(Array.isArray(list) ? list : []);
       }
     } catch (err) {
       console.error('Erreur de chargement des véhicules:', err);

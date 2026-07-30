@@ -47,7 +47,9 @@ public class VehiculeServiceImpl implements VehiculeService {
     @Transactional(readOnly = true)
     public Page<VehiculeResponse> findAll(String search, String direction, StatutAdministratif statut, Pageable pageable) {
         log.info("Recherche de véhicules avec critères - search: {}, direction: {}, statut: {}", search, direction, statut);
-        return vehiculeRepository.searchVehicules(search, direction, statut, pageable)
+        String formattedSearch = (search != null && !search.trim().isEmpty()) ? "%" + search.trim().toLowerCase() + "%" : null;
+        String formattedDirection = (direction != null && !direction.trim().isEmpty()) ? direction.trim() : null;
+        return vehiculeRepository.searchVehicules(formattedSearch, formattedDirection, statut, pageable)
                 .map(vehiculeMapper::toResponse);
     }
 

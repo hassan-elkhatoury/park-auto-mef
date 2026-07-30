@@ -16,8 +16,7 @@ const roleColors = {
 export default function UtilisateursView() {
   const emptyForm = {
     matricule: '', nom: '', prenom: '', email: '',
-    motDePasse: 'MEF@2026!Sec', telephone: '',
-    direction: 'Direction du Budget', service: 'Service Logistique',
+    telephone: '', direction: 'Direction du Budget', service: 'Service Logistique',
     region: 'Rabat-Salé-Kénitra', role: 'GESTIONNAIRE_LOCAL', statut: 'ACTIVE'
   };
   const [users, setUsers] = useState([]);
@@ -61,7 +60,6 @@ export default function UtilisateursView() {
         nom: formData.nom,
         prenom: formData.prenom,
         email: formData.email,
-        motDePasse: formData.motDePasse || 'MEF@2026!Sec',
         telephone: formData.telephone,
         direction: formData.direction || 'Direction du Budget',
         service: formData.service || 'Service Logistique',
@@ -166,6 +164,21 @@ export default function UtilisateursView() {
     );
   };
 
+  const generateNextUserMatricule = (existingUsers = []) => {
+    let maxNum = 0;
+    existingUsers.forEach(u => {
+      if (u.matricule) {
+        const matches = u.matricule.match(/\d+/g);
+        if (matches) {
+          const num = parseInt(matches[matches.length - 1], 10);
+          if (num > maxNum && num < 10000) maxNum = num;
+        }
+      }
+    });
+    const nextNum = maxNum + 1;
+    return `MEF-${String(nextNum).padStart(3, '0')}`;
+  };
+
   return (
     <div className="p-8">
       <div className="max-w-[1400px] mx-auto space-y-6">
@@ -180,7 +193,11 @@ export default function UtilisateursView() {
             <button onClick={fetchUsers} className="h-9 px-3 bg-white border border-gray-200 rounded-lg text-[13px] font-medium text-gray-600 flex items-center gap-1.5 hover:bg-gray-50 shadow-xs cursor-pointer">
               <RotateCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Actualiser
             </button>
-            <button onClick={() => { setFormData(emptyForm); setIsModalOpen(true); }} className="h-9 px-4 gold-gradient-bg text-white rounded-lg text-[13px] font-semibold flex items-center gap-1.5 hover:opacity-90 shadow-sm cursor-pointer">
+            <button onClick={() => { 
+              const autoMatricule = generateNextUserMatricule(users);
+              setFormData({ ...emptyForm, matricule: autoMatricule }); 
+              setIsModalOpen(true); 
+            }} className="h-9 px-4 gold-gradient-bg text-white rounded-lg text-[13px] font-semibold flex items-center gap-1.5 hover:opacity-90 shadow-sm cursor-pointer">
               <UserPlus className="w-3.5 h-3.5" /> Nouveau Compte
             </button>
           </div>
@@ -332,7 +349,7 @@ export default function UtilisateursView() {
                 <div className="space-y-0.5">
                   <strong className="text-[#E5C17C] font-extrabold block">Sécurité & Habilitation Ministère MEF :</strong>
                   <span className="text-slate-300 text-[11px] leading-relaxed">
-                    Un mot de passe temporaire initial est généré automatiquement par le système (<code className="bg-[#C5A059]/20 px-1 py-0.5 rounded text-[#E5C17C] font-mono">MEF@2026!Sec</code>). L'agent sera <u>forcé de le modifier</u> dès sa première connexion.
+                    Un mot de passe temporaire unique et sécurisé est généré automatiquement par le système et immédiatement envoyé par email à l'agent. L'agent sera <u>forcé de le modifier</u> dès sa première connexion.
                   </span>
                 </div>
               </div>

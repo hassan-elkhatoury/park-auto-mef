@@ -85,7 +85,7 @@ public class AuthServiceImpl implements AuthService {
         } catch (UnauthorizedException ue) {
             throw ue;
         } catch (Exception e) {
-            log.warn("Échec de connexion pour l'utilisateur {} : {}", request.email(), e.getMessage());
+            log.error("Échec de connexion détaillé pour l'utilisateur {} : ", request.email(), e);
             throw new UnauthorizedException("Adresse email ou mot de passe incorrect");
         }
     }

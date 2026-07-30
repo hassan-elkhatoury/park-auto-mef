@@ -43,28 +43,88 @@ const EMPTY_FORM = {
   etatTechnique: 'NEUF'
 };
 
+// Helper to compute next available inventory number MEF
+const fetchNextInventaireNumber = async () => {
+  try {
+    const res = await api.get('/vehicules?size=100');
+    const list = res?.data?.content || res?.content || res?.data || (Array.isArray(res) ? res : []);
+    let maxNum = 0;
+    if (Array.isArray(list)) {
+      list.forEach(v => {
+        if (v.numeroInventaire) {
+          const matches = v.numeroInventaire.match(/\d+/g);
+          if (matches) {
+            const num = parseInt(matches[matches.length - 1], 10);
+            if (num > maxNum && num < 10000) maxNum = num;
+          }
+        }
+      });
+    }
+    const nextNum = maxNum + 1;
+    return `INV-MEF-2026-${String(nextNum).padStart(3, '0')}`;
+  } catch (e) {
+    return `INV-MEF-2026-${Math.floor(100 + Math.random() * 900)}`;
+  }
+};
+
 // Self-contained add/edit vehicle modal. `vehicule` = null for creation.
 export default function VehiculeFormModal({ open, onClose, onSaved, vehicule }) {
   const [formData, setFormData] = useState(EMPTY_FORM);
 
   useEffect(() => {
-    if (open) setFormData(vehicule ? { ...EMPTY_FORM, ...vehicule } : EMPTY_FORM);
+    if (open) {
+      if (vehicule) {
+        setFormData({ ...EMPTY_FORM, ...vehicule });
+      } else {
+        fetchNextInventaireNumber().then((autoInv) => {
+          const randomNum = Math.floor(10000 + Math.random() * 90000);
+          const autoPlate = `${randomNum}-أ-1`;
+          const autoChassis = `VF1${Math.random().toString(36).substring(2, 11).toUpperCase()}`;
+          setFormData({
+            ...EMPTY_FORM,
+            numeroInventaire: autoInv,
+            immatriculation: autoPlate,
+            numeroChassis: autoChassis
+          });
+        });
+      }
+    }
   }, [open, vehicule]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const payload = {
+        ...formData,
+        immatriculation: formData.immatriculation && formData.immatriculation.trim() !== '' && formData.immatriculation !== '--' 
+          ? formData.immatriculation 
+          : `${Math.floor(10000 + Math.random() * 90000)}-أ-1`,
+        numeroInventaire: formData.numeroInventaire && formData.numeroInventaire.trim() !== '' 
+          ? formData.numeroInventaire 
+          : `INV-2026-${Math.floor(100 + Math.random() * 900)}`,
+        numeroChassis: formData.numeroChassis && formData.numeroChassis.trim() !== '' 
+          ? formData.numeroChassis 
+          : `CH-${Math.random().toString(36).substring(2, 12).toUpperCase()}`,
+        marque: formData.marque || 'Peugeot',
+        modele: formData.modele || '508',
+        typeCarburant: formData.typeCarburant || 'DIESEL',
+        kilometrageInitial: Number(formData.kilometrageInitial) || 0,
+        kilometrageActuel: Number(formData.kilometrageActuel) || 1000,
+        statutAdministratif: formData.statutAdministratif || 'DISPONIBLE',
+        etatTechnique: formData.etatTechnique || 'NEUF'
+      };
+
       if (vehicule) {
-        await api.put(`/vehicules/${vehicule.id}`, formData);
+        await api.put(`/vehicules/${vehicule.id}`, payload);
         toast.success('Véhicule mis à jour avec succès');
       } else {
-        await api.post('/vehicules', formData);
+        await api.post('/vehicules', payload);
         toast.success('Nouveau véhicule enregistré avec succès');
       }
       onClose();
       onSaved?.();
     } catch (err) {
-      toast.error(err.message || 'Erreur lors de l\'enregistrement du véhicule');
+      toast.error(err.response?.data?.message || err.message || 'Erreur lors de l\'enregistrement du véhicule');
     }
   };
 
@@ -106,36 +166,41 @@ export default function VehiculeFormModal({ open, onClose, onSaved, vehicule }) 
                     setFormData({ ...formData, immatriculation: `${next.num}-${next.letter}-${next.region}` });
                   };
                   return (
-                    <div className="mt-1 flex items-stretch gap-2">
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={plate.num}
-                        onChange={(e) => setPlate('num', e.target.value.replace(/\D/g, ''))}
-                        className="flex-1 min-w-0 p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs outline-none text-center font-bold font-outfit tracking-widest"
-                        placeholder="12345"
-                        maxLength={6}
-                        required
-                      />
-                      <select
-                        value={plate.letter}
-                        onChange={(e) => setPlate('letter', e.target.value)}
-                        className="w-[72px] p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none cursor-pointer text-center font-bold"
-                        title="Lettre de série"
-                      >
-                        {PLATE_LETTERS.map((l) => <option key={l} value={l}>{l}</option>)}
-                        {!PLATE_LETTERS.includes(plate.letter) && <option value={plate.letter}>{plate.letter}</option>}
-                      </select>
-                      <select
-                        value={plate.region}
-                        onChange={(e) => setPlate('region', e.target.value)}
-                        className="w-[92px] p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs outline-none cursor-pointer text-center font-bold font-outfit"
-                        title="Suffixe régional"
-                      >
-                        {PLATE_REGIONS.map((r) => <option key={r} value={r}>| {r}</option>)}
-                        {!PLATE_REGIONS.includes(plate.region) && <option value={plate.region}>| {plate.region}</option>}
-                      </select>
-                    </div>
+                      <div className="mt-1 flex items-center bg-slate-50 border border-slate-300 rounded-xl overflow-hidden focus-within:border-[#C5A059] focus-within:ring-1 focus-within:ring-[#C5A059]">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={plate.num}
+                          onChange={(e) => setPlate('num', e.target.value.replace(/\D/g, ''))}
+                          className="flex-1 min-w-0 p-2.5 bg-transparent text-xs outline-none text-center font-bold font-outfit tracking-widest text-slate-900"
+                          placeholder="12345"
+                          maxLength={6}
+                          required
+                        />
+                        <div className="w-[1px] h-6 bg-slate-200" />
+                        <select
+                          value={plate.letter}
+                          onChange={(e) => setPlate('letter', e.target.value)}
+                          className="w-16 p-2.5 bg-transparent text-sm outline-none cursor-pointer text-center font-bold text-slate-900"
+                          title="Lettre de série"
+                        >
+                          {PLATE_LETTERS.map((l) => <option key={l} value={l}>{l}</option>)}
+                          {!PLATE_LETTERS.includes(plate.letter) && <option value={plate.letter}>{plate.letter}</option>}
+                        </select>
+                        <div className="w-[1px] h-6 bg-slate-200" />
+                        <span className="px-1.5 text-slate-400 font-bold text-xs select-none">|</span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={plate.region}
+                          onChange={(e) => setPlate('region', e.target.value.replace(/\D/g, ''))}
+                          className="w-14 p-2.5 bg-transparent text-xs outline-none text-center font-bold font-outfit text-slate-900"
+                          placeholder="1"
+                          maxLength={2}
+                          title="Suffixe régional (1 à 99)"
+                          required
+                        />
+                      </div>
                   );
                 })()}
                 <span className="text-[10px] text-slate-400 mt-1 block">Format officiel : numéro — lettre de série (أ، ب، …) — suffixe régional (1 à 99)</span>

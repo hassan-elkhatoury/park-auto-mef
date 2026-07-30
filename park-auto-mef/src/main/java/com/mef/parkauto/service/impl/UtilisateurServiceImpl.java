@@ -13,6 +13,7 @@ import com.mef.parkauto.exception.ResourceNotFoundException;
 import com.mef.parkauto.mapper.UtilisateurMapper;
 import com.mef.parkauto.repository.RoleRepository;
 import com.mef.parkauto.repository.UtilisateurRepository;
+import com.mef.parkauto.service.EmailService;
 import com.mef.parkauto.service.JournalService;
 import com.mef.parkauto.service.UtilisateurService;
 import com.mef.parkauto.util.AppConstants;
@@ -44,6 +45,7 @@ public class UtilisateurServiceImpl implements UtilisateurService {
     private final PasswordEncoder passwordEncoder;
     private final UtilisateurMapper utilisateurMapper;
     private final JournalService journalService;
+    private final EmailService emailService;
     private final HttpServletRequest httpServletRequest;
 
     @Override
@@ -119,9 +121,9 @@ public class UtilisateurServiceImpl implements UtilisateurService {
         user.setStatut(UserStatus.ACTIVE);
         user.setDoitChangerMotDePasse(true);
 
-        // Encodage du mot de passe initial (MEF@2026!Sec par défaut)
-        String rawPassword = "MEF@2026!Sec";
-        log.info("Mot de passe initial configuré pour {}: {}", request.email(), rawPassword);
+        // Génération d'un mot de passe temporaire aléatoire et sécurisé
+        String rawPassword = generateSecurePassword();
+        log.info("Mot de passe temporaire généré pour {}: {}", request.email(), rawPassword);
         String encodedPassword = passwordEncoder.encode(rawPassword);
         String[] parts = encodedPassword.split("\\$");
         user.setSel(parts.length > 0 ? parts[0] : "");
@@ -138,6 +140,9 @@ public class UtilisateurServiceImpl implements UtilisateurService {
         user.setRole(role);
 
         Utilisateur savedUser = utilisateurRepository.save(user);
+
+        // Envoi du mot de passe temporaire par email
+        emailService.sendTemporaryPassword(savedUser.getEmail(), savedUser.getNom(), savedUser.getPrenom(), rawPassword);
 
         // Audit log
         journalService.log(
