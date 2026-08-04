@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Send, CheckCircle, XCircle, Clock, Calendar, MapPin, Users,
-  AlertCircle, Plus, Search, X, Filter, SlidersHorizontal,
-  ChevronRight, Building2, Clock8, ClipboardCheck, Ban,
+  Plus, Search, X, SlidersHorizontal,
+  ChevronRight, Clock8, ClipboardCheck, Ban,
   UserCheck, ArrowUpDown, RefreshCw, Eye
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -57,6 +58,7 @@ const STATUS_STYLES = {
 };
 
 export default function DemandesView({ onOpenAffectationModal }) {
+  const navigate = useNavigate();
   const [demandes, setDemandes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterStatut, setFilterStatut] = useState('TOUTES');
@@ -206,7 +208,7 @@ export default function DemandesView({ onOpenAffectationModal }) {
       </div>
       <div>
         <p className="text-xs text-slate-500 font-medium">{label}</p>
-        <p className="text-2xl font-black text-[#0F1D32]">{count}</p>
+        <p className="text-2xl font-black text-[#0A1E3F]">{count}</p>
       </div>
     </div>
   );
@@ -222,31 +224,13 @@ export default function DemandesView({ onOpenAffectationModal }) {
     );
   };
 
-  const emptyState = (
-    <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-sm">
-      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
-        <Search className="w-7 h-7 text-slate-400" />
-      </div>
-      <p className="text-slate-500 font-bold text-sm">
-        {searchQuery || destinationFilter !== 'TOUTES'
-          ? 'Aucune demande ne correspond aux filtres'
-          : 'Aucune demande de déplacement pour le moment'}
-      </p>
-      <p className="text-xs text-slate-400 mt-1">
-        {searchQuery || destinationFilter !== 'TOUTES'
-          ? 'Essayez de modifier vos critères de recherche'
-          : 'Cliquez sur "Nouvelle Demande" pour créer la première demande'}
-      </p>
-    </div>
-  );
-
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-5">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 md:p-6 rounded-2xl border border-slate-200/80 shadow-sm">
         <div>
-          <h1 className="text-lg md:text-xl font-black text-[#0F1D32] tracking-wide uppercase flex items-center gap-2">
-            <Send className="w-5 h-5 md:w-6 md:h-6 text-[#C5A059]" />
+          <h1 className="text-lg md:text-xl font-black text-[#0A1E3F] tracking-wide uppercase flex items-center gap-2">
+            <Send className="w-5 h-5 md:w-6 md:h-6 text-[#C59B27]" />
             Demandes de Déplacement
           </h1>
           <p className="text-xs text-slate-500 mt-1">
@@ -255,7 +239,7 @@ export default function DemandesView({ onOpenAffectationModal }) {
         </div>
         <button
           onClick={() => setIsNewModalOpen(true)}
-          className="gold-gradient-bg text-[#070D1B] font-extrabold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-md hover:brightness-105 transition-all cursor-pointer shrink-0"
+          className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-md hover:brightness-105 transition-all cursor-pointer shrink-0"
         >
           <Plus className="w-4 h-4" /> Nouvelle Demande
         </button>
@@ -280,7 +264,7 @@ export default function DemandesView({ onOpenAffectationModal }) {
               placeholder="Rechercher par référence, motif, destination, agent..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#C5A059]/30 focus:border-[#C5A059] transition-all"
+              className="w-full pl-9 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#C59B27]/30 focus:border-[#C59B27] transition-all"
             />
             {searchQuery && (
               <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer">
@@ -292,13 +276,13 @@ export default function DemandesView({ onOpenAffectationModal }) {
             onClick={() => setShowFilters(!showFilters)}
             className={`px-3 py-2.5 rounded-xl border text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer shrink-0 ${
               showFilters || destinationFilter !== 'TOUTES'
-                ? 'bg-[#0F1D32] text-[#E5C17C] border-[#0F1D32]'
+                ? 'bg-[#0A1E3F] text-[#D7B14A] border-[#0A1E3F]'
                 : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
             }`}
           >
             <SlidersHorizontal className="w-3.5 h-3.5" /> Filtres
             {destinationFilter !== 'TOUTES' && (
-              <span className="w-2 h-2 rounded-full bg-[#C5A059]" />
+              <span className="w-2 h-2 rounded-full bg-[#C59B27]" />
             )}
           </button>
           <button
@@ -317,7 +301,7 @@ export default function DemandesView({ onOpenAffectationModal }) {
               <select
                 value={destinationFilter}
                 onChange={e => setDestinationFilter(e.target.value)}
-                className="bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-[#C5A059]/30"
+                className="bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-[#C59B27]/30"
               >
                 <option value="TOUTES">Toutes les destinations</option>
                 {destinations.filter(d => d !== 'TOUTES').map(d => (
@@ -334,7 +318,7 @@ export default function DemandesView({ onOpenAffectationModal }) {
                   onClick={() => toggleSort(f)}
                   className={`px-2 py-1 rounded-lg font-bold transition-all cursor-pointer ${
                     sortField === f
-                      ? 'bg-[#0F1D32] text-[#E5C17C]'
+                      ? 'bg-[#0A1E3F] text-[#D7B14A]'
                       : 'hover:bg-slate-100 text-slate-600'
                   }`}
                 >
@@ -362,7 +346,7 @@ export default function DemandesView({ onOpenAffectationModal }) {
                 className={`px-3.5 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                   filterStatut === tab.id
                     ? tab.id === 'TOUTES'
-                      ? 'bg-[#0F1D32] text-[#E5C17C] shadow-sm'
+                      ? 'bg-[#0A1E3F] text-[#D7B14A] shadow-sm'
                       : tab.id === 'EN_ATTENTE_VALIDATION' ? 'bg-amber-500 text-white shadow-sm'
                       : tab.id === 'VALIDEE_SERVICE' ? 'bg-blue-500 text-white shadow-sm'
                       : tab.id === 'APPROUVEE_AFFECTEE' ? 'bg-emerald-500 text-white shadow-sm'
@@ -385,151 +369,114 @@ export default function DemandesView({ onOpenAffectationModal }) {
         </div>
       </div>
 
-      {/* List */}
-      {loading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="bg-white rounded-2xl border border-slate-200/80 p-5 animate-pulse">
-              <div className="flex gap-3 mb-3">
-                <div className="h-4 w-24 bg-slate-200 rounded" />
-                <div className="h-4 w-32 bg-slate-200 rounded" />
-              </div>
-              <div className="h-5 w-3/4 bg-slate-200 rounded mb-2" />
-              <div className="h-3 w-1/2 bg-slate-200 rounded" />
-            </div>
-          ))}
+      {/* Data Table */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-slate-100 flex justify-between items-center">
+          <h3 className="font-outfit font-extrabold text-sm text-slate-900">Registre des Demandes</h3>
+          <span className="text-[11px] font-bold text-slate-400">
+            {filteredDemandes.length} demande{filteredDemandes.length !== 1 ? 's' : ''} affichée{filteredDemandes.length !== 1 ? 's' : ''}
+          </span>
         </div>
-      ) : filteredDemandes.length === 0 ? emptyState : (
-        <div className="space-y-3">
-          {filteredDemandes.map(d => {
-            const style = STATUS_STYLES[d.statut] || STATUS_STYLES.TERMINEE;
-            return (
-              <div
-                key={d.id}
-                className={`bg-white rounded-2xl border ${style.bg} shadow-sm hover:shadow-md transition-all overflow-hidden`}
-              >
-                <div className="p-4 md:p-5">
-                  {/* Top row: reference + status */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2.5">
-                      <span className="font-mono text-xs font-black text-[#C5A059] bg-[#C5A059]/10 px-2.5 py-1 rounded-lg border border-[#C5A059]/20">
+
+        <div className="overflow-x-auto">
+          {loading ? (
+            <div className="p-10 text-center text-xs text-slate-400">Chargement des demandes...</div>
+          ) : filteredDemandes.length === 0 ? (
+            <div className="p-10 text-center">
+              <Search className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+              <p className="text-xs font-bold text-slate-500">Aucune demande trouvée</p>
+            </div>
+          ) : (
+            <table className="enterprise-table">
+              <thead>
+                <tr>
+                  <th>Référence</th>
+                  <th>Motif</th>
+                  <th>Destination</th>
+                  <th>Départ</th>
+                  <th>Demandeur</th>
+                  <th>Statut</th>
+                  <th className="!text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredDemandes.map((d) => (
+                  <tr key={d.id} className="cursor-pointer" onClick={() => navigate(`/demandes/${d.id}`)}>
+                    <td>
+                      <span className="font-mono text-xs font-black text-[#C59B27] bg-[#C59B27]/10 px-2.5 py-1 rounded-lg border border-[#C59B27]/20">
                         {d.reference}
                       </span>
+                    </td>
+                    <td>
+                      <span className="text-xs font-extrabold text-slate-900 block leading-tight max-w-[280px] truncate">{d.motif}</span>
+                      <span className="text-[10px] text-slate-400 block">
+                        {new Date(d.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="flex items-center gap-1.5 text-xs text-slate-600 whitespace-nowrap">
+                        <MapPin className="w-3.5 h-3.5 text-[#C59B27]" /> {d.destination}
+                      </span>
+                      <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {new Date(d.dateHeureDepart).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} → {new Date(d.dateHeureRetourEstimee).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="text-xs font-semibold text-slate-700 whitespace-nowrap">
+                        {new Date(d.dateHeureDepart).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="text-xs font-bold text-slate-800 block">{d.demandeurNomComplet || 'Agent MEF'}</span>
+                      <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                        <Users className="w-3 h-3" /> {d.nombrePassagers} passager{d.nombrePassagers > 1 ? 's' : ''}
+                      </span>
+                    </td>
+                    <td>
                       <StatusBadge statut={d.statut} />
-                    </div>
-                    <div className="text-[10px] text-slate-400 font-medium">
-                      {new Date(d.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  </div>
-
-                  {/* Main content */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {/* Left: Mission info */}
-                    <div className="md:col-span-2 space-y-2">
-                      <h3 className="text-sm font-extrabold text-[#0F1D32] leading-tight">{d.motif}</h3>
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-500">
-                        <span className="flex items-center gap-1.5 font-semibold text-slate-700">
-                          <MapPin className="w-3.5 h-3.5 text-[#C5A059]" /> {d.destination}
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                          {new Date(d.dateHeureDepart).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                          {' → '}
-                          {new Date(d.dateHeureRetourEstimee).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <Users className="w-3.5 h-3.5 text-slate-400" /> {d.nombrePassagers} passager{d.nombrePassagers > 1 ? 's' : ''}
-                        </span>
-                      </div>
-
-                      {/* Demandeur */}
-                      <div className="flex items-center gap-2 text-[11px] text-slate-500 bg-slate-50 rounded-lg px-3 py-1.5 border border-slate-100">
-                        <UserCheck className="w-3.5 h-3.5 text-slate-400" />
-                        <span className="font-bold text-slate-700">{d.demandeurNomComplet || 'Agent MEF'}</span>
-                        {d.demandeurDirection && (
-                          <>
-                            <span className="text-slate-300">•</span>
-                            <Building2 className="w-3 h-3 text-slate-400" />
-                            {d.demandeurDirection}
-                            {d.demandeurService && <> / {d.demandeurService}</>}
-                          </>
+                    </td>
+                    <td>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); navigate(`/demandes/${d.id}`); }}
+                          className="w-8 h-8 rounded-lg bg-[#0A1E3F]/5 border border-[#0A1E3F]/10 text-[#0A1E3F] hover:bg-[#0A1E3F] hover:text-[#D7B14A] flex items-center justify-center transition-all cursor-pointer"
+                          title="Consulter la fiche demande"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        {d.statut === 'EN_ATTENTE_VALIDATION' && canValidateN1 && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleOpenValidationModal(d); }}
+                            className="w-8 h-8 rounded-lg bg-[#0A1E3F] hover:bg-[#122B55] text-[#D7B14A] flex items-center justify-center transition-all cursor-pointer"
+                            title="Décision N1"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                          </button>
+                        )}
+                        {d.statut === 'VALIDEE_SERVICE' && canAffecterN2 && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onOpenAffectationModal && onOpenAffectationModal(d); }}
+                            className="w-8 h-8 rounded-lg bg-[#C59B27]/10 border border-[#C59B27]/40 text-[#94700E] hover:bg-[#C59B27] hover:text-[#0A1E3F] flex items-center justify-center transition-all cursor-pointer"
+                            title="Affecter Véhicule"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
                         )}
                       </div>
-                    </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
 
-                    {/* Right: Validation info */}
-                    <div className="space-y-1.5 text-[10px] text-slate-500 bg-slate-50 rounded-xl p-3 border border-slate-100">
-                      {d.statut === 'EN_ATTENTE_VALIDATION' && (
-                        <p className="text-amber-700 font-bold flex items-center gap-1">
-                          <Clock /> En attente de décision N1
-                        </p>
-                      )}
-                      {d.statut === 'VALIDEE_SERVICE' && d.valideurServiceNomComplet && (
-                        <p className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-blue-500" /> Validé par {d.valideurServiceNomComplet}</p>
-                      )}
-                      {d.statut === 'APPROUVEE_AFFECTEE' && (
-                        <>
-                          {d.valideurServiceNomComplet && <p className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-blue-500" /> N1: {d.valideurServiceNomComplet}</p>}
-                          {d.approbateurParcNomComplet && <p className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-emerald-500" /> N2: {d.approbateurParcNomComplet}</p>}
-                          {d.affectationReference && <p className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-emerald-500" /> {d.affectationReference}</p>}
-                        </>
-                      )}
-                      {d.statut === 'REJETEE' && d.valideurServiceNomComplet && (
-                        <p className="flex items-center gap-1"><XCircle className="w-3 h-3 text-red-500" /> Rejeté par {d.valideurServiceNomComplet}</p>
-                      )}
-                      {d.statut === 'TERMINEE' && (
-                        <p className="text-slate-600 font-medium">Mission terminée</p>
-                      )}
-                      {d.listePassagers && d.listePassagers.trim() && (
-                        <p className="flex items-center gap-1 mt-1 pt-1 border-t border-slate-200">
-                          <Users className="w-3 h-3 text-slate-400" /> {d.listePassagers}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Rejection reason */}
-                  {d.statut === 'REJETEE' && d.motifRejet && (
-                    <div className="mt-3 bg-red-50 p-3 rounded-xl border border-red-200 text-xs text-red-800 flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <span className="font-bold block text-[11px]">Motif du rejet :</span>
-                        {d.motifRejet}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Actions bar */}
-                <div className="bg-slate-50/80 border-t border-slate-100 px-4 md:px-5 py-2.5 flex flex-wrap items-center justify-end gap-2">
-                  {d.statut === 'EN_ATTENTE_VALIDATION' && canValidateN1 && (
-                    <button
-                      onClick={() => handleOpenValidationModal(d)}
-                      className="bg-[#0F1D32] hover:bg-[#1B3050] text-[#E5C17C] font-extrabold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
-                    >
-                      <CheckCircle className="w-4 h-4" /> Décision N1
-                    </button>
-                  )}
-                  {d.statut === 'VALIDEE_SERVICE' && canAffecterN2 && (
-                    <button
-                      onClick={() => onOpenAffectationModal && onOpenAffectationModal(d)}
-                      className="gold-gradient-bg text-[#070D1B] font-extrabold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-md hover:brightness-105 transition-all cursor-pointer"
-                    >
-                      <ChevronRight className="w-4 h-4" /> Affecter Véhicule
-                    </button>
-                  )}
-                  {canValidateN1 && d.statut !== 'EN_ATTENTE_VALIDATION' && (
-                    <button
-                      onClick={() => handleOpenValidationModal(d)}
-                      className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-white transition-all cursor-pointer flex items-center gap-1.5"
-                    >
-                      <Eye className="w-3.5 h-3.5" /> Détails
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+      {filteredDemandes.length > 0 && (
+        <div className="text-center text-[10px] text-slate-400 font-medium pb-2">
+          {filteredDemandes.length} demande{filteredDemandes.length !== 1 ? 's' : ''} affichée{filteredDemandes.length !== 1 ? 's' : ''}
+          {demandes.length !== filteredDemandes.length && ` sur ${demandes.length} totale${demandes.length !== 1 ? 's' : ''}`}
         </div>
       )}
 
@@ -545,8 +492,8 @@ export default function DemandesView({ onOpenAffectationModal }) {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-extrabold text-[#0F1D32] uppercase flex items-center gap-2">
-                <Send className="w-5 h-5 text-[#C5A059]" />
+              <h2 className="text-base font-extrabold text-[#0A1E3F] uppercase flex items-center gap-2">
+                <Send className="w-5 h-5 text-[#C59B27]" />
                 Nouvelle Demande
               </h2>
               <button onClick={() => setIsNewModalOpen(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
@@ -557,42 +504,42 @@ export default function DemandesView({ onOpenAffectationModal }) {
               <div>
                 <label className="block font-bold text-slate-700 mb-1.5">Motif de la mission *</label>
                 <input type="text" required placeholder="ex: Inspection budgétaire régionale..." value={newForm.motif} onChange={e => setNewForm({ ...newForm, motif: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C5A059]/30 font-medium" />
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C59B27]/30 font-medium" />
               </div>
               <div>
                 <label className="block font-bold text-slate-700 mb-1.5">Destination *</label>
                 <input type="text" required placeholder="ex: Tanger, Casablanca..." value={newForm.destination} onChange={e => setNewForm({ ...newForm, destination: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C5A059]/30 font-medium" />
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C59B27]/30 font-medium" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1.5">Départ *</label>
                   <input type="datetime-local" required value={newForm.dateHeureDepart} onChange={e => setNewForm({ ...newForm, dateHeureDepart: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C5A059]/30 font-medium" />
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C59B27]/30 font-medium" />
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1.5">Retour estimé *</label>
                   <input type="datetime-local" required value={newForm.dateHeureRetourEstimee} onChange={e => setNewForm({ ...newForm, dateHeureRetourEstimee: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C5A059]/30 font-medium" />
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C59B27]/30 font-medium" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1.5">Passagers</label>
                   <input type="number" min="1" value={newForm.nombrePassagers} onChange={e => setNewForm({ ...newForm, nombrePassagers: parseInt(e.target.value) || 1 })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C5A059]/30 font-bold" />
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C59B27]/30 font-bold" />
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1.5">Accompagnateurs</label>
                   <input type="text" placeholder="M. Bennani, Mme Alami..." value={newForm.listePassagers} onChange={e => setNewForm({ ...newForm, listePassagers: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C5A059]/30 font-medium" />
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C59B27]/30 font-medium" />
                 </div>
               </div>
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
                 <button type="button" onClick={() => setIsNewModalOpen(false)}
                   className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold text-slate-700 text-xs transition-all cursor-pointer">Annuler</button>
                 <button type="submit"
-                  className="px-4 py-2.5 rounded-xl gold-gradient-bg text-[#070D1B] font-extrabold text-xs shadow-md hover:brightness-105 transition-all cursor-pointer">Soumettre la demande</button>
+                  className="px-4 py-2.5 rounded-xl gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs shadow-md hover:brightness-105 transition-all cursor-pointer">Soumettre la demande</button>
               </div>
             </form>
           </div>
@@ -604,8 +551,8 @@ export default function DemandesView({ onOpenAffectationModal }) {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-extrabold text-[#0F1D32] uppercase flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-[#C5A059]" />
+              <h2 className="text-base font-extrabold text-[#0A1E3F] uppercase flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-[#C59B27]" />
                 Décision N1 (Service)
               </h2>
               <button onClick={() => setIsValidN1ModalOpen(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">

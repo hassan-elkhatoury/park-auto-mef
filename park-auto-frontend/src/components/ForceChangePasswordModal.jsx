@@ -47,18 +47,18 @@ export default function ForceChangePasswordModal({ user, onPasswordChanged }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-[#070D1B]/90 backdrop-blur-lg z-[9999] flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-[460px] rounded-2xl shadow-2xl overflow-hidden border border-[#C5A059]/40">
+    <div className="fixed inset-0 bg-[#0A1E3F]/90 backdrop-blur-lg z-[9999] flex items-center justify-center p-4">
+      <div className="bg-white w-full max-w-[460px] rounded-2xl shadow-2xl overflow-hidden border border-[#C59B27]/40">
         
         {/* Header */}
-        <div className="bg-[#070D1B] p-6 text-white text-center relative border-b border-[#C5A059]/30">
+        <div className="bg-[#0A1E3F] p-6 text-white text-center relative border-b border-[#C59B27]/30">
           <div className="w-12 h-12 rounded-xl gold-gradient-bg mx-auto flex items-center justify-center mb-3 shadow-lg">
-            <ShieldAlert className="w-6 h-6 text-[#070D1B]" />
+            <ShieldAlert className="w-6 h-6 text-[#0A1E3F]" />
           </div>
           <h2 className="text-lg font-black font-['Outfit'] tracking-wide text-white">
             Changement de Mot de Passe Obligatoire
           </h2>
-          <p className="text-xs text-[#E5C17C] mt-1 font-medium">
+          <p className="text-xs text-[#D7B14A] mt-1 font-medium">
             Première connexion détectée — Sécurité Ministère MEF
           </p>
         </div>
@@ -81,7 +81,7 @@ export default function ForceChangePasswordModal({ user, onPasswordChanged }) {
                 value={ancientMotDePasse}
                 onChange={(e) => setAncientMotDePasse(e.target.value)}
                 placeholder="Entrez votre mot de passe initial"
-                className="w-full h-10 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C5A059]"
+                className="w-full h-10 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]"
                 required
               />
             </div>
@@ -93,7 +93,7 @@ export default function ForceChangePasswordModal({ user, onPasswordChanged }) {
                 value={nouveauMotDePasse}
                 onChange={(e) => setNouveauMotDePasse(e.target.value)}
                 placeholder="Au moins 8 caractères"
-                className="w-full h-10 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C5A059]"
+                className="w-full h-10 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]"
                 required
               />
             </div>
@@ -105,7 +105,7 @@ export default function ForceChangePasswordModal({ user, onPasswordChanged }) {
                 value={confirmationMotDePasse}
                 onChange={(e) => setConfirmationMotDePasse(e.target.value)}
                 placeholder="Répétez le nouveau mot de passe"
-                className="w-full h-10 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C5A059]"
+                className="w-full h-10 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]"
                 required
               />
             </div>
@@ -113,7 +113,7 @@ export default function ForceChangePasswordModal({ user, onPasswordChanged }) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-11 gold-gradient-bg text-[#070D1B] font-extrabold text-xs rounded-xl shadow-md flex items-center justify-center gap-2 hover:opacity-95 cursor-pointer mt-2"
+              className="w-full h-11 gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs rounded-xl shadow-md flex items-center justify-center gap-2 hover:opacity-95 cursor-pointer mt-2"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>{loading ? 'Validation en cours...' : 'Valider et Accéder au Système'}</span>

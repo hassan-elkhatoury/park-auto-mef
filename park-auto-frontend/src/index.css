@@ -3,61 +3,101 @@
 @tailwind utilities;
 
 :root {
-  --navy-900: #0A1628;
-  --navy-800: #0F1D32;
-  --navy-700: #142640;
-  --gold: #C5A059;
-  --gold-light: #F5ECDA;
-  --green: #059669;
+  /* ═══ MEF Official & Moroccan Institutional Palette ═══ */
+  --navy-950: #071530;
+  --navy-900: #091B36;
+  --navy-800: #0A1E3F;
+  --navy-700: #122B55;
+  --navy-600: #1A3666;
+  --gold: #C59B27;
+  --gold-bright: #D7B14A;
+  --gold-light: #E3C873;
+  --gold-lighter: #F7EFD3;
+  --gold-dark: #B8860B;
+  --bronze: #C47D2B;
+  --emerald: #0D7A5F;
+  --emerald-dark: #007A5E;
+  --mission-blue: #1565C0;
+  --mint: #00A896;
+  --canvas: #F4F6FB;
+  --card: #FFFFFF;
+  --card-line: #E2E8F0;
+
+  /* Semantic */
+  --green: #0D7A5F;
   --orange: #D97706;
-  --red: #DC2626;
+  --red: #C1272D;
+  --blue: #1565C0;
 }
 
 /* ═══ Base ═══ */
 body {
-  background-color: #F8F9FB;
+  background-color: var(--canvas);
   color: #1E293B;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
-/* ═══ Gold Accent (minimal usage) ═══ */
+/* ═══ Gold Accents ═══ */
 .gold-gradient-bg {
-  background: linear-gradient(135deg, #D4B370 0%, #C5A059 50%, #A8843D 100%);
+  background: linear-gradient(135deg, #E3C873 0%, #C59B27 50%, #B8860B 100%);
 }
 
 .gold-gradient-text {
-  background: linear-gradient(135deg, #E5C17C 0%, #C5A059 50%, #9B783E 100%);
+  background: linear-gradient(135deg, #E3C873 0%, #C59B27 50%, #94700E 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 .gold-glow {
-  box-shadow: 0 0 24px rgba(197, 160, 89, 0.35);
+  box-shadow: 0 0 24px rgba(197, 155, 39, 0.35);
 }
 
 .text-gold {
-  color: #C5A059;
+  color: #C59B27;
+}
+
+/* ═══ High Definition Moroccan Star Zellij SVG Pattern ═══ */
+.zellige-pattern {
+  background-color: var(--canvas);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cpath fill='%23C59B27' fill-opacity='0.07' d='M40 0l11.71 11.71H68.29V28.29L80 40l-11.71 11.71v16.57H51.71L40 80l-11.71-11.71H11.71V51.71L0 40l11.71-11.71V11.71h16.57z'/%3E%3Cpath fill='%230A1E3F' fill-opacity='0.05' d='M40 10l8.79 8.79H61.21V31.21L70 40l-8.79 8.79v12.43H48.79L40 70l-8.79-8.79H18.79V48.79L10 40l8.79-8.79V18.79h12.43z'/%3E%3Cpolygon fill='%23C59B27' fill-opacity='0.08' points='40 20 45.86 25.86 54.14 25.86 54.14 34.14 60 40 54.14 45.86 54.14 54.14 45.86 54.14 40 60 34.14 54.14 25.86 54.14 25.86 45.86 20 40 25.86 34.14 25.86 25.86 34.14 25.86'/%3E%3Cpolygon fill='%230A1E3F' fill-opacity='0.06' points='40 25 50 40 40 55 30 40'/%3E%3Cpolygon fill='%230A1E3F' fill-opacity='0.06' points='25 40 40 30 55 40 40 50'/%3E%3Ccircle cx='40' cy='40' r='4' fill='%23C59B27' fill-opacity='0.15'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 80px 80px;
+}
+
+/* Watermark Zellij for Card backgrounds */
+.card-zellij-watermark {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cg fill='none' stroke='%23C59B27' stroke-width='1.2' stroke-opacity='0.09'%3E%3Cpath d='M80 0 L160 80 L80 160 L0 80 Z'/%3E%3Cpath d='M0 0 L160 160 M160 0 L0 160'/%3E%3Ccircle cx='80' cy='80' r='40'/%3E%3Cpolygon points='80 20 97.57 62.43 140 80 97.57 97.57 80 140 62.43 97.57 20 80 62.43 62.43'/%3E%3Cpolygon points='80 35 92.43 67.57 125 80 92.43 92.43 80 125 67.57 92.43 35 80 67.57 67.57'/%3E%3C/g%3E%3C/svg%3E");
+  background-position: right -15px center;
+  background-repeat: no-repeat;
+  background-size: 160px 160px;
+}
+
+/* Moroccan Zellige silhouette art for the sidebar base (gold/amber hues) */
+.zellige-sidebar-art {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='200' viewBox='0 0 260 200'%3E%3Cg fill='none' stroke='%23C59B27' stroke-width='1.1' stroke-opacity='0.32'%3E%3Cpath d='M20 190 Q40 140 80 150 Q90 120 130 130 Q170 120 180 150 Q220 140 240 190 Z'/%3E%3Cpath d='M0 200 L260 200'/%3E%3Cg stroke-opacity='0.2'%3E%3Cpath d='M50 200 Q70 165 100 175'/%3E%3Cpath d='M110 200 Q125 170 150 178'/%3E%3Cpath d='M160 200 Q180 168 210 175'/%3E%3Cpath d='M215 200 Q228 175 245 182'/%3E%3C/g%3E%3Ccircle cx='130' cy='150' r='22'/%3E%3Cpolygon points='130 132 145 145 141 163 119 163 115 145'/%3E%3Ccircle cx='66' cy='152' r='12' stroke-opacity='0.18'/%3E%3Ccircle cx='194' cy='152' r='12' stroke-opacity='0.18'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: bottom center;
+  background-size: 100% auto;
 }
 
 /* ═══ Vehicle Status Badges ═══ */
-.status-disponible    { background-color: #10B981; color: #FFFFFF; }
-.status-affecte       { background-color: #3B82F6; color: #FFFFFF; }
-.status-en-entretien  { background-color: #D97706; color: #FFFFFF; }
-.status-hors-service  { background-color: #DC2626; color: #FFFFFF; }
+.status-disponible    { background-color: #0D7A5F; color: #FFFFFF; }
+.status-affecte       { background-color: #0A1E3F; color: #FFFFFF; }
+.status-en-entretien  { background-color: #C47D2B; color: #FFFFFF; }
+.status-hors-service  { background-color: #C1272D; color: #FFFFFF; }
 .status-archive       { background-color: #64748B; color: #FFFFFF; }
-.status-reserve       { background-color: #7C3AED; color: #FFFFFF; }
+.status-reserve       { background-color: #1565C0; color: #FFFFFF; }
 
 /* ═══ Moroccan License Plate ═══ */
 .moroccan-plate {
   display: inline-flex;
   background: #FFFFFF;
-  border: 2px solid #0F172A;
+  border: 2px solid #0A1E3F;
   border-radius: 6px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
@@ -72,49 +112,14 @@ body {
   font-weight: 800;
   font-size: 14px;
   letter-spacing: 0.06em;
-  color: #0F172A;
+  color: #0A1E3F;
   font-variant-numeric: tabular-nums;
 }
 
 .moroccan-plate .plate-separator {
-  color: #C5A059;
+  color: #C59B27;
   font-weight: 400;
 }
-
-/* ═══ Enterprise Card ═══ */
-.enterprise-card {
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0;
-  border-radius: 10px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.enterprise-card:hover {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.03);
-}
-
-/* ═══ Status Dots ═══ */
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-  flex-shrink: 0;
-}
-
-.status-dot-disponible { background-color: #059669; }
-.status-dot-affecte { background-color: #3B82F6; }
-.status-dot-entretien { background-color: #D97706; }
-.status-dot-hors-service { background-color: #DC2626; }
-.status-dot-archive { background-color: #94A3B8; }
-.status-dot-reserve { background-color: #7C3AED; }
-
-/* ═══ KPI Card Left Border Accents ═══ */
-.kpi-accent-total { border-left: 3px solid #C5A059; }
-.kpi-accent-disponible { border-left: 3px solid #059669; }
-.kpi-accent-entretien { border-left: 3px solid #D97706; }
-.kpi-accent-hors-service { border-left: 3px solid #DC2626; }
-.kpi-accent-archive { border-left: 3px solid #94A3B8; }
 
 /* ═══ Enterprise Table ═══ */
 .enterprise-table {
@@ -124,20 +129,20 @@ body {
 }
 
 .enterprise-table thead th {
-  background: #F8FAFC;
-  border-bottom: 1px solid #E2E8F0;
-  padding: 12px 16px;
-  font-size: 12px;
-  font-weight: 600;
+  background: #F4F6FB;
+  border-bottom: 2px solid var(--card-line);
+  padding: 14px 18px;
+  font-size: 11px;
+  font-weight: 700;
   color: #64748B;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   text-align: left;
   white-space: nowrap;
 }
 
 .enterprise-table tbody td {
-  padding: 14px 16px;
+  padding: 16px 18px;
   border-bottom: 1px solid #F1F5F9;
   font-size: 14px;
   color: #334155;
@@ -154,6 +159,41 @@ body {
 
 .enterprise-table tbody tr:last-child td {
   border-bottom: none;
+}
+
+/* ═══ Animations ═══ */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes gold-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(197, 155, 39, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(197, 155, 39, 0); }
+}
+
+@keyframes fade-slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(197, 155, 39, 0.06), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2.5s infinite;
+}
+
+.animate-gold-pulse {
+  animation: gold-pulse 2s infinite;
+}
+
+.animate-fade-slide-up {
+  animation: fade-slide-up 0.4s ease-out;
 }
 
 /* ═══ Scrollbar ═══ */
@@ -175,7 +215,6 @@ body {
   background: #94A3B8;
 }
 
-/* ═══ Sidebar scrollbar ═══ */
 .sidebar-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
@@ -187,67 +226,16 @@ body {
 /* ═══ Focus ═══ */
 input:focus, select:focus, textarea:focus {
   outline: none;
-  border-color: #C5A059;
-  box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.1);
+  border-color: #C59B27;
+  box-shadow: 0 0 0 3px rgba(197, 155, 39, 0.15);
 }
 
-/* ═══ Transitions (enterprise: 150-200ms) ═══ */
+/* ═══ Transitions ═══ */
 button, a, input, select {
   transition: all 0.15s ease;
 }
 
-/* ═══ Glass Panel (Login only) ═══ */
-.glass-panel {
-  background: rgba(15, 29, 50, 0.88);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* ═══ Moroccan BG overlay (Login only) ═══ */
-.moroccan-bg-overlay {
-  background-image: radial-gradient(rgba(197, 160, 89, 0.12) 1px, transparent 1px);
-  background-size: 28px 28px;
-}
-
-/* ═══ Floating particles (Login only) ═══ */
-@keyframes floatParticle {
-  0%, 100% { transform: translateY(0) translateX(0); opacity: 0.2; }
-  50% { transform: translateY(-20px) translateX(10px); opacity: 0.4; }
-}
-
-.floating-particle {
-  position: absolute;
-  width: 3px;
-  height: 3px;
-  background: rgba(197, 160, 89, 0.25);
-  border-radius: 50%;
-  animation: floatParticle 8s ease-in-out infinite;
-}
-
-/* ═══ Pagination ═══ */
-.pagination-btn {
-  min-width: 32px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #64748B;
-  border: 1px solid #E2E8F0;
-  background: white;
-  cursor: pointer;
-}
-
-.pagination-btn:hover {
-  background: #F8FAFC;
-  border-color: #CBD5E1;
-}
-
-.pagination-btn.active {
-  background: #C5A059;
-  color: white;
-  border-color: #C5A059;
+/* ═══ Arabic Text ═══ */
+.font-amiri {
+  font-family: 'Amiri', serif;
 }

@@ -209,7 +209,7 @@ export default function UtilisateursView() {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher par nom, email, matricule..."
-              className="w-full h-9 pl-9 pr-3 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 placeholder:text-gray-400 outline-none focus:border-[#C5A059]" />
+              className="w-full h-9 pl-9 pr-3 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 placeholder:text-gray-400 outline-none focus:border-[#C59B27]" />
           </div>
           <span className="text-[13px] text-gray-500 font-medium">{filteredUsers.length} utilisateur{filteredUsers.length !== 1 ? 's' : ''}</span>
         </div>
@@ -224,7 +224,7 @@ export default function UtilisateursView() {
             </div>
           ) : (
             <table className="w-full text-left text-xs">
-              <thead className="bg-[#070D1B] text-[#E5C17C] uppercase font-bold text-[10px]">
+              <thead className="bg-[#0A1E3F] text-[#D7B14A] uppercase font-bold text-[10px]">
                 <tr>
                   <th className="p-3.5">Matricule</th>
                   <th className="p-3.5">Utilisateur</th>
@@ -307,20 +307,20 @@ export default function UtilisateursView() {
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-[540px] rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
-            <div className="flex items-center justify-between p-5 bg-[#070D1B] text-white">
+            <div className="flex items-center justify-between p-5 bg-[#0A1E3F] text-white">
               <div>
                 <h3 className="text-[16px] font-bold font-['Outfit']">Créer un Compte Agent MEF</h3>
-                <p className="text-[11px] text-[#E5C17C]">Enregistrement et attribution des habilitations</p>
+                <p className="text-[11px] text-[#D7B14A]">Enregistrement et attribution des habilitations</p>
               </div>
               <button onClick={() => setIsModalOpen(false)} className="w-7 h-7 rounded-md flex items-center justify-center text-gray-400 hover:bg-white/10 cursor-pointer"><X className="w-4 h-4" /></button>
             </div>
             <form onSubmit={handleCreateUser} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="text-xs font-bold text-gray-700 block mb-1">Matricule *</label><input type="text" value={formData.matricule} onChange={(e) => setFormData({...formData, matricule: e.target.value})} placeholder="MEF-2026-099" className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C5A059]" required /></div>
-                <div><label className="text-xs font-bold text-gray-700 block mb-1">Nom *</label><input type="text" value={formData.nom} onChange={(e) => setFormData({...formData, nom: e.target.value})} placeholder="El Mansouri" className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C5A059]" required /></div>
-                <div><label className="text-xs font-bold text-gray-700 block mb-1">Prénom *</label><input type="text" value={formData.prenom} onChange={(e) => setFormData({...formData, prenom: e.target.value})} placeholder="Khadija" className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C5A059]" required /></div>
-                <div><label className="text-xs font-bold text-gray-700 block mb-1">Email Professionnel *</label><input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="k.mansouri@mef.gov.ma" className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C5A059]" required /></div>
-                <div><label className="text-xs font-bold text-gray-700 block mb-1">Rôle Système *</label><select value={formData.role || 'GESTIONNAIRE_LOCAL'} onChange={(e) => setFormData({...formData, role: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs cursor-pointer outline-none font-medium focus:border-[#C5A059]">
+                <div><label className="text-xs font-bold text-gray-700 block mb-1">Matricule *</label><input type="text" value={formData.matricule} onChange={(e) => setFormData({...formData, matricule: e.target.value})} placeholder="MEF-2026-099" className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]" required /></div>
+                <div><label className="text-xs font-bold text-gray-700 block mb-1">Nom *</label><input type="text" value={formData.nom} onChange={(e) => setFormData({...formData, nom: e.target.value})} placeholder="El Mansouri" className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]" required /></div>
+                <div><label className="text-xs font-bold text-gray-700 block mb-1">Prénom *</label><input type="text" value={formData.prenom} onChange={(e) => setFormData({...formData, prenom: e.target.value})} placeholder="Khadija" className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]" required /></div>
+                <div><label className="text-xs font-bold text-gray-700 block mb-1">Email Professionnel *</label><input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="k.mansouri@mef.gov.ma" className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]" required /></div>
+                <div><label className="text-xs font-bold text-gray-700 block mb-1">Rôle Système *</label><select value={formData.role || 'GESTIONNAIRE_LOCAL'} onChange={(e) => setFormData({...formData, role: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs cursor-pointer outline-none font-medium focus:border-[#C59B27]">
                   <option value="ADMIN">ADMIN</option>
                   <option value="GESTIONNAIRE_CENTRAL">GESTIONNAIRE_CENTRAL</option>
                   <option value="GESTIONNAIRE_LOCAL">GESTIONNAIRE_LOCAL</option>
@@ -329,7 +329,7 @@ export default function UtilisateursView() {
                   <option value="CONDUCTEUR">CONDUCTEUR</option>
                   <option value="CONSULTATION">CONSULTATION</option>
                 </select></div>
-                <div><label className="text-xs font-bold text-gray-700 block mb-1">Direction MEF *</label><select value={formData.direction} onChange={(e) => setFormData({...formData, direction: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs cursor-pointer outline-none font-medium focus:border-[#C5A059]">
+                <div><label className="text-xs font-bold text-gray-700 block mb-1">Direction MEF *</label><select value={formData.direction} onChange={(e) => setFormData({...formData, direction: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs cursor-pointer outline-none font-medium focus:border-[#C59B27]">
                   <option value="Direction du Budget">Direction du Budget (DB)</option>
                   <option value="Direction Générale des Impôts">Direction Générale des Impôts (DGI)</option>
                   <option value="Administration des Douanes et Impôts Indirects">Administration des Douanes et Impôts Indirects (ADII)</option>
@@ -341,13 +341,13 @@ export default function UtilisateursView() {
                   <option value="Direction des Études et des Prévisions Financières">Direction des Études et des Prévisions Financières (DEPF)</option>
                 </select></div>
               </div>
-              <div><label className="text-xs font-bold text-gray-700 block mb-1">Téléphone</label><input type="tel" value={formData.telephone} onChange={(e) => setFormData({...formData, telephone: e.target.value})} placeholder="+212 6XX XX XX XX" className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C5A059]" /></div>
+              <div><label className="text-xs font-bold text-gray-700 block mb-1">Téléphone</label><input type="tel" value={formData.telephone} onChange={(e) => setFormData({...formData, telephone: e.target.value})} placeholder="+212 6XX XX XX XX" className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]" /></div>
               
               {/* Premium Institutional Warning Alert */}
-              <div className="bg-[#070D1B] border border-[#C5A059]/40 rounded-xl p-3.5 text-xs text-white flex items-start gap-3 shadow-lg">
-                <Shield className="w-4 h-4 text-[#E5C17C] flex-shrink-0 mt-0.5" />
+              <div className="bg-[#0A1E3F] border border-[#C59B27]/40 rounded-xl p-3.5 text-xs text-white flex items-start gap-3 shadow-lg">
+                <Shield className="w-4 h-4 text-[#D7B14A] flex-shrink-0 mt-0.5" />
                 <div className="space-y-0.5">
-                  <strong className="text-[#E5C17C] font-extrabold block">Sécurité & Habilitation Ministère MEF :</strong>
+                  <strong className="text-[#D7B14A] font-extrabold block">Sécurité & Habilitation Ministère MEF :</strong>
                   <span className="text-slate-300 text-[11px] leading-relaxed">
                     Un mot de passe temporaire unique et sécurisé est généré automatiquement par le système et immédiatement envoyé par email à l'agent. L'agent sera <u>forcé de le modifier</u> dès sa première connexion.
                   </span>
@@ -356,7 +356,7 @@ export default function UtilisateursView() {
 
               <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="h-9 px-4 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-600 hover:bg-gray-50 cursor-pointer">Annuler</button>
-                <button type="submit" className="h-9 px-5 gold-gradient-bg text-[#070D1B] rounded-xl text-xs font-black hover:opacity-95 shadow-md cursor-pointer">Créer le Compte</button>
+                <button type="submit" className="h-9 px-5 gold-gradient-bg text-[#0A1E3F] rounded-xl text-xs font-black hover:opacity-95 shadow-md cursor-pointer">Créer le Compte</button>
               </div>
             </form>
           </div>
@@ -367,20 +367,20 @@ export default function UtilisateursView() {
       {isEditModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-[540px] rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
-            <div className="flex items-center justify-between p-5 bg-[#070D1B] text-white">
+            <div className="flex items-center justify-between p-5 bg-[#0A1E3F] text-white">
               <div>
                 <h3 className="text-[16px] font-bold font-['Outfit']">Modifier l'Agent #{editingUser?.id}</h3>
-                <p className="text-[11px] text-[#E5C17C]">{editingUser?.prenom} {editingUser?.nom} — {editingUser?.matricule}</p>
+                <p className="text-[11px] text-[#D7B14A]">{editingUser?.prenom} {editingUser?.nom} — {editingUser?.matricule}</p>
               </div>
               <button onClick={() => setIsEditModalOpen(false)} className="w-7 h-7 rounded-md flex items-center justify-center text-gray-400 hover:bg-white/10 cursor-pointer"><X className="w-4 h-4" /></button>
             </div>
             <form onSubmit={handleUpdateUser} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="text-xs font-bold text-gray-700 block mb-1">Matricule *</label><input type="text" value={formData.matricule} onChange={(e) => setFormData({...formData, matricule: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C5A059]" required /></div>
-                <div><label className="text-xs font-bold text-gray-700 block mb-1">Nom *</label><input type="text" value={formData.nom} onChange={(e) => setFormData({...formData, nom: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C5A059]" required /></div>
-                <div><label className="text-xs font-bold text-gray-700 block mb-1">Prénom *</label><input type="text" value={formData.prenom} onChange={(e) => setFormData({...formData, prenom: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C5A059]" required /></div>
-                <div><label className="text-xs font-bold text-gray-700 block mb-1">Email *</label><input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C5A059]" required /></div>
-                <div><label className="text-xs font-bold text-gray-700 block mb-1">Rôle Système *</label><select value={formData.role || 'GESTIONNAIRE_LOCAL'} onChange={(e) => setFormData({...formData, role: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs cursor-pointer outline-none font-medium focus:border-[#C5A059]">
+                <div><label className="text-xs font-bold text-gray-700 block mb-1">Matricule *</label><input type="text" value={formData.matricule} onChange={(e) => setFormData({...formData, matricule: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]" required /></div>
+                <div><label className="text-xs font-bold text-gray-700 block mb-1">Nom *</label><input type="text" value={formData.nom} onChange={(e) => setFormData({...formData, nom: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]" required /></div>
+                <div><label className="text-xs font-bold text-gray-700 block mb-1">Prénom *</label><input type="text" value={formData.prenom} onChange={(e) => setFormData({...formData, prenom: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]" required /></div>
+                <div><label className="text-xs font-bold text-gray-700 block mb-1">Email *</label><input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]" required /></div>
+                <div><label className="text-xs font-bold text-gray-700 block mb-1">Rôle Système *</label><select value={formData.role || 'GESTIONNAIRE_LOCAL'} onChange={(e) => setFormData({...formData, role: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs cursor-pointer outline-none font-medium focus:border-[#C59B27]">
                   <option value="ADMIN">ADMIN</option>
                   <option value="GESTIONNAIRE_CENTRAL">GESTIONNAIRE_CENTRAL</option>
                   <option value="GESTIONNAIRE_LOCAL">GESTIONNAIRE_LOCAL</option>
@@ -389,7 +389,7 @@ export default function UtilisateursView() {
                   <option value="CONDUCTEUR">CONDUCTEUR</option>
                   <option value="CONSULTATION">CONSULTATION</option>
                 </select></div>
-                <div><label className="text-xs font-bold text-gray-700 block mb-1">Direction MEF *</label><select value={formData.direction} onChange={(e) => setFormData({...formData, direction: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs cursor-pointer outline-none font-medium focus:border-[#C5A059]">
+                <div><label className="text-xs font-bold text-gray-700 block mb-1">Direction MEF *</label><select value={formData.direction} onChange={(e) => setFormData({...formData, direction: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs cursor-pointer outline-none font-medium focus:border-[#C59B27]">
                   <option value="Direction du Budget">Direction du Budget (DB)</option>
                   <option value="Direction Générale des Impôts">Direction Générale des Impôts (DGI)</option>
                   <option value="Administration des Douanes et Impôts Indirects">Administration des Douanes et Impôts Indirects (ADII)</option>
@@ -402,14 +402,14 @@ export default function UtilisateursView() {
                 </select></div>
               </div>
 
-              <div><label className="text-xs font-bold text-gray-700 block mb-1">Téléphone</label><input type="tel" value={formData.telephone} onChange={(e) => setFormData({...formData, telephone: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C5A059]" /></div>
+              <div><label className="text-xs font-bold text-gray-700 block mb-1">Téléphone</label><input type="tel" value={formData.telephone} onChange={(e) => setFormData({...formData, telephone: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]" /></div>
 
               {/* High-End iOS Style Toggle Switch for Account Status */}
               <div>
                 <label className="text-xs font-bold text-gray-700 block mb-1">Statut du Compte Agent *</label>
                 <div 
                   onClick={() => setFormData({ ...formData, statut: formData.statut === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' })}
-                  className="flex items-center justify-between p-3.5 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:border-[#C5A059] transition-all select-none"
+                  className="flex items-center justify-between p-3.5 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:border-[#C59B27] transition-all select-none"
                 >
                   <div className="flex items-center gap-2.5">
                     <span className={`w-3 h-3 rounded-full ${formData.statut === 'ACTIVE' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse' : 'bg-red-500'}`} />
@@ -436,7 +436,7 @@ export default function UtilisateursView() {
 
               <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
                 <button type="button" onClick={() => setIsEditModalOpen(false)} className="h-9 px-4 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-600 hover:bg-gray-50 cursor-pointer">Annuler</button>
-                <button type="submit" className="h-9 px-5 gold-gradient-bg text-[#070D1B] rounded-xl text-xs font-black hover:opacity-95 shadow-md cursor-pointer">Enregistrer les Modifications</button>
+                <button type="submit" className="h-9 px-5 gold-gradient-bg text-[#0A1E3F] rounded-xl text-xs font-black hover:opacity-95 shadow-md cursor-pointer">Enregistrer les Modifications</button>
               </div>
             </form>
           </div>

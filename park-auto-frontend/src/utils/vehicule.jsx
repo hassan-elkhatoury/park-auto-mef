@@ -162,7 +162,7 @@ export function MoroccanPlate({ immatriculation, className = '' }) {
     );
   }
   return (
-    <span className={`bg-[#070D1B] text-white px-3 py-1 rounded-md font-mono text-xs font-bold tracking-wider border border-[#C5A059]/40 ${className}`}>
+    <span className={`bg-[#0A1E3F] text-white px-3 py-1 rounded-md font-mono text-xs font-bold tracking-wider border border-[#C59B27]/40 ${className}`}>
       {immatriculation}
     </span>
   );

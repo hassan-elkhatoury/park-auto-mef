@@ -63,33 +63,26 @@ export default function VehiculesListView() {
   };
 
   return (
-    <div className="flex-1 p-7 overflow-y-auto">
-      <div className="max-w-[1380px] mx-auto flex flex-col gap-6">
-
-        {/* Top Meta Bar */}
-        <motion.div
-          className="flex justify-between items-center"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div>
+          <h1 className="text-xl font-black text-[#0A1E3F] tracking-wide uppercase flex items-center gap-2">
+            <Car className="w-6 h-6 text-[#C59B27]" />
+            Flotte Automobile
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Gestion opérationnelle des véhicules du Parc Auto MEF
+          </p>
+        </div>
+        <button
+          onClick={fetchVehicules}
+          className="bg-white border border-slate-300 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-2 shadow-sm hover:bg-slate-50 cursor-pointer shrink-0"
         >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl gold-gradient-bg flex items-center justify-center shadow-gold">
-              <Car className="w-6 h-6 text-[#070D1B]" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-black font-outfit text-slate-900">Flotte Automobile</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Gestion opérationnelle des véhicules du Parc Auto MEF</p>
-            </div>
-          </div>
-          <button
-            onClick={fetchVehicules}
-            className="bg-white border border-slate-300 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-2 shadow-sm hover:bg-slate-50 cursor-pointer"
-          >
-            <RotateCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            <span>Actualiser</span>
-          </button>
-        </motion.div>
+          <RotateCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          <span>Actualiser</span>
+        </button>
+      </div>
 
         {/* Toolbar: search + filters + add */}
         <motion.div
@@ -152,7 +145,7 @@ export default function VehiculesListView() {
 
           <motion.button
             onClick={() => { setEditingVehicule(null); setIsModalOpen(true); }}
-            className="gold-gradient-bg text-[#070D1B] font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-gold flex items-center gap-2 cursor-pointer ml-auto"
+            className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-gold flex items-center gap-2 cursor-pointer ml-auto"
             whileHover={{ scale: 1.03, boxShadow: '0 8px 32px rgba(197,160,89,0.5)' }}
             whileTap={{ scale: 0.97 }}
           >
@@ -225,7 +218,7 @@ export default function VehiculesListView() {
                               className="max-w-full max-h-full object-contain"
                               onError={(e) => {
                                 e.target.style.display = 'none';
-                                e.target.parentElement.innerHTML = `<span class="text-[9px] font-black text-[#9B783E] uppercase">${(v.marque || 'MEF').slice(0, 3)}</span>`;
+                                e.target.parentElement.innerHTML = `<span class="text-[9px] font-black text-[#94700E] uppercase">${(v.marque || 'MEF').slice(0, 3)}</span>`;
                               }}
                             />
                           </div>
@@ -239,7 +232,7 @@ export default function VehiculesListView() {
                       {/* MEF direction */}
                       <td>
                         <span
-                          className="px-2 py-1 rounded-md bg-[#070D1B]/5 border border-[#070D1B]/10 text-[11px] font-extrabold text-[#070D1B] whitespace-nowrap"
+                          className="px-2 py-1 rounded-md bg-[#0A1E3F]/5 border border-[#0A1E3F]/10 text-[11px] font-extrabold text-[#0A1E3F] whitespace-nowrap"
                           title={v.direction}
                         >
                           {directionShort(v.direction)}
@@ -249,7 +242,7 @@ export default function VehiculesListView() {
                       {/* Fuel */}
                       <td>
                         <span className="flex items-center gap-1.5 text-xs text-slate-600 whitespace-nowrap">
-                          <Fuel className="w-3.5 h-3.5 text-[#9B783E]" />
+                          <Fuel className="w-3.5 h-3.5 text-[#94700E]" />
                           {FUEL_LABELS[v.typeCarburant] || v.typeCarburant}
                         </span>
                       </td>
@@ -257,7 +250,7 @@ export default function VehiculesListView() {
                       {/* Mileage */}
                       <td>
                         <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 whitespace-nowrap">
-                          <Gauge className="w-3.5 h-3.5 text-[#9B783E]" />
+                          <Gauge className="w-3.5 h-3.5 text-[#94700E]" />
                           {(v.kilometrageActuel || 0).toLocaleString('fr-FR')} km
                         </span>
                       </td>
@@ -274,14 +267,14 @@ export default function VehiculesListView() {
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => navigate(`/vehicules/${v.id}`)}
-                            className="w-8 h-8 rounded-lg bg-[#070D1B]/5 border border-[#070D1B]/10 text-[#070D1B] hover:bg-[#070D1B] hover:text-[#E5C17C] flex items-center justify-center transition-all cursor-pointer"
+                            className="w-8 h-8 rounded-lg bg-[#0A1E3F]/5 border border-[#0A1E3F]/10 text-[#0A1E3F] hover:bg-[#0A1E3F] hover:text-[#D7B14A] flex items-center justify-center transition-all cursor-pointer"
                             title="Consulter la fiche véhicule"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => { setEditingVehicule(v); setIsModalOpen(true); }}
-                            className="w-8 h-8 rounded-lg bg-[#C5A059]/10 border border-[#C5A059]/40 text-[#9B783E] hover:bg-[#C5A059] hover:text-[#070D1B] flex items-center justify-center transition-all cursor-pointer"
+                            className="w-8 h-8 rounded-lg bg-[#C59B27]/10 border border-[#C59B27]/40 text-[#94700E] hover:bg-[#C59B27] hover:text-[#0A1E3F] flex items-center justify-center transition-all cursor-pointer"
                             title="Modifier le véhicule"
                           >
                             <PenTool className="w-4 h-4" />
@@ -302,8 +295,6 @@ export default function VehiculesListView() {
             </table>
           </div>
         </motion.div>
-
-      </div>
 
       {/* Add/Edit Vehicle Modal */}
       <VehiculeFormModal

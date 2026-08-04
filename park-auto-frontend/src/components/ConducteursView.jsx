@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, UserCheck, AlertTriangle, ShieldCheck, Phone, Mail, Edit, Trash2, Calendar, Award } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Plus, UserCheck, AlertTriangle, ShieldCheck, Phone, Mail, Edit, Trash2, Award, Eye } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../services/api';
 
 export default function ConducteursView() {
+  const navigate = useNavigate();
   const [conducteurs, setConducteurs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -139,8 +141,8 @@ export default function ConducteursView() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
         <div>
-          <h1 className="text-xl font-black text-[#0F1D32] tracking-wide uppercase flex items-center gap-2">
-            <UserCheck className="w-6 h-6 text-[#C5A059]" />
+          <h1 className="text-xl font-black text-[#0A1E3F] tracking-wide uppercase flex items-center gap-2">
+            <UserCheck className="w-6 h-6 text-[#C59B27]" />
             Gestion des Conducteurs & Chauffeurs Habilités
           </h1>
           <p className="text-xs text-slate-500 mt-1">
@@ -151,7 +153,7 @@ export default function ConducteursView() {
         {canManageConducteur && (
           <button
             onClick={() => handleOpenModal()}
-            className="gold-gradient-bg text-[#070D1B] font-extrabold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-md hover:brightness-105 transition-all cursor-pointer"
+            className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-md hover:brightness-105 transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" /> Nouveau Conducteur
           </button>
@@ -167,7 +169,7 @@ export default function ConducteursView() {
             placeholder="Rechercher par nom, matricule, CIN, n° permis..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#C5A059]/50"
+            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#C59B27]/50"
           />
         </div>
 
@@ -178,7 +180,7 @@ export default function ConducteursView() {
               onClick={() => setFilterStatut(st)}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 filterStatut === st
-                  ? 'bg-[#0F1D32] text-[#E5C17C]'
+                  ? 'bg-[#0A1E3F] text-[#D7B14A]'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
@@ -188,7 +190,7 @@ export default function ConducteursView() {
         </div>
       </div>
 
-      {/* Drivers List Grid / Cards */}
+      {/* Drivers Data Table */}
       {loading ? (
         <div className="text-center py-12 text-slate-400 text-xs">Chargement des conducteurs...</div>
       ) : filteredConducteurs.length === 0 ? (
@@ -196,102 +198,125 @@ export default function ConducteursView() {
           Aucun conducteur trouvé.
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredConducteurs.map((c) => {
-            const expired = isPermisExpired(c.dateExpirationPermis);
-            return (
-              <div
-                key={c.id}
-                className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">
-                        {c.matricule} • CIN: {c.cin}
-                      </span>
-                      <h3 className="text-base font-extrabold text-[#0F1D32]">
-                        {c.nom} {c.prenom}
-                      </h3>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        {c.direction} {c.service ? `(${c.service})` : ''}
-                      </p>
-                    </div>
-
-                    <span
-                      className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase ${
-                        c.statut === 'ACTIF'
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                          : c.statut === 'SUSPENDU'
-                          ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                          : 'bg-slate-100 text-slate-600 border border-slate-300'
-                      }`}
-                    >
-                      {c.statut}
-                    </span>
-                  </div>
-
-                  <div className="bg-slate-50 p-3 rounded-xl space-y-2 border border-slate-100 mb-4 text-xs text-slate-700">
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-400 font-medium">Permis N°:</span>
-                      <span className="font-bold text-[#0F1D32]">{c.numeroPermis}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-400 font-medium">Catégorie(s):</span>
-                      <span className="font-bold text-[#C5A059] bg-[#C5A059]/10 px-2 py-0.5 rounded">
-                        Cat. {c.categoriePermis}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-400 font-medium">Expiration:</span>
-                      <span className={`font-bold flex items-center gap-1 ${expired ? 'text-red-600' : 'text-slate-700'}`}>
-                        {expired && <AlertTriangle className="w-3.5 h-3.5 text-red-500" />}
-                        {c.dateExpirationPermis}
-                      </span>
-                    </div>
-
-                    {c.habilitationsSpeciales && (
-                      <div className="pt-1.5 border-t border-slate-200/60 flex items-center gap-1 text-[11px] text-[#0F1D32]">
-                        <Award className="w-3.5 h-3.5 text-[#C5A059]" />
-                        <span>{c.habilitationsSpeciales}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                  <div className="flex items-center gap-3">
-                    {c.telephone && (
-                      <a href={`tel:${c.telephone}`} className="hover:text-[#C5A059] flex items-center gap-1">
-                        <Phone className="w-3.5 h-3.5" /> {c.telephone}
-                      </a>
-                    )}
-                  </div>
-
-                  {canManageConducteur && (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleOpenModal(c)}
-                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
-                        title="Modifier"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(c.id)}
-                        className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-colors"
-                        title="Supprimer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-slate-100 flex justify-between items-center">
+            <h3 className="font-outfit font-extrabold text-sm text-slate-900">Registre des Conducteurs</h3>
+            <span className="text-[11px] font-bold text-slate-400">
+              {filteredConducteurs.length} conducteur{filteredConducteurs.length !== 1 ? 's' : ''} affiché{filteredConducteurs.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="enterprise-table">
+              <thead>
+                <tr>
+                  <th>Conducteur</th>
+                  <th>Matricule / CIN</th>
+                  <th>Direction</th>
+                  <th>Permis</th>
+                  <th>Expiration</th>
+                  <th>Contact</th>
+                  <th>Statut</th>
+                  <th className="!text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredConducteurs.map((c) => {
+                  const expired = isPermisExpired(c.dateExpirationPermis);
+                  return (
+                    <tr key={c.id} className="cursor-pointer" onClick={() => navigate(`/conducteurs/${c.id}`)}>
+                      <td>
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-[#0A1E3F]/5 border border-[#0A1E3F]/10 flex items-center justify-center flex-shrink-0">
+                            <UserCheck className="w-4 h-4 text-[#94700E]" />
+                          </div>
+                          <div className="min-w-0">
+                            <span className="text-xs font-extrabold text-slate-900 block leading-tight">{c.nom} {c.prenom}</span>
+                            {c.habilitationsSpeciales && (
+                              <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                                <Award className="w-3 h-3 text-[#C59B27]" /> {c.habilitationsSpeciales}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="text-xs font-mono font-bold text-slate-700">{c.matricule}</span>
+                        <span className="text-[10px] text-slate-400 block">CIN: {c.cin}</span>
+                      </td>
+                      <td>
+                        <span className="text-xs font-semibold text-slate-700 block max-w-[220px] truncate">{c.direction}</span>
+                        {c.service && <span className="text-[10px] text-slate-400 block">{c.service}</span>}
+                      </td>
+                      <td>
+                        <span className="text-xs font-bold text-slate-800 font-mono">{c.numeroPermis}</span>
+                        <span className="text-[10px] text-slate-400 block">Cat. {c.categoriePermis}</span>
+                      </td>
+                      <td>
+                        <span className={`text-xs font-bold flex items-center gap-1 whitespace-nowrap ${expired ? 'text-red-600' : 'text-slate-700'}`}>
+                          {expired && <AlertTriangle className="w-3.5 h-3.5 text-red-500" />}
+                          {c.dateExpirationPermis}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="flex flex-col gap-0.5">
+                          {c.telephone && (
+                            <a href={`tel:${c.telephone}`} onClick={(e) => e.stopPropagation()} className="text-xs font-semibold text-slate-700 hover:text-[#C59B27] flex items-center gap-1.5">
+                              <Phone className="w-3 h-3 text-[#94700E]" /> {c.telephone}
+                            </a>
+                          )}
+                          {c.email && (
+                            <span className="text-[10px] text-slate-400 flex items-center gap-1.5 truncate max-w-[180px]">
+                              <Mail className="w-3 h-3" /> {c.email}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase inline-flex items-center gap-1.5 border ${
+                          c.statut === 'ACTIF'
+                            ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                            : c.statut === 'SUSPENDU'
+                            ? 'bg-amber-100 text-amber-800 border-amber-300'
+                            : 'bg-slate-100 text-slate-600 border-slate-300'
+                        }`}>
+                          <ShieldCheck className="w-3 h-3" /> {c.statut}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); navigate(`/conducteurs/${c.id}`); }}
+                            className="w-8 h-8 rounded-lg bg-[#0A1E3F]/5 border border-[#0A1E3F]/10 text-[#0A1E3F] hover:bg-[#0A1E3F] hover:text-[#D7B14A] flex items-center justify-center transition-all cursor-pointer"
+                            title="Consulter la fiche conducteur"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          {canManageConducteur && (
+                            <>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleOpenModal(c); }}
+                                className="w-8 h-8 rounded-lg bg-[#C59B27]/10 border border-[#C59B27]/40 text-[#94700E] hover:bg-[#C59B27] hover:text-[#0A1E3F] flex items-center justify-center transition-all cursor-pointer"
+                                title="Modifier"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleDelete(c.id); }}
+                                className="w-8 h-8 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-500 hover:text-white hover:border-red-500 flex items-center justify-center transition-all cursor-pointer"
+                                title="Supprimer"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -299,8 +324,8 @@ export default function ConducteursView() {
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-base font-extrabold text-[#0F1D32] uppercase flex items-center gap-2">
-              <UserCheck className="w-5 h-5 text-[#C5A059]" />
+            <h2 className="text-base font-extrabold text-[#0A1E3F] uppercase flex items-center gap-2">
+              <UserCheck className="w-5 h-5 text-[#C59B27]" />
               {selectedConducteur ? 'Modifier le Conducteur' : 'Nouveau Conducteur Habilité'}
             </h2>
 
@@ -461,7 +486,7 @@ export default function ConducteursView() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg gold-gradient-bg text-[#070D1B] font-extrabold shadow-md hover:brightness-105"
+                  className="px-4 py-2 rounded-lg gold-gradient-bg text-[#0A1E3F] font-extrabold shadow-md hover:brightness-105"
                 >
                   Enregistrer
                 </button>

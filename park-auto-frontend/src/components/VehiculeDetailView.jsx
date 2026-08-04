@@ -15,7 +15,7 @@ function SpecItem({ icon: Icon, label, children }) {
   return (
     <div className="flex items-start gap-3 p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
       <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center flex-shrink-0">
-        <Icon className="w-4 h-4 text-[#9B783E]" />
+        <Icon className="w-4 h-4 text-[#94700E]" />
       </div>
       <div className="min-w-0">
         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block">{label}</span>
@@ -96,7 +96,7 @@ export default function VehiculeDetailView() {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-[#C5A059] animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#C59B27] animate-spin" />
       </div>
     );
   }
@@ -108,7 +108,7 @@ export default function VehiculeDetailView() {
         <p className="text-sm font-bold text-slate-600">Véhicule introuvable</p>
         <button
           onClick={() => navigate('/vehicules')}
-          className="px-5 py-2.5 gold-gradient-bg text-[#070D1B] font-extrabold text-xs rounded-xl shadow-gold cursor-pointer"
+          className="px-5 py-2.5 gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs rounded-xl shadow-gold cursor-pointer"
         >
           ← Retour à la Flotte
         </button>
@@ -168,7 +168,7 @@ export default function VehiculeDetailView() {
                   </p>
                 </div>
                 <span className="px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-[10px] font-extrabold text-slate-600 uppercase flex items-center gap-1.5">
-                  <HeartPulse className="w-3.5 h-3.5 text-[#9B783E]" />
+                  <HeartPulse className="w-3.5 h-3.5 text-[#94700E]" />
                   {vehicule.etatTechnique}
                 </span>
               </div>
@@ -188,7 +188,7 @@ export default function VehiculeDetailView() {
               <div className="flex gap-2 flex-wrap pt-1 mt-auto">
                 <motion.button
                   onClick={() => setIsEditModalOpen(true)}
-                  className="px-4 py-2.5 gold-gradient-bg text-[#070D1B] font-extrabold text-xs rounded-xl shadow-gold flex items-center gap-2 cursor-pointer"
+                  className="px-4 py-2.5 gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs rounded-xl shadow-gold flex items-center gap-2 cursor-pointer"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.97 }}
                 >
@@ -204,7 +204,7 @@ export default function VehiculeDetailView() {
                     });
                     setIsStatusModalOpen(true);
                   }}
-                  className="px-4 py-2.5 bg-[#C5A059]/15 border border-[#C5A059]/40 text-[#9B783E] font-extrabold text-xs rounded-xl hover:bg-[#C5A059] hover:text-[#070D1B] flex items-center gap-2 transition-all cursor-pointer"
+                  className="px-4 py-2.5 bg-[#C59B27]/15 border border-[#C59B27]/40 text-[#94700E] font-extrabold text-xs rounded-xl hover:bg-[#C59B27] hover:text-[#0A1E3F] flex items-center gap-2 transition-all cursor-pointer"
                   whileTap={{ scale: 0.97 }}
                 >
                   <TrendingUp className="w-3.5 h-3.5" /> Changer le Statut
@@ -230,7 +230,7 @@ export default function VehiculeDetailView() {
         >
           <h3 className="font-outfit font-extrabold text-sm text-slate-900 flex items-center gap-2.5 mb-4">
             <div className="w-8 h-8 rounded-lg gold-gradient-bg flex items-center justify-center">
-              <Car className="w-4 h-4 text-[#070D1B]" />
+              <Car className="w-4 h-4 text-[#0A1E3F]" />
             </div>
             Caractéristiques Techniques
           </h3>
@@ -288,8 +288,8 @@ export default function VehiculeDetailView() {
           transition={{ duration: 0.4, delay: 0.3 }}
         >
           <h3 className="font-outfit font-extrabold text-sm text-slate-900 flex items-center gap-2.5 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-[#C5A059]/15 flex items-center justify-center">
-              <History className="w-4 h-4 text-[#9B783E]" />
+            <div className="w-8 h-8 rounded-lg bg-[#C59B27]/15 flex items-center justify-center">
+              <History className="w-4 h-4 text-[#94700E]" />
             </div>
             Historique des Statuts
           </h3>
@@ -298,11 +298,11 @@ export default function VehiculeDetailView() {
               Aucune transition de statut enregistrée pour ce véhicule.
             </p>
           ) : (
-            <div className="flex flex-col gap-4 relative pl-4 border-l-2 border-[#C5A059]/40 my-2">
+            <div className="flex flex-col gap-4 relative pl-4 border-l-2 border-[#C59B27]/40 my-2">
               {historique.map((h, index) => {
                 const dotColor = h.nouveauStatutAdministratif === 'DISPONIBLE' ? 'bg-emerald-500' :
                   ['HORS_SERVICE', 'ACCIDENTE', 'REFORME'].includes(h.nouveauStatutAdministratif) ? 'bg-red-500' :
-                  ['EN_ENTRETIEN', 'EN_REPARATION'].includes(h.nouveauStatutAdministratif) ? 'bg-amber-500' : 'bg-[#C5A059]';
+                  ['EN_ENTRETIEN', 'EN_REPARATION'].includes(h.nouveauStatutAdministratif) ? 'bg-amber-500' : 'bg-[#C59B27]';
                 return (
                   <motion.div
                     key={h.id}
@@ -314,7 +314,7 @@ export default function VehiculeDetailView() {
                     <div className={`absolute -left-[21px] top-1 w-3 h-3 rounded-full ${dotColor} border-2 border-white shadow-sm`} />
                     <div className="flex justify-between items-center gap-3 flex-wrap">
                       <span className="text-xs font-extrabold text-slate-900">
-                        {h.ancienStatutAdministratif || 'INITIAL'} → <span className="text-[#9B783E]">{h.nouveauStatutAdministratif}</span>
+                        {h.ancienStatutAdministratif || 'INITIAL'} → <span className="text-[#94700E]">{h.nouveauStatutAdministratif}</span>
                       </span>
                       <span className="text-[10px] text-slate-400">{new Date(h.dateChangement).toLocaleString('fr-FR')}</span>
                     </div>
@@ -343,7 +343,7 @@ export default function VehiculeDetailView() {
       <AnimatePresence>
         {isStatusModalOpen && (
           <motion.div
-            className="fixed inset-0 bg-[#070D1B]/75 backdrop-blur-md z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-[#0A1E3F]/75 backdrop-blur-md z-50 flex items-center justify-center p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -420,7 +420,7 @@ export default function VehiculeDetailView() {
                   <button type="button" onClick={() => setIsStatusModalOpen(false)} className="px-5 py-2.5 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-200 cursor-pointer transition-colors">Annuler</button>
                   <motion.button
                     type="submit"
-                    className="px-6 py-2.5 gold-gradient-bg text-[#070D1B] font-extrabold text-xs rounded-xl shadow-gold cursor-pointer"
+                    className="px-6 py-2.5 gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs rounded-xl shadow-gold cursor-pointer"
                     whileHover={{ scale: 1.02, boxShadow: '0 8px 32px rgba(197,160,89,0.5)' }}
                     whileTap={{ scale: 0.98 }}
                   >

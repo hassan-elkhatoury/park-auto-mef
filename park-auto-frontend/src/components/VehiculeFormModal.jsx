@@ -132,7 +132,7 @@ export default function VehiculeFormModal({ open, onClose, onSaved, vehicule }) 
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 bg-[#070D1B]/75 backdrop-blur-md z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-[#0A1E3F]/75 backdrop-blur-md z-50 flex items-center justify-center p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -147,7 +147,7 @@ export default function VehiculeFormModal({ open, onClose, onSaved, vehicule }) 
             <div className="flex justify-between items-center border-b pb-3 mb-4">
               <h3 className="font-outfit font-extrabold text-lg text-slate-900 flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg gold-gradient-bg flex items-center justify-center">
-                  {vehicule ? <PenTool className="w-4 h-4 text-[#070D1B]" /> : <Plus className="w-4 h-4 text-[#070D1B]" />}
+                  {vehicule ? <PenTool className="w-4 h-4 text-[#0A1E3F]" /> : <Plus className="w-4 h-4 text-[#0A1E3F]" />}
                 </div>
                 {vehicule ? 'Modifier la Fiche Véhicule' : 'Nouveau Véhicule'}
               </h3>
@@ -166,7 +166,7 @@ export default function VehiculeFormModal({ open, onClose, onSaved, vehicule }) 
                     setFormData({ ...formData, immatriculation: `${next.num}-${next.letter}-${next.region}` });
                   };
                   return (
-                      <div className="mt-1 flex items-center bg-slate-50 border border-slate-300 rounded-xl overflow-hidden focus-within:border-[#C5A059] focus-within:ring-1 focus-within:ring-[#C5A059]">
+                      <div className="mt-1 flex items-center bg-slate-50 border border-slate-300 rounded-xl overflow-hidden focus-within:border-[#C59B27] focus-within:ring-1 focus-within:ring-[#C59B27]">
                         <input
                           type="text"
                           inputMode="numeric"
@@ -313,7 +313,7 @@ export default function VehiculeFormModal({ open, onClose, onSaved, vehicule }) 
                 <button type="button" onClick={onClose} className="px-5 py-2.5 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-200 cursor-pointer transition-colors">Annuler</button>
                 <motion.button
                   type="submit"
-                  className="px-6 py-2.5 gold-gradient-bg text-[#070D1B] font-extrabold text-xs rounded-xl shadow-gold cursor-pointer"
+                  className="px-6 py-2.5 gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs rounded-xl shadow-gold cursor-pointer"
                   whileHover={{ scale: 1.02, boxShadow: '0 8px 32px rgba(197,160,89,0.5)' }}
                   whileTap={{ scale: 0.98 }}
                 >

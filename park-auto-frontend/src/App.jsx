@@ -9,10 +9,15 @@ import VehiculesListView from './components/VehiculesListView';
 import VehiculeDetailView from './components/VehiculeDetailView';
 import UtilisateursView from './components/UtilisateursView';
 import DemandesView from './components/DemandesView';
+import DemandeDetailView from './components/DemandeDetailView';
 import AffectationsView from './components/AffectationsView';
+import AffectationDetailView from './components/AffectationDetailView';
 import ConducteursView from './components/ConducteursView';
+import ConducteurDetailView from './components/ConducteurDetailView';
 import ForceChangePasswordModal from './components/ForceChangePasswordModal';
 import AuditView from './components/AuditView';
+import CarburantView from './components/CarburantView';
+import RapportsView from './components/RapportsView';
 
 export default function App() {
   const [user, setUser] = useState(() => {
@@ -58,7 +63,7 @@ export default function App() {
   if (!user) {
     return (
       <>
-        <Toaster position="top-right" toastOptions={{ style: { background: '#0F1D32', color: '#fff', border: '1px solid #1B3050', fontSize: '13px', fontFamily: 'Inter, sans-serif', borderRadius: '8px' }, duration: 4000 }} />
+        <Toaster position="top-right" toastOptions={{ style: { background: '#0A1E3F', color: '#fff', border: '1px solid #122B55', fontSize: '13px', fontFamily: 'Inter, sans-serif', borderRadius: '8px' }, duration: 4000 }} />
         <Routes>
           <Route path="/login" element={<LoginView onLoginSuccess={(u) => { setUser(u); navigate('/dashboard'); }} />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
@@ -70,31 +75,35 @@ export default function App() {
   const mustChangePassword = user.doitChangerMotDePasse === true || user.mustChangePassword === true || user.firstLogin === true;
 
   return (
-    <div className="h-screen flex flex-col bg-[#F8F9FB] overflow-hidden">
-      <Toaster position="top-right" toastOptions={{ style: { background: '#0F1D32', color: '#fff', border: '1px solid #1B3050', fontSize: '13px', fontFamily: 'Inter, sans-serif', borderRadius: '8px' }, duration: 4000 }} />
+    <div className="h-screen flex flex-col bg-[#F4F6FB] overflow-hidden">
+      <Toaster position="top-right" toastOptions={{ style: { background: '#0A1E3F', color: '#fff', border: '1px solid #122B55', fontSize: '13px', fontFamily: 'Inter, sans-serif', borderRadius: '8px' }, duration: 4000 }} />
       {mustChangePassword && (
         <ForceChangePasswordModal 
           user={user} 
           onPasswordChanged={(updatedUser) => setUser(updatedUser)} 
         />
       )}
-      <Navbar user={user} onLogout={handleLogout} />
+      <Navbar user={user} onLogout={handleLogout} collapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)} />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar 
           user={user}
           collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
-        <main className="flex-1 overflow-y-auto bg-[#F8F9FB]">
+        <main className="flex-1 overflow-y-auto bg-[#F4F6FB]">
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/login" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<DashboardView />} />
+            <Route path="/dashboard" element={<DashboardView user={user} />} />
             <Route path="/vehicules" element={<VehiculesListView />} />
             <Route path="/vehicules/:id" element={<VehiculeDetailView />} />
             <Route path="/demandes" element={<DemandesView onOpenAffectationModal={handleOpenAffectationModal} />} />
+            <Route path="/demandes/:id" element={<DemandeDetailView />} />
             <Route path="/affectations" element={<AffectationsView selectedDemandeForAffectation={selectedDemandeForAffectation} onCloseDemandeSelection={() => setSelectedDemandeForAffectation(null)} />} />
+            <Route path="/affectations/:id" element={<AffectationDetailView />} />
             <Route path="/conducteurs" element={<ConducteursView />} />
+            <Route path="/conducteurs/:id" element={<ConducteurDetailView />} />
+            <Route path="/carburant" element={<CarburantView />} />
+            <Route path="/rapports" element={<RapportsView />} />
             <Route path="/utilisateurs" element={<UtilisateursView />} />
             <Route path="/audit" element={<AuditView />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

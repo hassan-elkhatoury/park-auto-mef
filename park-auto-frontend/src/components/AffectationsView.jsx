@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Key, Car, UserCheck, Calendar, ShieldCheck, FileText, CheckCircle, RotateCcw, AlertTriangle, Printer } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Key, Car, UserCheck, CheckCircle, RotateCcw, Printer, Eye } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../services/api';
 
 export default function AffectationsView({ selectedDemandeForAffectation, onCloseDemandeSelection }) {
+  const navigate = useNavigate();
   const [affectations, setAffectations] = useState([]);
   const [demandesValidees, setDemandesValidees] = useState([]);
   const [vehiculesDisponibles, setVehiculesDisponibles] = useState([]);
@@ -190,8 +192,8 @@ export default function AffectationsView({ selectedDemandeForAffectation, onClos
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
         <div>
-          <h1 className="text-xl font-black text-[#0F1D32] tracking-wide uppercase flex items-center gap-2">
-            <Key className="w-6 h-6 text-[#C5A059]" />
+          <h1 className="text-xl font-black text-[#0A1E3F] tracking-wide uppercase flex items-center gap-2">
+            <Key className="w-6 h-6 text-[#C59B27]" />
             Affectations & Restitutions de Véhicules
           </h1>
           <p className="text-xs text-slate-500 mt-1">
@@ -202,7 +204,7 @@ export default function AffectationsView({ selectedDemandeForAffectation, onClos
         {canManageAffectation && (
           <button
             onClick={() => handleOpenAffectationModal()}
-            className="gold-gradient-bg text-[#070D1B] font-extrabold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-md hover:brightness-105 transition-all cursor-pointer"
+            className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-md hover:brightness-105 transition-all cursor-pointer"
           >
             <Car className="w-4 h-4" /> Nouvelle Affectation (N2)
           </button>
@@ -217,78 +219,103 @@ export default function AffectationsView({ selectedDemandeForAffectation, onClos
           Aucune affectation trouvée.
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {affectations.map((aff) => {
-            const isEnCours = aff.statut === 'EN_COURS';
-            return (
-              <div
-                key={aff.id}
-                className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4"
-              >
-                <div className="space-y-2 flex-1">
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono text-xs font-black text-[#C5A059] bg-[#C5A059]/10 px-2.5 py-0.5 rounded">
-                      {aff.reference}
-                    </span>
-                    <span
-                      className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase ${
-                        isEnCours
-                          ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
-                          : 'bg-slate-100 text-slate-600 border border-slate-300'
-                      }`}
-                    >
-                      {isEnCours ? 'Mission En Cours' : 'Restituée'}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs pt-1">
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1">
-                      <div className="font-bold text-[#0F1D32] flex items-center gap-1.5">
-                        <Car className="w-4 h-4 text-[#C5A059]" /> Véhicule : {aff.vehiculeImmatriculation}
-                      </div>
-                      <div className="text-slate-500">{aff.vehiculeMarqueModele}</div>
-                      <div className="text-slate-500 font-mono text-[11px]">Km Départ : {aff.kilometrageDepart} km</div>
-                    </div>
-
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1">
-                      <div className="font-bold text-[#0F1D32] flex items-center gap-1.5">
-                        <UserCheck className="w-4 h-4 text-[#C5A059]" /> Chauffeur : {aff.conducteurNomComplet}
-                      </div>
-                      <div className="text-slate-500">Permis N° : {aff.conducteurNumeroPermis}</div>
-                      <div className="text-slate-500 font-mono text-[11px]">Demande Réf : {aff.demandeReference}</div>
-                    </div>
-                  </div>
-
-                  {!isEnCours && (
-                    <div className="bg-emerald-50/70 p-3 rounded-xl border border-emerald-200 text-xs text-emerald-900 flex flex-wrap items-center justify-between gap-2">
-                      <span><span className="font-bold">Km Retour :</span> {aff.kilometrageRetour} km (ΔKm = {aff.kilometrageRetour - aff.kilometrageDepart} km)</span>
-                      <span><span className="font-bold">Niveau Carburant :</span> {aff.niveauCarburantRetour || 'Plein'}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="flex flex-wrap items-center gap-2 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100">
-                  <button
-                    onClick={() => handleOpenPdfOrdreMission(aff.id)}
-                    className="bg-[#0F1D32] hover:bg-[#1B3050] text-[#E5C17C] font-extrabold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
-                    title="Imprimer / Télécharger l'Ordre de Mission Officiel PDF"
-                  >
-                    <Printer className="w-4 h-4" /> Ordre de Mission (PDF)
-                  </button>
-
-                  {isEnCours && canManageAffectation && (
-                    <button
-                      onClick={() => handleOpenRestitutionModal(aff)}
-                      className="gold-gradient-bg text-[#070D1B] font-extrabold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-md hover:brightness-105 transition-all cursor-pointer"
-                    >
-                      <RotateCcw className="w-4 h-4" /> Enregistrer Restitution
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-slate-100 flex justify-between items-center">
+            <h3 className="font-outfit font-extrabold text-sm text-slate-900">Registre des Affectations</h3>
+            <span className="text-[11px] font-bold text-slate-400">
+              {affectations.length} affectation{affectations.length !== 1 ? 's' : ''} affichée{affectations.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="enterprise-table">
+              <thead>
+                <tr>
+                  <th>Référence</th>
+                  <th>Véhicule</th>
+                  <th>Chauffeur</th>
+                  <th>Mission</th>
+                  <th>Kilométrage</th>
+                  <th>Statut</th>
+                  <th className="!text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {affectations.map((aff) => {
+                  const isEnCours = aff.statut === 'EN_COURS';
+                  return (
+                    <tr key={aff.id} className="cursor-pointer" onClick={() => navigate(`/affectations/${aff.id}`)}>
+                      <td>
+                        <span className="font-mono text-xs font-black text-[#C59B27] bg-[#C59B27]/10 px-2.5 py-1 rounded-lg border border-[#C59B27]/20">
+                          {aff.reference}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="flex items-center gap-1.5 text-xs font-bold text-slate-800 whitespace-nowrap">
+                          <Car className="w-3.5 h-3.5 text-[#94700E]" /> {aff.vehiculeImmatriculation}
+                        </span>
+                        <span className="text-[10px] text-slate-400 block">{aff.vehiculeMarqueModele}</span>
+                      </td>
+                      <td>
+                        <span className="flex items-center gap-1.5 text-xs font-bold text-slate-800 whitespace-nowrap">
+                          <UserCheck className="w-3.5 h-3.5 text-[#94700E]" /> {aff.conducteurNomComplet}
+                        </span>
+                        <span className="text-[10px] text-slate-400 block">Permis N° {aff.conducteurNumeroPermis}</span>
+                      </td>
+                      <td>
+                        <span className="text-xs text-slate-600 block max-w-[200px] truncate">{aff.demandeMotif || aff.demandeReference}</span>
+                        <span className="text-[10px] text-slate-400 font-mono">Réf {aff.demandeReference}</span>
+                      </td>
+                      <td>
+                        <span className="text-xs font-semibold text-slate-700 whitespace-nowrap">Départ: {aff.kilometrageDepart} km</span>
+                        {!isEnCours && (
+                          <span className="text-[10px] text-slate-400 block">
+                            Retour: {aff.kilometrageRetour} km (Δ {aff.kilometrageRetour - aff.kilometrageDepart} km)
+                          </span>
+                        )}
+                      </td>
+                      <td>
+                        <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase inline-flex items-center gap-1.5 border ${
+                          isEnCours
+                            ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                            : 'bg-slate-100 text-slate-600 border-slate-300'
+                        }`}>
+                          {isEnCours ? <CheckCircle className="w-3 h-3" /> : <RotateCcw className="w-3 h-3" />}
+                          {isEnCours ? 'En Cours' : 'Restituée'}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); navigate(`/affectations/${aff.id}`); }}
+                            className="w-8 h-8 rounded-lg bg-[#0A1E3F]/5 border border-[#0A1E3F]/10 text-[#0A1E3F] hover:bg-[#0A1E3F] hover:text-[#D7B14A] flex items-center justify-center transition-all cursor-pointer"
+                            title="Consulter la fiche affectation"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleOpenPdfOrdreMission(aff.id); }}
+                            className="w-8 h-8 rounded-lg bg-[#0A1E3F] hover:bg-[#122B55] text-[#D7B14A] flex items-center justify-center transition-all cursor-pointer"
+                            title="Ordre de Mission (PDF)"
+                          >
+                            <Printer className="w-4 h-4" />
+                          </button>
+                          {isEnCours && canManageAffectation && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleOpenRestitutionModal(aff); }}
+                              className="w-8 h-8 rounded-lg bg-[#C59B27]/10 border border-[#C59B27]/40 text-[#94700E] hover:bg-[#C59B27] hover:text-[#0A1E3F] flex items-center justify-center transition-all cursor-pointer"
+                              title="Enregistrer Restitution"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -296,8 +323,8 @@ export default function AffectationsView({ selectedDemandeForAffectation, onClos
       {isAffectationModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-            <h2 className="text-base font-extrabold text-[#0F1D32] uppercase flex items-center gap-2">
-              <Key className="w-5 h-5 text-[#C5A059]" />
+            <h2 className="text-base font-extrabold text-[#0A1E3F] uppercase flex items-center gap-2">
+              <Key className="w-5 h-5 text-[#C59B27]" />
               Approbation & Affectation Niveau 2 (Gestionnaire du Parc)
             </h2>
 
@@ -385,7 +412,7 @@ export default function AffectationsView({ selectedDemandeForAffectation, onClos
                 <button
                   type="submit"
                   disabled={vehiculesDisponibles.length === 0 || conducteursDisponibles.length === 0}
-                  className="px-4 py-2 rounded-lg gold-gradient-bg text-[#070D1B] font-extrabold shadow-md hover:brightness-105 disabled:opacity-50"
+                  className="px-4 py-2 rounded-lg gold-gradient-bg text-[#0A1E3F] font-extrabold shadow-md hover:brightness-105 disabled:opacity-50"
                 >
                   Confirmer l'affectation
                 </button>
@@ -399,15 +426,15 @@ export default function AffectationsView({ selectedDemandeForAffectation, onClos
       {isRestitutionModalOpen && selectedAffectation && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-            <h2 className="text-base font-extrabold text-[#0F1D32] uppercase flex items-center gap-2">
-              <RotateCcw className="w-5 h-5 text-[#C5A059]" />
+            <h2 className="text-base font-extrabold text-[#0A1E3F] uppercase flex items-center gap-2">
+              <RotateCcw className="w-5 h-5 text-[#C59B27]" />
               Restitution du Véhicule & Clôture de Mission
             </h2>
 
             <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1">
               <p><span className="font-bold">Affectation :</span> {selectedAffectation.reference}</p>
               <p><span className="font-bold">Véhicule :</span> {selectedAffectation.vehiculeImmatriculation}</p>
-              <p><span className="font-bold font-mono text-[#C5A059]">Kilométrage Départ :</span> {selectedAffectation.kilometrageDepart} km</p>
+              <p><span className="font-bold font-mono text-[#C59B27]">Kilométrage Départ :</span> {selectedAffectation.kilometrageDepart} km</p>
             </div>
 
             <form onSubmit={handleRestitutionSubmit} className="space-y-4 text-xs">
@@ -470,7 +497,7 @@ export default function AffectationsView({ selectedDemandeForAffectation, onClos
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg gold-gradient-bg text-[#070D1B] font-extrabold shadow-md hover:brightness-105"
+                  className="px-4 py-2 rounded-lg gold-gradient-bg text-[#0A1E3F] font-extrabold shadow-md hover:brightness-105"
                 >
                   Valider la restitution
                 </button>

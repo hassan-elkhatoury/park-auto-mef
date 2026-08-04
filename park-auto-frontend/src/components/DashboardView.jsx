@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Car, CheckCircle2, Route, Wrench, RotateCw, Activity, ArrowRight, BarChart3, Fuel, HeartPulse } from 'lucide-react';
+import {
+  Car, CheckCircle2, Calendar, Wrench, RotateCw, BarChart3, Fuel,
+  Send, ClipboardCheck, XCircle, Clock, ArrowRight, FileText, User, Loader2
+} from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend
+  PieChart, Pie, Cell
 } from 'recharts';
 import api from '../services/api';
-import { getVehiclePhoto, getStatusStyle, DIRECTIONS_MEF, FUEL_LABELS } from '../utils/vehicule';
+import { DIRECTIONS_MEF, FUEL_LABELS } from '../utils/vehicule';
 
 // Animated counter component
 function AnimatedCounter({ value, duration = 1.2 }) {
@@ -26,18 +29,23 @@ function AnimatedCounter({ value, duration = 1.2 }) {
   return <>{display}</>;
 }
 
-const metricCards = [
-  { key: 'total', label: 'Total Flotte', sub: 'Véhicules enregistrés', icon: Car, color: 'border-t-[#C5A059]', iconBg: 'bg-blue-50', iconColor: 'text-blue-600' },
-  { key: 'disponibles', label: 'Disponibles', sub: 'Prêts à être affectés', icon: CheckCircle2, color: 'border-t-emerald-500', iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600', subColor: 'text-emerald-600' },
-  { key: 'enMission', label: 'En Mission', sub: 'Affectés / Réservés', icon: Route, color: 'border-t-blue-500', iconBg: 'bg-blue-50', iconColor: 'text-blue-600', subColor: 'text-blue-600' },
-  { key: 'maintenance', label: 'En Maintenance', sub: 'Entretien / Réparation', icon: Wrench, color: 'border-t-amber-500', iconBg: 'bg-amber-50', iconColor: 'text-amber-600', subColor: 'text-amber-600' },
-];
+// 8-Pointed Star Moroccan Zellij Emblem SVG
+function MoroccanStarEmblem() {
+  return (
+    <svg className="w-9 h-9 text-[#C59B27] flex-shrink-0" viewBox="0 0 100 100" fill="none">
+      <path d="M50 5 L61.8 23.2 L83.2 16.8 L76.8 38.2 L95 50 L76.8 61.8 L83.2 83.2 L61.8 76.8 L50 95 L38.2 76.8 L16.8 83.2 L23.2 61.8 L5 50 L23.2 38.2 L16.8 16.8 L38.2 23.2 Z"
+            stroke="currentColor" strokeWidth="3" fill="rgba(197, 155, 39, 0.1)" />
+      <circle cx="50" cy="50" r="22" stroke="currentColor" strokeWidth="2.5" fill="none" />
+      <polygon points="50,34 54,46 66,50 54,54 50,66 46,54 34,50 46,46" fill="currentColor" />
+    </svg>
+  );
+}
 
-const FUEL_COLORS = { DIESEL: '#0F1D32', ESSENCE: '#C5A059', HYBRIDE: '#10B981', ELECTRIQUE: '#3B82F6' };
+const FUEL_COLORS = { DIESEL: '#0A1E3F', ESSENCE: '#C59B27', HYBRIDE: '#0D7A5F', ELECTRIQUE: '#1565C0' };
 
 const TOOLTIP_STYLE = {
-  backgroundColor: '#0F1D32',
-  border: '1px solid #1B3050',
+  backgroundColor: '#0A1E3F',
+  border: '1px solid #122B55',
   borderRadius: '10px',
   fontSize: '12px',
   color: '#fff',
@@ -45,28 +53,63 @@ const TOOLTIP_STYLE = {
 };
 
 const isMaintenance = (v) => ['EN_ENTRETIEN', 'EN_REPARATION', 'IMMOBILISE'].includes(v.statutAdministratif);
-const isHorsService = (v) => ['HORS_SERVICE', 'ACCIDENTE', 'REFORME'].includes(v.statutAdministratif) || v.etatTechnique === 'HORS_SERVICE';
 
-export default function DashboardView() {
+const DEMAND_STATUS = {
+  EN_ATTENTE_VALIDATION: { badge: 'bg-amber-100 text-amber-800 border-amber-300', icon: Clock, label: 'En Attente N1' },
+  VALIDEE_SERVICE: { badge: 'bg-blue-100 text-blue-800 border-blue-300', icon: ClipboardCheck, label: 'Validée Service' },
+  APPROUVEE_AFFECTEE: { badge: 'bg-emerald-100 text-emerald-800 border-emerald-300', icon: CheckCircle2, label: 'Affectée' },
+  TERMINEE: { badge: 'bg-slate-100 text-slate-700 border-slate-300', icon: CheckCircle2, label: 'Terminée' },
+  REJETEE: { badge: 'bg-red-100 text-red-800 border-red-300', icon: XCircle, label: 'Rejetée' },
+};
+
+const ROLE_LABELS = {
+  ADMIN: 'Administrateur Système',
+  GESTIONNAIRE_CENTRAL: 'Gestionnaire Central du Parc',
+  GESTIONNAIRE_LOCAL: 'Gestionnaire Local du Parc',
+  RESPONSABLE_FINANCIER: 'Responsable Financier',
+  RESPONSABLE_SERVICE: 'Responsable de Service',
+  CONDUCTEUR: 'Conducteur',
+  CONSULTATION: 'Consultation',
+};
+
+export default function DashboardView({ user }) {
+  const navigate = useNavigate();
   const [vehicules, setVehicules] = useState([]);
+  const [demandes, setDemandes] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchVehicules = async () => {
+  const roleName = user?.role?.nom || user?.role || 'CONSULTATION';
+  const fullName = user ? `${user.prenom || ''} ${user.nom || ''}`.trim() : '';
+
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/vehicules?size=100');
-      if (res && res.data) {
-        setVehicules(res.data.content || []);
+      const [vehRes, demRes] = await Promise.allSettled([
+        api.get('/vehicules?size=100'),
+        api.get('/demandes'),
+      ]);
+
+      if (vehRes.status === 'fulfilled') {
+        const res = vehRes.value;
+        const list = res?.data?.content || res?.content || res?.data || (Array.isArray(res) ? res : []);
+        setVehicules(Array.isArray(list) ? list : []);
+      }
+      if (demRes.status === 'fulfilled') {
+        const d = demRes.value;
+        setDemandes(Array.isArray(d) ? d : (d?.content || d?.data || []));
       }
     } catch (err) {
-      console.error('Erreur de chargement des véhicules:', err);
+      console.error('Erreur de chargement du tableau de bord:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchVehicules();
+    fetchData();
+    const onGlobalRefresh = () => fetchData();
+    window.addEventListener('parkauto:refresh', onGlobalRefresh);
+    return () => window.removeEventListener('parkauto:refresh', onGlobalRefresh);
   }, []);
 
   const metrics = {
@@ -76,7 +119,15 @@ export default function DashboardView() {
     maintenance: vehicules.filter(isMaintenance).length,
   };
 
-  // Fleet count per official MEF direction (acronyms on the axis)
+  const demandStats = {
+    enAttente: demandes.filter((d) => d.statut === 'EN_ATTENTE_VALIDATION').length,
+    validees: demandes.filter((d) => d.statut === 'VALIDEE_SERVICE').length,
+    affectees: demandes.filter((d) => ['APPROUVEE_AFFECTEE', 'EN_COURS'].includes(d.statut)).length,
+    terminees: demandes.filter((d) => d.statut === 'TERMINEE').length,
+    rejetees: demandes.filter((d) => d.statut === 'REJETEE').length,
+  };
+
+  // Fleet count per official MEF direction
   const directionData = useMemo(() =>
     DIRECTIONS_MEF.map((d) => ({
       name: d.short,
@@ -85,7 +136,7 @@ export default function DashboardView() {
     })),
   [vehicules]);
 
-  // Fuel mix for the pie chart
+  // Fuel mix for donut chart
   const fuelData = useMemo(() =>
     Object.keys(FUEL_LABELS)
       .map((key) => ({
@@ -96,260 +147,404 @@ export default function DashboardView() {
       .filter((f) => f.value > 0),
   [vehicules]);
 
-  // Availability & condition donut
-  const statusData = useMemo(() => [
-    { name: 'Disponibles', value: metrics.disponibles, color: '#10B981' },
-    { name: 'En Mission', value: metrics.enMission, color: '#3B82F6' },
-    { name: 'En Maintenance', value: metrics.maintenance, color: '#D97706' },
-    { name: 'Hors Service', value: vehicules.filter(isHorsService).length, color: '#DC2626' },
-    { name: 'Archivés', value: vehicules.filter((v) => v.statutAdministratif === 'ARCHIVE').length, color: '#64748B' },
-  ].filter((s) => s.value > 0), [vehicules, metrics.disponibles, metrics.enMission, metrics.maintenance]);
+  const totalFuelVehicles = useMemo(() => fuelData.reduce((sum, f) => sum + f.value, 0), [fuelData]);
 
-  // Latest fleet movements (most recently modified vehicles first)
-  const recentMovements = useMemo(() =>
-    [...vehicules]
-      .sort((a, b) => new Date(b.dateModification || b.dateCreation || 0) - new Date(a.dateModification || a.dateCreation || 0))
-      .slice(0, 6),
-  [vehicules]);
+  const kpiCards = [
+    { label: 'Total Flotte', sub: 'Véhicules enregistrés', value: metrics.total, icon: Car, iconBg: 'bg-[#0A1E3F]', bar: 'bg-[#0A1E3F]', delay: 0 },
+    { label: 'Disponibles', sub: 'Prêts à être affectés', value: metrics.disponibles, icon: CheckCircle2, iconBg: 'bg-[#0D7A5F]', bar: 'bg-[#0D7A5F]', delay: 0.08 },
+    { label: 'En Mission', sub: 'Affectés / Réservés', value: metrics.enMission, icon: Calendar, iconBg: 'bg-[#1565C0]', bar: 'bg-[#1565C0]', delay: 0.16 },
+    { label: 'En Maintenance', sub: 'Entretien / Réparation', value: metrics.maintenance, icon: Wrench, iconBg: 'bg-[#C47D2B]', bar: 'bg-[#C47D2B]', delay: 0.24 },
+  ];
+
+  if (loading && vehicules.length === 0 && demandes.length === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[#C59B27] animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex-1 p-7 overflow-y-auto">
-      <div className="max-w-[1380px] mx-auto flex flex-col gap-6">
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
 
-        {/* Top Meta Bar */}
-        <motion.div
-          className="flex justify-between items-center"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div className="flex items-center gap-4">
+          <MoroccanStarEmblem />
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-xl font-black text-[#0A1E3F] tracking-wide uppercase">
+                {fullName ? `Bienvenue, ${fullName}` : 'Tableau de Bord'}
+              </h2>
+              <span className="font-amiri text-sm text-[#C59B27] font-bold" dir="rtl">لوحة القيادة والمؤشرات</span>
+            </div>
+            <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
+              <span className="gold-gradient-text font-extrabold uppercase tracking-wider text-[10px]">{ROLE_LABELS[roleName] || roleName}</span>
+              · Vue d'ensemble de la flotte automobile du Ministère
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={fetchData}
+          className="bg-[#0A1E3F] hover:bg-[#122B55] text-white font-bold text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer shrink-0"
         >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl gold-gradient-bg flex items-center justify-center shadow-gold">
-              <BarChart3 className="w-6 h-6 text-[#070D1B]" />
+          <RotateCw className={`w-4 h-4 text-[#D7B14A] ${loading ? 'animate-spin' : ''}`} />
+          Actualiser les Données
+        </button>
+      </div>
+
+      {/* ============ CONDUCTEUR : Mes missions & demandes ============ */}
+      {roleName === 'CONDUCTEUR' ? (
+        <DriverDashboard
+          demandes={demandes}
+          userId={user?.id}
+          navigate={navigate}
+          onRefresh={fetchData}
+          loading={loading}
+        />
+      ) : roleName === 'CONSULTATION' ? (
+        <ConsultationOverview
+          kpiCards={kpiCards}
+          directionData={directionData}
+          fuelData={fuelData}
+          totalFuelVehicles={totalFuelVehicles}
+          demandes={demandes}
+          demandStats={demandStats}
+          navigate={navigate}
+        />
+      ) : (
+        <ManagementDashboard
+          kpiCards={kpiCards}
+          directionData={directionData}
+          fuelData={fuelData}
+          totalFuelVehicles={totalFuelVehicles}
+          demandes={demandes}
+          demandStats={demandStats}
+          navigate={navigate}
+        />
+      )}
+    </div>
+  );
+}
+
+/* =====================================================================
+   KPI Cards
+   ===================================================================== */
+function KpiCards({ kpiCards }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {kpiCards.map((card) => {
+        const Icon = card.icon;
+        return (
+          <motion.div
+            key={card.label}
+            className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between relative overflow-hidden"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: card.delay }}
+          >
+            <div className="flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-full ${card.iconBg} flex items-center justify-center text-white shadow-sm`}>
+                <Icon className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-slate-800 block">{card.label}</span>
+                <span className="text-3xl font-black font-outfit text-[#0A1E3F]">
+                  <AnimatedCounter value={card.value} />
+                </span>
+                <span className="text-[10px] font-semibold text-slate-500 block">{card.sub}</span>
+              </div>
+            </div>
+            <div className={`absolute bottom-0 left-0 right-0 h-1 ${card.bar}`} />
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* =====================================================================
+   Charts Row : Direction Bar + Fuel Donut
+   ===================================================================== */
+function FleetCharts({ directionData, fuelData, totalFuelVehicles }) {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      {/* Bar Chart */}
+      <motion.div
+        className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-md transition-shadow"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+      >
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-xl gold-gradient-bg flex items-center justify-center text-[#071530] shadow-sm">
+            <BarChart3 className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2.5">
+              <div className="w-1 h-5 rounded-full bg-[#C59B27]" />
+              <h3 className="font-outfit font-extrabold text-sm text-[#0A1E3F]">Répartition par Direction MEF</h3>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-0.5">Nombre de véhicules rattachés à chaque direction</p>
+          </div>
+        </div>
+
+        <ResponsiveContainer width="100%" height={270}>
+          <BarChart data={directionData} margin={{ top: 10, right: 10, left: -18, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+            <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#475569', fontWeight: 700 }} axisLine={{ stroke: '#CBD5E1' }} tickLine={false} />
+            <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+            <Tooltip
+              contentStyle={TOOLTIP_STYLE}
+              cursor={{ fill: 'rgba(10,30,63,0.04)' }}
+              labelFormatter={(label) => directionData.find((d) => d.name === label)?.fullName || label}
+            />
+            <Bar dataKey="véhicules" fill="#0A1E3F" radius={[4, 4, 0, 0]} maxBarSize={38} />
+          </BarChart>
+        </ResponsiveContainer>
+      </motion.div>
+
+      {/* Donut Chart */}
+      <motion.div
+        className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-md transition-shadow"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.2 }}
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl gold-gradient-bg flex items-center justify-center text-[#071530] shadow-sm">
+            <Fuel className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2.5">
+              <div className="w-1 h-5 rounded-full bg-[#C59B27]" />
+              <h3 className="font-outfit font-extrabold text-sm text-[#0A1E3F]">Répartition par Carburant</h3>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-0.5">Motorisation de la flotte</p>
+          </div>
+        </div>
+
+        <div className="relative">
+          <ResponsiveContainer width="100%" height={240}>
+            <PieChart>
+              <Pie
+                data={fuelData.length > 0 ? fuelData : [{ name: 'Diesel', value: totalFuelVehicles || 4, color: '#0A1E3F' }]}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                innerRadius={64}
+                outerRadius={92}
+                stroke="#fff"
+                strokeWidth={3}
+              >
+                {(fuelData.length > 0 ? fuelData : [{ color: '#0A1E3F' }]).map((entry, idx) => (
+                  <Cell key={idx} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip contentStyle={TOOLTIP_STYLE} />
+            </PieChart>
+          </ResponsiveContainer>
+
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+            <span className="text-3xl font-black font-outfit text-[#0A1E3F] block leading-none">
+              {totalFuelVehicles || 4}
+            </span>
+            <span className="text-[11px] font-semibold text-slate-400 block mt-1">Véhicules</span>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-3 text-[11px] font-bold text-slate-700">
+          {(fuelData.length > 0 ? fuelData : [{ name: 'Diesel', color: '#0A1E3F', value: 0 }]).map((f) => (
+            <span key={f.name} className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: f.color }} />
+              {f.name}
+            </span>
+          ))}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+/* =====================================================================
+   Demand Pipeline (status summary)
+   ===================================================================== */
+function DemandPipeline({ demandStats }) {
+  const items = [
+    { label: 'En Attente N1', count: demandStats.enAttente, icon: Clock, color: 'bg-amber-500' },
+    { label: 'Validées Service', count: demandStats.validees, icon: ClipboardCheck, color: 'bg-blue-500' },
+    { label: 'Affectées / En Cours', count: demandStats.affectees, icon: CheckCircle2, color: 'bg-emerald-500' },
+    { label: 'Terminées', count: demandStats.terminees, icon: FileText, color: 'bg-slate-500' },
+    { label: 'Rejetées', count: demandStats.rejetees, icon: XCircle, color: 'bg-red-500' },
+  ];
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      {items.map((it) => {
+        const Icon = it.icon;
+        return (
+          <div key={it.label} className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-sm flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${it.color}`}>
+              <Icon className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-black font-outfit text-slate-900">Analytics &amp; Indicateurs</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Vue analytique en temps réel de la flotte automobile du Ministère</p>
+              <p className="text-xs text-slate-500 font-medium">{it.label}</p>
+              <p className="text-2xl font-black text-[#0A1E3F]">{it.count}</p>
             </div>
           </div>
-          <button
-            onClick={fetchVehicules}
-            className="bg-white border border-slate-300 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-2 shadow-sm hover:bg-slate-50 cursor-pointer"
-          >
-            <RotateCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            <span>Actualiser les Données</span>
-          </button>
-        </motion.div>
+        );
+      })}
+    </div>
+  );
+}
 
-        {/* 4 KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {metricCards.map((card, index) => {
-            const Icon = card.icon;
+/* =====================================================================
+   Recent Demandes List (real data from /demandes)
+   ===================================================================== */
+function RecentDemandes({ demandes, navigate, limit = 6, emptyHint = 'Aucune demande enregistrée pour le moment.' }) {
+  const recent = [...demandes]
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    .slice(0, limit);
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-7 rounded-full bg-[#C59B27]" />
+          <h3 className="font-outfit font-extrabold text-sm text-[#0A1E3F]">Dernières Demandes de Déplacement</h3>
+        </div>
+        <Link to="/demandes" className="text-[11px] font-bold text-[#C59B27] hover:text-[#94700E] flex items-center gap-1 transition-colors">
+          Voir tout <ArrowRight className="w-3 h-3" />
+        </Link>
+      </div>
+
+      {recent.length === 0 ? (
+        <div className="text-center py-10">
+          <FileText className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+          <p className="text-xs font-bold text-slate-500">{emptyHint}</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {recent.map((d) => {
+            const s = DEMAND_STATUS[d.statut] || DEMAND_STATUS.TERMINEE;
+            const Icon = s.icon;
             return (
-              <motion.div
-                key={card.key}
-                className={`bg-white border border-slate-200 border-t-4 ${card.color} rounded-2xl p-4 flex items-center gap-3.5 shadow-sm hover:shadow-card-hover transition-shadow`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.08 }}
-                whileHover={{ y: -2 }}
+              <button
+                key={d.id}
+                onClick={() => navigate(`/demandes/${d.id}`)}
+                className="flex items-center justify-between p-3.5 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200 border-l-4 border-l-[#C59B27] text-left cursor-pointer"
               >
-                <div className={`w-12 h-12 rounded-xl ${card.iconBg} ${card.iconColor} flex items-center justify-center text-xl flex-shrink-0`}>
-                  <Icon className="w-6 h-6" />
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-slate-100 text-[#0A1E3F] flex items-center justify-center flex-shrink-0">
+                    <Send className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-xs font-extrabold text-[#0A1E3F] block leading-tight truncate">
+                      <span className="font-mono text-[#C59B27]">{d.reference}</span> — {d.motif}
+                    </span>
+                    <span className="text-[11px] text-[#94A3B8] block mt-0.5">
+                      {d.destination}
+                      {d.dateHeureDepart ? ` · ${new Date(d.dateHeureDepart).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-xs font-semibold text-slate-500 block">{card.label}</span>
-                  <span className="text-2xl font-black font-outfit text-slate-900">
-                    <AnimatedCounter value={metrics[card.key]} />
-                  </span>
-                  <span className={`text-[10px] font-bold ${card.subColor || 'text-slate-400'} block`}>{card.sub}</span>
-                </div>
-              </motion.div>
+                <span className={`px-3 py-1 rounded-full text-[10px] font-extrabold inline-flex items-center gap-1.5 border flex-shrink-0 ml-3 ${s.badge}`}>
+                  <Icon className="w-3 h-3" /> {s.label}
+                </span>
+              </button>
             );
           })}
         </div>
+      )}
+    </div>
+  );
+}
 
-        {/* Charts Row: Directions bar + Fuel pie */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <motion.div
-            className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.25 }}
-          >
-            <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-lg gold-gradient-bg flex items-center justify-center">
-                <BarChart3 className="w-4 h-4 text-[#070D1B]" />
-              </div>
-              <div>
-                <h3 className="font-outfit font-extrabold text-sm text-slate-900">Répartition par Direction MEF</h3>
-                <p className="text-[10px] text-slate-400">Nombre de véhicules rattachés à chaque direction</p>
-              </div>
-            </div>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={directionData} margin={{ top: 5, right: 10, left: -18, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748B', fontWeight: 700 }} axisLine={{ stroke: '#E2E8F0' }} tickLine={false} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={TOOLTIP_STYLE}
-                  cursor={{ fill: 'rgba(197,160,89,0.08)' }}
-                  labelFormatter={(label) => directionData.find((d) => d.name === label)?.fullName || label}
-                />
-                <Bar dataKey="véhicules" fill="#C5A059" radius={[6, 6, 0, 0]} maxBarSize={42} />
-              </BarChart>
-            </ResponsiveContainer>
-          </motion.div>
+/* =====================================================================
+   CONDUCTEUR : Mes missions & demandes
+   ===================================================================== */
+function DriverDashboard({ demandes, userId, navigate, onRefresh, loading }) {
+  const myDemandes = demandes.filter((d) => d.demandeurId === userId || d.demandeurId === String(userId));
+  const myStats = {
+    enAttente: myDemandes.filter((d) => d.statut === 'EN_ATTENTE_VALIDATION').length,
+    affectees: myDemandes.filter((d) => ['APPROUVEE_AFFECTEE', 'EN_COURS'].includes(d.statut)).length,
+    terminees: myDemandes.filter((d) => d.statut === 'TERMINEE').length,
+  };
 
-          <motion.div
-            className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.35 }}
-          >
-            <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
-                <Fuel className="w-4 h-4 text-emerald-600" />
-              </div>
-              <div>
-                <h3 className="font-outfit font-extrabold text-sm text-slate-900">Répartition par Carburant</h3>
-                <p className="text-[10px] text-slate-400">Motorisation de la flotte</p>
-              </div>
-            </div>
-            {fuelData.length === 0 ? (
-              <div className="h-[280px] flex items-center justify-center text-xs text-slate-400">Aucune donnée disponible</div>
-            ) : (
-              <ResponsiveContainer width="100%" height={280}>
-                <PieChart>
-                  <Pie
-                    data={fuelData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="44%"
-                    outerRadius={88}
-                    stroke="#fff"
-                    strokeWidth={2}
-                    label={({ value }) => value}
-                  >
-                    {fuelData.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={TOOLTIP_STYLE} />
-                  <Legend verticalAlign="bottom" iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', fontWeight: 600 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </motion.div>
-        </div>
+  const cards = [
+    { label: 'Mes Demandes', sub: 'Total enregistré', value: myDemandes.length, icon: Send, iconBg: 'bg-[#0A1E3F]', bar: 'bg-[#0A1E3F]' },
+    { label: 'En Attente / En Cours', sub: 'Demandes ouvertes', value: myStats.enAttente + myStats.affectees, icon: Clock, iconBg: 'bg-[#1565C0]', bar: 'bg-[#1565C0]' },
+    { label: 'Missions Terminées', sub: 'Clôturées', value: myStats.terminees, icon: CheckCircle2, iconBg: 'bg-[#0D7A5F]', bar: 'bg-[#0D7A5F]' },
+  ];
 
-        {/* Second Row: Status donut + Recent movements */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <motion.div
-            className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.45 }}
-          >
-            <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                <HeartPulse className="w-4 h-4 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="font-outfit font-extrabold text-sm text-slate-900">Disponibilité &amp; État du Parc</h3>
-                <p className="text-[10px] text-slate-400">Statuts administratifs actuels</p>
-              </div>
-            </div>
-            {statusData.length === 0 ? (
-              <div className="h-[280px] flex items-center justify-center text-xs text-slate-400">Aucune donnée disponible</div>
-            ) : (
-              <ResponsiveContainer width="100%" height={280}>
-                <PieChart>
-                  <Pie
-                    data={statusData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="44%"
-                    innerRadius={52}
-                    outerRadius={88}
-                    stroke="#fff"
-                    strokeWidth={2}
-                    label={({ value }) => value}
-                  >
-                    {statusData.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={TOOLTIP_STYLE} />
-                  <Legend verticalAlign="bottom" iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', fontWeight: 600 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </motion.div>
-
-          <motion.div
-            className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.55 }}
-          >
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-[#C5A059]/15 flex items-center justify-center">
-                  <Activity className="w-4 h-4 text-[#9B783E]" />
+  return (
+    <div className="space-y-6">
+      {/* Driver KPI cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {cards.map((card) => {
+          const Icon = card.icon;
+          return (
+            <motion.div
+              key={card.label}
+              className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm relative overflow-hidden"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-full ${card.iconBg} flex items-center justify-center text-white shadow-sm`}>
+                  <Icon className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-outfit font-extrabold text-sm text-slate-900">Derniers Mouvements de la Flotte</h3>
-                  <p className="text-[10px] text-slate-400">Dernières fiches véhicules créées ou modifiées</p>
+                  <span className="text-xs font-bold text-slate-800 block">{card.label}</span>
+                  <span className="text-3xl font-black font-outfit text-[#0A1E3F]">
+                    <AnimatedCounter value={card.value} />
+                  </span>
+                  <span className="text-[10px] font-semibold text-slate-500 block">{card.sub}</span>
                 </div>
               </div>
-              <Link
-                to="/vehicules"
-                className="text-[11px] font-bold text-[#9B783E] hover:text-[#070D1B] flex items-center gap-1 transition-colors"
-              >
-                Toute la flotte <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            {recentMovements.length === 0 ? (
-              <div className="py-14 text-center">
-                <Car className="w-8 h-8 text-slate-300 mx-auto mb-3" />
-                <p className="text-xs text-slate-400">{loading ? 'Chargement des données...' : 'Aucun véhicule enregistré pour le moment.'}</p>
-              </div>
-            ) : (
-              <div className="flex flex-col divide-y divide-slate-100">
-                {recentMovements.map((v) => (
-                  <Link
-                    key={v.id}
-                    to={`/vehicules/${v.id}`}
-                    className="flex items-center gap-3.5 py-2.5 px-2 -mx-2 rounded-xl hover:bg-slate-50 transition-colors group"
-                  >
-                    <img
-                      src={getVehiclePhoto(v.marque, v.modele)}
-                      alt={`${v.marque} ${v.modele}`}
-                      className="w-14 h-10 object-cover rounded-lg border border-slate-200 flex-shrink-0"
-                    />
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <span className="text-xs font-extrabold text-slate-900 truncate">{v.marque} {v.modele}</span>
-                      <span className="text-[10px] text-slate-400 font-mono">{v.immatriculation}</span>
-                    </div>
-                    <span className={`hidden sm:inline-block px-2.5 py-1 rounded-full text-[9px] font-extrabold uppercase ${getStatusStyle(v.statutAdministratif)}`}>
-                      {v.statutAdministratif}
-                    </span>
-                    <span className="text-[10px] text-slate-400 w-[74px] text-right flex-shrink-0">
-                      {new Date(v.dateModification || v.dateCreation).toLocaleDateString('fr-FR')}
-                    </span>
-                    <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-[#C5A059] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
-                  </Link>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        </div>
-
+              <div className={`absolute bottom-0 left-0 right-0 h-1 ${card.bar}`} />
+            </motion.div>
+          );
+        })}
       </div>
+
+      {/* My demandes */}
+      <RecentDemandes
+        demandes={myDemandes}
+        navigate={navigate}
+        limit={8}
+        emptyHint="Aucune demande de déplacement à votre nom pour le moment."
+      />
+    </div>
+  );
+}
+
+/* =====================================================================
+   CONSULTATION : Read-only fleet overview
+   ===================================================================== */
+function ConsultationOverview({ kpiCards, directionData, fuelData, totalFuelVehicles, demandes, demandStats, navigate }) {
+  return (
+    <div className="space-y-6">
+      <KpiCards kpiCards={kpiCards} />
+      <FleetCharts directionData={directionData} fuelData={fuelData} totalFuelVehicles={totalFuelVehicles} />
+      <DemandPipeline demandStats={demandStats} />
+      <RecentDemandes demandes={demandes} navigate={navigate} />
+    </div>
+  );
+}
+
+/* =====================================================================
+   MANAGEMENT : Full dashboard
+   ===================================================================== */
+function ManagementDashboard({ kpiCards, directionData, fuelData, totalFuelVehicles, demandes, demandStats, navigate }) {
+  return (
+    <div className="space-y-6">
+      <KpiCards kpiCards={kpiCards} />
+      <FleetCharts directionData={directionData} fuelData={fuelData} totalFuelVehicles={totalFuelVehicles} />
+      <DemandPipeline demandStats={demandStats} />
+      <RecentDemandes demandes={demandes} navigate={navigate} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Lock, Mail, Eye, EyeOff, ArrowRight, Crown, CheckCircle2, Landmark, Loader2 } from 'lucide-react';
+import { Shield, Lock, Mail, Eye, EyeOff, ArrowRight, CheckCircle2, Landmark, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 
@@ -48,13 +48,13 @@ export default function LoginView({ onLoginSuccess }) {
   };
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center bg-[#070D1B]">
+    <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center bg-[#091B36]">
       {/* Background Image with Overlay */}
       <div 
         className="absolute inset-0 bg-cover bg-center brightness-[0.35] contrast-[1.15]" 
         style={{ backgroundImage: `url('/assets/bg_mef.jpg')` }}
       />
-      <div className="absolute inset-0 bg-gradient-to-br from-[#070D1B]/95 via-[#0F172A]/85 to-[#070D1B]/95" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#091B36]/95 via-[#0A1E3F]/85 to-[#091B36]/95" />
       <div className="absolute inset-0 moroccan-bg-overlay opacity-40 pointer-events-none" />
 
       {/* Floating Particles */}
@@ -95,7 +95,7 @@ export default function LoginView({ onLoginSuccess }) {
                 alt="Royaume du Maroc" 
                 className="max-w-[280px] h-auto drop-shadow-2xl object-contain" 
               />
-              <div className="h-12 w-[1px] bg-[#C5A059]/40" />
+              <div className="h-12 w-[1px] bg-[#C59B27]/40" />
               <img 
                 src="/assets/royaume_logo.png" 
                 alt="Logo Royaume du Maroc" 
@@ -115,7 +115,7 @@ export default function LoginView({ onLoginSuccess }) {
           </div>
 
           <div className="pt-6 border-t border-white/10 flex items-center justify-between text-xs text-slate-400">
-            <span className="font-semibold text-[#E5C17C]">Royaume du Maroc — MEF</span>
+            <span className="font-semibold text-[#D7B14A]">Royaume du Maroc — MEF</span>
             <span>Accès Réservé aux Agents Habilités</span>
           </div>
         </motion.div>
@@ -123,7 +123,7 @@ export default function LoginView({ onLoginSuccess }) {
         {/* Right Side: Glassmorphism Card */}
         <div className="flex justify-center">
           <motion.div 
-            className="w-full max-w-[450px] glass-panel rounded-3xl p-9 text-white shadow-2xl hover:border-[#C5A059]/40 transition-all duration-500"
+            className="w-full max-w-[450px] glass-panel rounded-3xl p-9 text-white shadow-2xl hover:border-[#C59B27]/40 transition-all duration-500"
             initial={{ opacity: 0, y: 30, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.6, delay: 0.3, ease: 'easeOut' }}
@@ -135,7 +135,7 @@ export default function LoginView({ onLoginSuccess }) {
               animate="visible"
             >
               <motion.div 
-                className="w-14 h-14 rounded-full bg-[#C5A059]/15 border border-[#C5A059]/40 text-[#E5C17C] flex items-center justify-center mb-3 shadow-[0_0_20px_rgba(197,160,89,0.25)]"
+                className="w-14 h-14 rounded-full bg-[#C59B27]/15 border border-[#C59B27]/40 text-[#D7B14A] flex items-center justify-center mb-3 shadow-[0_0_20px_rgba(197,160,89,0.25)]"
                 variants={itemVariants}
                 whileHover={{ scale: 1.1, boxShadow: '0 0 30px rgba(197,160,89,0.4)' }}
               >
@@ -171,13 +171,13 @@ export default function LoginView({ onLoginSuccess }) {
             >
               <motion.div variants={itemVariants} className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5 text-[#E5C17C]" /> Email Professionnel
+                  <Mail className="w-3.5 h-3.5 text-[#D7B14A]" /> Email Professionnel
                 </label>
                 <input 
                   type="email" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-[#070D1B]/80 border border-white/15 rounded-xl text-white text-sm outline-none focus:border-[#E5C17C] focus:ring-2 focus:ring-[#C5A059]/30 transition-all placeholder:text-slate-500"
+                  className="w-full px-4 py-3 bg-[#091B36]/80 border border-white/15 rounded-xl text-white text-sm outline-none focus:border-[#D7B14A] focus:ring-2 focus:ring-[#C59B27]/30 transition-all placeholder:text-slate-500"
                   placeholder="admin@mef.gov.ma"
                   required
                 />
@@ -185,14 +185,14 @@ export default function LoginView({ onLoginSuccess }) {
 
               <motion.div variants={itemVariants} className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-[#E5C17C]" /> Mot de Passe
+                  <Lock className="w-3.5 h-3.5 text-[#D7B14A]" /> Mot de Passe
                 </label>
                 <div className="relative flex items-center">
                   <input 
                     type={showPassword ? 'text' : 'password'} 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-3 bg-[#070D1B]/80 border border-white/15 rounded-xl text-white text-sm outline-none focus:border-[#E5C17C] focus:ring-2 focus:ring-[#C5A059]/30 transition-all pr-10 placeholder:text-slate-500"
+                    className="w-full px-4 py-3 bg-[#091B36]/80 border border-white/15 rounded-xl text-white text-sm outline-none focus:border-[#D7B14A] focus:ring-2 focus:ring-[#C59B27]/30 transition-all pr-10 placeholder:text-slate-500"
                     placeholder="••••••••••••"
                     required
                   />
@@ -209,7 +209,7 @@ export default function LoginView({ onLoginSuccess }) {
               <motion.button 
                 type="submit" 
                 disabled={loading}
-                className="w-full py-3.5 gold-gradient-bg text-[#070D1B] font-extrabold text-sm rounded-xl gold-glow flex items-center justify-center gap-2 transition-all mt-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+                className="w-full py-3.5 gold-gradient-bg text-[#091B36] font-extrabold text-sm rounded-xl gold-glow flex items-center justify-center gap-2 transition-all mt-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
                 variants={itemVariants}
                 whileHover={{ scale: loading ? 1 : 1.02, boxShadow: '0 8px 32px rgba(197,160,89,0.5)' }}
                 whileTap={{ scale: loading ? 1 : 0.98 }}
@@ -235,11 +235,11 @@ export default function LoginView({ onLoginSuccess }) {
 
               <motion.button 
                 type="button"
-                className="w-full py-3 bg-white/5 border border-[#C5A059]/35 text-white font-semibold text-xs rounded-xl hover:bg-[#C5A059]/15 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                className="w-full py-3 bg-white/5 border border-[#C59B27]/35 text-white font-semibold text-xs rounded-xl hover:bg-[#C59B27]/15 flex items-center justify-center gap-2 transition-all cursor-pointer"
                 variants={itemVariants}
                 whileHover={{ scale: 1.01 }}
               >
-                <Landmark className="w-4 h-4 text-[#E5C17C]" />
+                <Landmark className="w-4 h-4 text-[#D7B14A]" />
                 <span>Authentification SSO MEF</span>
               </motion.button>
 
