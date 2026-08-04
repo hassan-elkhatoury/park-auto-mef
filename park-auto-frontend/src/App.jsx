@@ -17,6 +17,7 @@ import ConducteurDetailView from './components/ConducteurDetailView';
 import ForceChangePasswordModal from './components/ForceChangePasswordModal';
 import AuditView from './components/AuditView';
 import CarburantView from './components/CarburantView';
+import MaintenanceView from './components/MaintenanceView';
 import RapportsView from './components/RapportsView';
 
 export default function App() {
@@ -103,6 +104,7 @@ export default function App() {
             <Route path="/conducteurs" element={<ConducteursView />} />
             <Route path="/conducteurs/:id" element={<ConducteurDetailView />} />
             <Route path="/carburant" element={<CarburantView />} />
+            <Route path="/maintenance" element={<MaintenanceView />} />
             <Route path="/rapports" element={<RapportsView />} />
             <Route path="/utilisateurs" element={<UtilisateursView />} />
             <Route path="/audit" element={<AuditView />} />

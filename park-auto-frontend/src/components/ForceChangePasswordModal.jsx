@@ -75,37 +75,37 @@ export default function ForceChangePasswordModal({ user, onPasswordChanged }) {
 
           <form onSubmit={handleSubmit} className="space-y-3.5">
             <div>
-              <label className="text-xs font-bold text-gray-700 block mb-1">Mot de passe temporaire actuel *</label>
+              <label className="text-xs font-bold text-[#0A1E3F] block mb-1">Mot de passe temporaire actuel *</label>
               <input 
                 type="password"
                 value={ancientMotDePasse}
                 onChange={(e) => setAncientMotDePasse(e.target.value)}
                 placeholder="Entrez votre mot de passe initial"
-                className="w-full h-10 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]"
+                className="w-full h-10 px-3 bg-white border border-[#E2E8F0] rounded-xl text-xs text-[#0A1E3F] outline-none focus:border-[#C59B27] focus:ring-2 focus:ring-[#C59B27]/15 transition-all"
                 required
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-gray-700 block mb-1">Nouveau mot de passe personnalisé *</label>
+              <label className="text-xs font-bold text-[#0A1E3F] block mb-1">Nouveau mot de passe personnalisé *</label>
               <input 
                 type="password"
                 value={nouveauMotDePasse}
                 onChange={(e) => setNouveauMotDePasse(e.target.value)}
                 placeholder="Au moins 8 caractères"
-                className="w-full h-10 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]"
+                className="w-full h-10 px-3 bg-white border border-[#E2E8F0] rounded-xl text-xs text-[#0A1E3F] outline-none focus:border-[#C59B27] focus:ring-2 focus:ring-[#C59B27]/15 transition-all"
                 required
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-gray-700 block mb-1">Confirmer le nouveau mot de passe *</label>
+              <label className="text-xs font-bold text-[#0A1E3F] block mb-1">Confirmer le nouveau mot de passe *</label>
               <input 
                 type="password"
                 value={confirmationMotDePasse}
                 onChange={(e) => setConfirmationMotDePasse(e.target.value)}
                 placeholder="Répétez le nouveau mot de passe"
-                className="w-full h-10 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]"
+                className="w-full h-10 px-3 bg-white border border-[#E2E8F0] rounded-xl text-xs text-[#0A1E3F] outline-none focus:border-[#C59B27] focus:ring-2 focus:ring-[#C59B27]/15 transition-all"
                 required
               />
             </div>

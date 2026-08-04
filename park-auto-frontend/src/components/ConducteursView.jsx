@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Plus, UserCheck, AlertTriangle, ShieldCheck, Phone, Mail, Edit, Trash2, Award, Eye } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../services/api';
+import ConfirmModal from './ConfirmModal';
 
 export default function ConducteursView() {
   const navigate = useNavigate();
@@ -12,6 +13,11 @@ export default function ConducteursView() {
   const [filterStatut, setFilterStatut] = useState('TOUS');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedConducteur, setSelectedConducteur] = useState(null);
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    conducteur: null,
+    loading: false
+  });
 
   const [formData, setFormData] = useState({
     matricule: '',
@@ -104,14 +110,25 @@ export default function ConducteursView() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Voulez-vous vraiment supprimer ce conducteur ?')) return;
+  const requestDelete = (conducteur) => {
+    setDeleteModal({
+      isOpen: true,
+      conducteur: conducteur,
+      loading: false
+    });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteModal.conducteur) return;
     try {
-      await api.delete(`/conducteurs/${id}`);
-      toast.success('Conducteur supprimé');
+      setDeleteModal(prev => ({ ...prev, loading: true }));
+      await api.delete(`/conducteurs/${deleteModal.conducteur.id}`);
+      toast.success(`Conducteur ${deleteModal.conducteur.prenom} ${deleteModal.conducteur.nom} supprimé avec succès !`);
+      setDeleteModal({ isOpen: false, conducteur: null, loading: false });
       fetchConducteurs();
     } catch (err) {
       toast.error('Erreur lors de la suppression');
+      setDeleteModal(prev => ({ ...prev, loading: false }));
     }
   };
 
@@ -301,7 +318,7 @@ export default function ConducteursView() {
                                 <Edit className="w-4 h-4" />
                               </button>
                               <button
-                                onClick={(e) => { e.stopPropagation(); handleDelete(c.id); }}
+                                onClick={(e) => { e.stopPropagation(); requestDelete(c); }}
                                 className="w-8 h-8 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-500 hover:text-white hover:border-red-500 flex items-center justify-center transition-all cursor-pointer"
                                 title="Supprimer"
                               >
@@ -495,6 +512,19 @@ export default function ConducteursView() {
           </div>
         </div>
       )}
+      {/* Premium Confirm Modal */}
+      <ConfirmModal
+        isOpen={deleteModal.isOpen}
+        title="Suppression de Fiche Conducteur"
+        message={`Voulez-vous vraiment supprimer la fiche du conducteur ${deleteModal.conducteur?.prenom} ${deleteModal.conducteur?.nom} (Permis N° ${deleteModal.conducteur?.numeroPermis}) ?`}
+        badgeText="La suppression sera enregistrée dans le journal d'audit du Ministère"
+        confirmText="Supprimer le conducteur"
+        cancelText="Annuler"
+        variant="danger"
+        loading={deleteModal.loading}
+        onConfirm={confirmDelete}
+        onClose={() => setDeleteModal({ isOpen: false, conducteur: null, loading: false })}
+      />
     </div>
   );
 }

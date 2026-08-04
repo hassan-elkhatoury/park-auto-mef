@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Clock, Power, Calendar, ChevronDown, ChevronsLeft, ChevronsRight, Landmark } from 'lucide-react';
+import { Bell, Clock, Power, Calendar, ChevronDown, ChevronsLeft, ChevronsRight, Landmark, RefreshCw } from 'lucide-react';
+
+// Moroccan 8-pointed star badge icon (inline SVG)
+function StarBadge({ className = '' }) {
+  return (
+    <svg className={`w-4 h-4 ${className}`} viewBox="0 0 100 100" fill="none">
+      <path d="M50 5 L61.8 23.2 L83.2 16.8 L76.8 38.2 L95 50 L76.8 61.8 L83.2 83.2 L61.8 76.8 L50 95 L38.2 76.8 L16.8 83.2 L23.2 61.8 L5 50 L23.2 38.2 L16.8 16.8 L38.2 23.2 Z"
+            stroke="currentColor" strokeWidth="4" fill="currentColor" fillOpacity="0.15" />
+    </svg>
+  );
+}
 
 export default function Navbar({ user, onLogout, collapsed, onToggleCollapse }) {
   const [time, setTime] = useState('');
@@ -16,8 +26,12 @@ export default function Navbar({ user, onLogout, collapsed, onToggleCollapse }) 
     return () => clearInterval(timer);
   }, []);
 
-  const initials = user ? (user.prenom[0] + user.nom[0]).toUpperCase() : 'SA';
+  const initials = ((user?.prenom?.[0] || 'S') + (user?.nom?.[0] || 'A')).toUpperCase();
   const roleName = user && user.role ? (user.role.nom || 'ADMIN') : 'ADMIN';
+
+  const handleRefresh = () => {
+    window.dispatchEvent(new Event('parkauto:refresh'));
+  };
 
   return (
     <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-50 text-[#0A1E3F] shadow-sm">
@@ -51,17 +65,17 @@ export default function Navbar({ user, onLogout, collapsed, onToggleCollapse }) 
           </div>
         </div>
 
-        {/* Right: Date, Clock, Notifications, Profile, Logout */}
-        <div className="flex items-center gap-4">
+        {/* Right: Date, Clock, Notifications, Profile, Refresh, Logout */}
+        <div className="flex items-center gap-3">
           {/* Date Chip */}
-          <div className="hidden md:flex items-center gap-1.5 text-xs text-[#0A1E3F] font-semibold bg-[#F4F6FB] border border-[#E2E8F0] px-3 py-1.5 rounded-lg shadow-sm">
-            <Calendar className="w-4 h-4 text-[#C59B27]" />
+          <div className="hidden md:flex items-center gap-1.5 text-xs text-[#0A1E3F] font-semibold bg-[#F4F6FB] border border-[#E2E8F0] px-3 py-1.5 rounded-full shadow-sm">
+            <Calendar className="w-3.5 h-3.5 text-[#C59B27]" />
             <span className="capitalize">{dateStr}</span>
           </div>
 
           {/* Clock Chip */}
-          <div className="flex items-center gap-1.5 text-xs text-[#0A1E3F] font-bold bg-[#F4F6FB] border border-[#E2E8F0] px-3 py-1.5 rounded-lg shadow-sm">
-            <Clock className="w-4 h-4 text-[#C59B27]" />
+          <div className="hidden lg:flex items-center gap-1.5 text-xs text-[#0A1E3F] font-bold bg-[#F4F6FB] border border-[#E2E8F0] px-3 py-1.5 rounded-full shadow-sm">
+            <Clock className="w-3.5 h-3.5 text-[#C59B27]" />
             <span className="tabular-nums">{time}</span>
           </div>
 
@@ -73,7 +87,7 @@ export default function Navbar({ user, onLogout, collapsed, onToggleCollapse }) 
             </span>
           </button>
 
-          {/* User Profile */}
+          {/* User Profile Pill with Star Badge */}
           <div className="flex items-center gap-2.5 cursor-pointer hover:bg-[#C59B27]/5 px-2.5 py-1.5 rounded-xl transition-all group">
             <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-[#E2E8F0] shadow-sm flex-shrink-0 group-hover:border-[#C59B27] transition-colors">
               <img
@@ -87,8 +101,9 @@ export default function Navbar({ user, onLogout, collapsed, onToggleCollapse }) 
               />
             </div>
             <div className="hidden lg:flex flex-col items-start">
-              <span className="text-xs font-bold text-[#0A1E3F] leading-tight">
+              <span className="text-xs font-bold text-[#0A1E3F] leading-tight flex items-center gap-1.5">
                 {user ? `${user.prenom} ${user.nom}` : 'Système Administrateur'}
+                <StarBadge className="text-[#C59B27]" />
               </span>
               <span className="text-[10px] gold-gradient-text font-extrabold leading-tight uppercase tracking-wider">
                 {roleName}
@@ -96,6 +111,7 @@ export default function Navbar({ user, onLogout, collapsed, onToggleCollapse }) 
             </div>
             <ChevronDown className="w-3.5 h-3.5 text-[#C59B27] hidden lg:block" />
           </div>
+
 
           {/* Logout */}
           <button

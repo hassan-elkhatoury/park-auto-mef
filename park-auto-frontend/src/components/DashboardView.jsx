@@ -3,11 +3,12 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Car, CheckCircle2, Calendar, Wrench, RotateCw, BarChart3, Fuel,
-  Send, ClipboardCheck, XCircle, Clock, ArrowRight, FileText, User, Loader2
+  Send, ClipboardCheck, XCircle, Clock, ArrowRight, FileText, User, Loader2,
+  TrendingDown, TrendingUp, Activity, Droplets
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell
+  PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
 import api from '../services/api';
 import { DIRECTIONS_MEF, FUEL_LABELS } from '../utils/vehicule';
@@ -167,9 +168,9 @@ export default function DashboardView({ user }) {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
 
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
-        <div className="flex items-center gap-4">
+      {/* Header with Moroccan star background watermark */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm moroccan-star-bg relative overflow-hidden">
+        <div className="flex items-center gap-4 relative z-10">
           <MoroccanStarEmblem />
           <div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -187,7 +188,7 @@ export default function DashboardView({ user }) {
 
         <button
           onClick={fetchData}
-          className="bg-[#0A1E3F] hover:bg-[#122B55] text-white font-bold text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer shrink-0"
+          className="bg-[#0A1E3F] hover:bg-[#122B55] text-white font-bold text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer shrink-0 relative z-10"
         >
           <RotateCw className={`w-4 h-4 text-[#D7B14A] ${loading ? 'animate-spin' : ''}`} />
           Actualiser les Données
@@ -212,6 +213,7 @@ export default function DashboardView({ user }) {
           demandes={demandes}
           demandStats={demandStats}
           navigate={navigate}
+          vehicules={vehicules}
         />
       ) : (
         <ManagementDashboard
@@ -222,6 +224,7 @@ export default function DashboardView({ user }) {
           demandes={demandes}
           demandStats={demandStats}
           navigate={navigate}
+          vehicules={vehicules}
         />
       )}
     </div>
@@ -400,6 +403,180 @@ function DemandPipeline({ demandStats }) {
 }
 
 /* =====================================================================
+   Activité Récente – last actions with status badges
+   ===================================================================== */
+function ActiviteRecente({ demandes, navigate }) {
+  const ACTIVITY_STATUS_MAP = {
+    TERMINEE: { label: 'Terminé', bg: 'bg-[#0D7A5F]/10', text: 'text-[#0D7A5F]', dot: 'bg-[#0D7A5F]' },
+    VALIDEE_SERVICE: { label: 'Confirmé', bg: 'bg-[#1565C0]/10', text: 'text-[#1565C0]', dot: 'bg-[#1565C0]' },
+    APPROUVEE_AFFECTEE: { label: 'Confirmé', bg: 'bg-[#1565C0]/10', text: 'text-[#1565C0]', dot: 'bg-[#1565C0]' },
+    EN_ATTENTE_VALIDATION: { label: 'En cours', bg: 'bg-[#C47D2B]/10', text: 'text-[#C47D2B]', dot: 'bg-[#C47D2B]' },
+    EN_COURS: { label: 'En cours', bg: 'bg-[#C47D2B]/10', text: 'text-[#C47D2B]', dot: 'bg-[#C47D2B]' },
+    REJETEE: { label: 'Rejeté', bg: 'bg-red-100', text: 'text-red-600', dot: 'bg-red-500' },
+  };
+
+  const recent = [...demandes]
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    .slice(0, 5);
+
+  return (
+    <motion.div
+      className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-md transition-shadow"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: 0.3 }}
+    >
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-10 h-10 rounded-xl gold-gradient-bg flex items-center justify-center text-[#071530] shadow-sm">
+          <Activity className="w-5 h-5" />
+        </div>
+        <div>
+          <div className="flex items-center gap-2.5">
+            <div className="w-1 h-5 rounded-full bg-[#C59B27]" />
+            <h3 className="font-outfit font-extrabold text-sm text-[#0A1E3F]">Activité Récente</h3>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-0.5">Dernières actions et mises à jour</p>
+        </div>
+      </div>
+
+      {recent.length === 0 ? (
+        <div className="text-center py-8">
+          <Activity className="w-7 h-7 text-slate-300 mx-auto mb-2" />
+          <p className="text-xs font-bold text-slate-400">Aucune activité récente</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {recent.map((d) => {
+            const status = ACTIVITY_STATUS_MAP[d.statut] || ACTIVITY_STATUS_MAP.EN_ATTENTE_VALIDATION;
+            return (
+              <button
+                key={d.id}
+                onClick={() => navigate(`/demandes/${d.id}`)}
+                className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors text-left cursor-pointer group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-full bg-slate-100 text-[#0A1E3F] flex items-center justify-center flex-shrink-0 group-hover:bg-[#C59B27]/10">
+                    <Send className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-xs font-bold text-[#0A1E3F] block truncate">
+                      {d.motif || d.reference || 'Demande'}
+                    </span>
+                    <span className="text-[10px] text-slate-400 block">
+                      {d.destination || ''}
+                      {d.dateHeureDepart ? ` · ${new Date(d.dateHeureDepart).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}` : ''}
+                    </span>
+                  </div>
+                </div>
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold inline-flex items-center gap-1 flex-shrink-0 ml-2 ${status.bg} ${status.text}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                  {status.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+/* =====================================================================
+   Consommation Moyenne – computed from real vehicule data
+   ===================================================================== */
+function ConsommationMoyenne({ vehicules }) {
+  // Compute average consumption from vehicules that have consommationMoyenne field
+  const vehiculesWithConso = vehicules.filter((v) => v.consommationMoyenne && v.consommationMoyenne > 0);
+  const avgConso = vehiculesWithConso.length > 0
+    ? (vehiculesWithConso.reduce((sum, v) => sum + v.consommationMoyenne, 0) / vehiculesWithConso.length).toFixed(1)
+    : null;
+
+  // Generate trend data from vehicule consumption values (sorted by id as proxy for time)
+  const consoData = vehiculesWithConso
+    .sort((a, b) => (a.id || 0) - (b.id || 0))
+    .map((v, idx) => ({
+      name: `V${idx + 1}`,
+      conso: v.consommationMoyenne,
+    }));
+
+  // If we don't have enough data points for a meaningful chart, pad with the average
+  const chartData = consoData.length >= 2
+    ? consoData
+    : avgConso
+      ? [{ name: 'Moy', conso: parseFloat(avgConso) }]
+      : [];
+
+  return (
+    <motion.div
+      className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-md transition-shadow"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: 0.35 }}
+    >
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-10 h-10 rounded-xl gold-gradient-bg flex items-center justify-center text-[#071530] shadow-sm">
+          <Droplets className="w-5 h-5" />
+        </div>
+        <div>
+          <div className="flex items-center gap-2.5">
+            <div className="w-1 h-5 rounded-full bg-[#C59B27]" />
+            <h3 className="font-outfit font-extrabold text-sm text-[#0A1E3F]">Consommation Moyenne</h3>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-0.5">Moyenne flotte enregistrée</p>
+        </div>
+      </div>
+
+      <div className="flex items-end gap-4 mb-4">
+        <span className="text-4xl font-black font-outfit text-[#0A1E3F] leading-none">
+          {avgConso || '—'}
+        </span>
+        <span className="text-sm font-bold text-slate-500 pb-0.5">L/100km</span>
+      </div>
+
+      {vehiculesWithConso.length > 0 && (
+        <div className="flex items-center gap-2 mb-4">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#00A896]/10 text-[#00A896]">
+            <TrendingDown className="w-3 h-3" />
+            {vehiculesWithConso.length} véhicule{vehiculesWithConso.length > 1 ? 's' : ''} avec données
+          </span>
+        </div>
+      )}
+
+      {chartData.length >= 2 ? (
+        <ResponsiveContainer width="100%" height={100}>
+          <AreaChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
+            <defs>
+              <linearGradient id="consoGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#00A896" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#00A896" stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <Area
+              type="monotone"
+              dataKey="conso"
+              stroke="#00A896"
+              strokeWidth={2.5}
+              fill="url(#consoGradient)"
+              dot={false}
+            />
+            <Tooltip
+              contentStyle={TOOLTIP_STYLE}
+              formatter={(val) => [`${val} L/100km`, 'Consommation']}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      ) : (
+        <div className="h-[100px] flex items-center justify-center">
+          <p className="text-[11px] text-slate-400 font-medium">
+            {avgConso ? 'Données insuffisantes pour le graphique' : 'Aucune donnée de consommation'}
+          </p>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+/* =====================================================================
    Recent Demandes List (real data from /demandes)
    ===================================================================== */
 function RecentDemandes({ demandes, navigate, limit = 6, emptyHint = 'Aucune demande enregistrée pour le moment.' }) {
@@ -524,13 +701,20 @@ function DriverDashboard({ demandes, userId, navigate, onRefresh, loading }) {
 /* =====================================================================
    CONSULTATION : Read-only fleet overview
    ===================================================================== */
-function ConsultationOverview({ kpiCards, directionData, fuelData, totalFuelVehicles, demandes, demandStats, navigate }) {
+function ConsultationOverview({ kpiCards, directionData, fuelData, totalFuelVehicles, demandes, demandStats, navigate, vehicules }) {
   return (
     <div className="space-y-6">
       <KpiCards kpiCards={kpiCards} />
       <FleetCharts directionData={directionData} fuelData={fuelData} totalFuelVehicles={totalFuelVehicles} />
       <DemandPipeline demandStats={demandStats} />
-      <RecentDemandes demandes={demandes} navigate={navigate} />
+
+      {/* Bottom Row: Activité Récente + Consommation Moyenne */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="lg:col-span-2">
+          <ActiviteRecente demandes={demandes} navigate={navigate} />
+        </div>
+        <ConsommationMoyenne vehicules={vehicules} />
+      </div>
     </div>
   );
 }
@@ -538,13 +722,20 @@ function ConsultationOverview({ kpiCards, directionData, fuelData, totalFuelVehi
 /* =====================================================================
    MANAGEMENT : Full dashboard
    ===================================================================== */
-function ManagementDashboard({ kpiCards, directionData, fuelData, totalFuelVehicles, demandes, demandStats, navigate }) {
+function ManagementDashboard({ kpiCards, directionData, fuelData, totalFuelVehicles, demandes, demandStats, navigate, vehicules }) {
   return (
     <div className="space-y-6">
       <KpiCards kpiCards={kpiCards} />
       <FleetCharts directionData={directionData} fuelData={fuelData} totalFuelVehicles={totalFuelVehicles} />
       <DemandPipeline demandStats={demandStats} />
-      <RecentDemandes demandes={demandes} navigate={navigate} />
+
+      {/* Bottom Row: Activité Récente + Consommation Moyenne */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="lg:col-span-2">
+          <ActiviteRecente demandes={demandes} navigate={navigate} />
+        </div>
+        <ConsommationMoyenne vehicules={vehicules} />
+      </div>
     </div>
   );
 }

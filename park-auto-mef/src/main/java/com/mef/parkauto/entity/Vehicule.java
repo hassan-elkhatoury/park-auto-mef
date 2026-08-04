@@ -115,6 +115,15 @@ public class Vehicule extends BaseEntity {
 
     private LocalDate dateFinGarantie;
 
+    // --- Échéances légales & Maintenance ---
+    private LocalDate dateFinAssurance;
+
+    private LocalDate dateVisiteTechnique;
+
+    private LocalDate dateVignette;
+
+    private Long prochainSeuilEntretienKm = 10000L;
+
     // --- Rattachement administratif ---
     @Column(length = 100)
     private String organisme = "Ministère de l'Économie et des Finances";

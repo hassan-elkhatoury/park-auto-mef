@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import api from '../services/api';
 import VehiculeFormModal from './VehiculeFormModal';
 import { getVehiclePhoto, getStatusStyle, MoroccanPlate, FUEL_LABELS } from '../utils/vehicule';
+import ConfirmModal from './ConfirmModal';
 
 // One labelled spec line in the technical sheet
 function SpecItem({ icon: Icon, label, children }) {
@@ -39,6 +40,7 @@ export default function VehiculeDetailView() {
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [archiveModal, setArchiveModal] = useState({ isOpen: false, loading: false });
   const [statusFormData, setStatusFormData] = useState({
     nouveauStatutAdministratif: 'DISPONIBLE',
     nouveauEtatTechnique: 'BON_ETAT',
@@ -82,14 +84,20 @@ export default function VehiculeDetailView() {
     }
   };
 
-  const handleArchive = async () => {
-    if (!window.confirm('Voulez-vous vraiment archiver ce véhicule ?')) return;
+  const requestArchive = () => {
+    setArchiveModal({ isOpen: true, loading: false });
+  };
+
+  const confirmArchive = async () => {
     try {
+      setArchiveModal({ isOpen: true, loading: true });
       await api.delete(`/vehicules/${id}`);
       toast.success('Véhicule archivé avec succès');
+      setArchiveModal({ isOpen: false, loading: false });
       navigate('/vehicules');
     } catch (err) {
       toast.error(err.message || 'Erreur lors de l\'archivage');
+      setArchiveModal({ isOpen: false, loading: false });
     }
   };
 
@@ -210,7 +218,7 @@ export default function VehiculeDetailView() {
                   <TrendingUp className="w-3.5 h-3.5" /> Changer le Statut
                 </motion.button>
                 <motion.button
-                  onClick={handleArchive}
+                  onClick={requestArchive}
                   className="px-4 py-2.5 bg-red-50 border border-red-200 text-red-600 font-extrabold text-xs rounded-xl hover:bg-red-500 hover:text-white hover:border-red-500 flex items-center gap-2 transition-all cursor-pointer"
                   whileTap={{ scale: 0.97 }}
                 >
@@ -433,6 +441,19 @@ export default function VehiculeDetailView() {
         )}
       </AnimatePresence>
 
+      {/* Premium Confirm Archive Modal */}
+      <ConfirmModal
+        isOpen={archiveModal.isOpen}
+        title="Archivage de Véhicule"
+        message={`Voulez-vous vraiment archiver le véhicule ${vehicule?.marque} ${vehicule?.modele} (${vehicule?.immatriculation}) ?`}
+        badgeText="Le statut du véhicule passera à ARCHIVE conformément aux règles du MEF"
+        confirmText="Archiver le véhicule"
+        cancelText="Annuler"
+        variant="danger"
+        loading={archiveModal.loading}
+        onConfirm={confirmArchive}
+        onClose={() => setArchiveModal({ isOpen: false, loading: false })}
+      />
     </div>
   );
 }

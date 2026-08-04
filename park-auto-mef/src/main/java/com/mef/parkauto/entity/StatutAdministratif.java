@@ -7,6 +7,7 @@ public enum StatutAdministratif {
     IMMOBILISE,
     EN_ENTRETIEN,
     EN_REPARATION,
+    EN_MAINTENANCE,
     TRANSFERE,
     EN_COURS_REFORME,
     REFORME,

@@ -19,6 +19,10 @@ public interface VehiculeMapper {
     @Mapping(target = "dateModification", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
+    @Mapping(target = "dateFinAssurance", ignore = true)
+    @Mapping(target = "dateVisiteTechnique", ignore = true)
+    @Mapping(target = "dateVignette", ignore = true)
+    @Mapping(target = "prochainSeuilEntretienKm", ignore = true)
     Vehicule toEntity(VehiculeRequest request);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
@@ -27,5 +31,9 @@ public interface VehiculeMapper {
     @Mapping(target = "dateModification", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
+    @Mapping(target = "dateFinAssurance", ignore = true)
+    @Mapping(target = "dateVisiteTechnique", ignore = true)
+    @Mapping(target = "dateVignette", ignore = true)
+    @Mapping(target = "prochainSeuilEntretienKm", ignore = true)
     void updateEntityFromRequest(VehiculeRequest request, @MappingTarget Vehicule vehicule);
 }

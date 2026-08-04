@@ -59,6 +59,7 @@ public class DataInitializer implements CommandLineRunner {
         initializeRoles();
         initializeAdminUser();
         initializeSampleSprint3Data();
+        initializeSampleSprint4Data();
 
         log.info("=== Initialisation des données terminée ===");
     }
@@ -67,6 +68,9 @@ public class DataInitializer implements CommandLineRunner {
     private final com.mef.parkauto.repository.DemandeDeplacementRepository demandeRepository;
     private final com.mef.parkauto.repository.AffectationRepository affectationRepository;
     private final com.mef.parkauto.repository.VehiculeRepository vehiculeRepository;
+    private final com.mef.parkauto.repository.PleinCarburantRepository pleinCarburantRepository;
+    private final com.mef.parkauto.repository.CarteCarburantRepository carteCarburantRepository;
+    private final com.mef.parkauto.repository.InterventionMaintenanceRepository maintenanceRepository;
 
     private void initializeSampleSprint3Data() {
         if (conducteurRepository.count() > 0) {
@@ -232,5 +236,137 @@ public class DataInitializer implements CommandLineRunner {
         utilisateurRepository.save(admin);
         log.info("Utilisateur administrateur créé avec succès — email: {}, matricule: ADMIN001",
                 adminEmail);
+    }
+
+    private void initializeSampleSprint4Data() {
+        if (carteCarburantRepository.count() > 0) {
+            return;
+        }
+        log.info("Initialisation des données de démonstration pour le Sprint 4 (Carburant, Maintenance & Alertes)...");
+
+        java.util.List<com.mef.parkauto.entity.Vehicule> vehicules = vehiculeRepository.findAll();
+        if (vehicules.isEmpty()) {
+            return;
+        }
+
+        com.mef.parkauto.entity.Vehicule v1 = vehicules.get(0);
+        com.mef.parkauto.entity.Vehicule v2 = vehicules.size() > 1 ? vehicules.get(1) : v1;
+
+        // Set legal dates & maintenance threshold for v1 & v2
+        v1.setDateFinAssurance(java.time.LocalDate.now().plusDays(12)); // Expiration imminente
+        v1.setDateVisiteTechnique(java.time.LocalDate.now().plusDays(45));
+        v1.setDateVignette(java.time.LocalDate.now().plusDays(5));
+        v1.setProchainSeuilEntretienKm(10000L);
+        v1.setKilometrageActuel(9400L); // >90% -> triggers preventive alert
+        vehiculeRepository.save(v1);
+
+        v2.setDateFinAssurance(java.time.LocalDate.now().plusMonths(6));
+        v2.setDateVisiteTechnique(java.time.LocalDate.now().minusDays(3)); // Expired!
+        v2.setDateVignette(java.time.LocalDate.now().plusMonths(4));
+        v2.setProchainSeuilEntretienKm(15000L);
+        v2.setKilometrageActuel(14200L); // >90% -> triggers preventive alert
+        vehiculeRepository.save(v2);
+
+        // 1. Create Sample Fuel Cards
+        com.mef.parkauto.entity.CarteCarburant card1 = new com.mef.parkauto.entity.CarteCarburant();
+        card1.setNumeroCarte("7001-9988-1234-0001");
+        card1.setFournisseur("TotalEnergies");
+        card1.setVehicule(v1);
+        card1.setServiceAttribue("Service Transport DAG");
+        card1.setPlafondMensuel(java.math.BigDecimal.valueOf(3500));
+        card1.setSolde(java.math.BigDecimal.valueOf(2150));
+        card1.setDateActivation(java.time.LocalDate.of(2025, 1, 1));
+        card1.setDateExpiration(java.time.LocalDate.of(2027, 12, 31));
+        card1.setStatut(com.mef.parkauto.entity.CarteCarburantStatut.ACTIVE);
+        card1.setObservation("Carte principale véhicule de fonction");
+        carteCarburantRepository.save(card1);
+
+        com.mef.parkauto.entity.CarteCarburant card2 = new com.mef.parkauto.entity.CarteCarburant();
+        card2.setNumeroCarte("7001-9988-1234-0002");
+        card2.setFournisseur("Afriquia");
+        card2.setVehicule(v2);
+        card2.setServiceAttribue("Direction du Budget");
+        card2.setPlafondMensuel(java.math.BigDecimal.valueOf(5000));
+        card2.setSolde(java.math.BigDecimal.valueOf(4200));
+        card2.setDateActivation(java.time.LocalDate.of(2025, 3, 1));
+        card2.setDateExpiration(java.time.LocalDate.of(2026, 8, 20)); // Expiring soon
+        card2.setStatut(com.mef.parkauto.entity.CarteCarburantStatut.ACTIVE);
+        card2.setObservation("Dotation carburant mission");
+        carteCarburantRepository.save(card2);
+
+        // 2. Create Sample Refuels (Pleins Carburant)
+        com.mef.parkauto.entity.PleinCarburant p1 = new com.mef.parkauto.entity.PleinCarburant();
+        p1.setVehicule(v1);
+        p1.setCarteCarburant(card1);
+        p1.setDatePlein(java.time.LocalDateTime.now().minusDays(5));
+        p1.setStationService("TotalEnergies Agdal Rabat");
+        p1.setTypeCarburant(com.mef.parkauto.entity.TypeCarburant.DIESEL);
+        p1.setQuantiteLitres(55.0);
+        p1.setPrixUnitaire(java.math.BigDecimal.valueOf(12.80));
+        p1.setMontantTTC(java.math.BigDecimal.valueOf(704.00));
+        p1.setKilometrage(9400L);
+        p1.setConsommationMoyenne(7.8);
+        p1.setAnomalieSurconsommation(false);
+        p1.setReferenceTicket("TCK-99881");
+        p1.setReferenceFacture("FAC-2026-081");
+        pleinCarburantRepository.save(p1);
+
+        com.mef.parkauto.entity.PleinCarburant p2 = new com.mef.parkauto.entity.PleinCarburant();
+        p2.setVehicule(v2);
+        p2.setCarteCarburant(card2);
+        p2.setDatePlein(java.time.LocalDateTime.now().minusDays(2));
+        p2.setStationService("Afriquia Autoroute Casa-Rabat");
+        p2.setTypeCarburant(com.mef.parkauto.entity.TypeCarburant.ESSENCE);
+        p2.setQuantiteLitres(68.0);
+        p2.setPrixUnitaire(java.math.BigDecimal.valueOf(14.50));
+        p2.setMontantTTC(java.math.BigDecimal.valueOf(986.00));
+        p2.setKilometrage(14200L);
+        p2.setConsommationMoyenne(14.2); // Overconsumption!
+        p2.setAnomalieSurconsommation(true); // Trigger badge
+        p2.setReferenceTicket("TCK-99895");
+        p2.setReferenceFacture("FAC-2026-095");
+        p2.setObservation("Consommation anormalement élevée relevée sur trajet autoroutier");
+        pleinCarburantRepository.save(p2);
+
+        // 3. Create Sample Maintenance Interventions
+        com.mef.parkauto.entity.InterventionMaintenance m1 = new com.mef.parkauto.entity.InterventionMaintenance();
+        m1.setVehicule(v1);
+        m1.setTypeMaintenance(com.mef.parkauto.entity.TypeMaintenance.PREVENTIVE);
+        m1.setNatureOperation(com.mef.parkauto.entity.NatureMaintenance.VIDANGE);
+        m1.setDatePrevisionnelle(java.time.LocalDate.now().plusDays(3));
+        m1.setKilometragePrevu(10000L);
+        m1.setPrestataire("Auto Hall Service Rabat");
+        m1.setCoutMainOeuvre(java.math.BigDecimal.valueOf(350));
+        m1.setCoutPieces(java.math.BigDecimal.valueOf(850));
+        m1.setMontantTotal(java.math.BigDecimal.valueOf(1200));
+        m1.setPiecesRemplacees("Filtre à huile, Filtre à air, Huile 5W30 Synthetic");
+        m1.setStatut(com.mef.parkauto.entity.StatutMaintenance.PROGRAMMEE);
+        m1.setImmobilisation(false);
+        m1.setDescription("Vidange périodique des 10 000 km");
+        maintenanceRepository.save(m1);
+
+        com.mef.parkauto.entity.InterventionMaintenance m2 = new com.mef.parkauto.entity.InterventionMaintenance();
+        m2.setVehicule(v2);
+        m2.setTypeMaintenance(com.mef.parkauto.entity.TypeMaintenance.CURATIVE);
+        m2.setNatureOperation(com.mef.parkauto.entity.NatureMaintenance.REPARATION_PANNE);
+        m2.setDatePrevisionnelle(java.time.LocalDate.now().minusDays(1));
+        m2.setDateRealisation(java.time.LocalDate.now());
+        m2.setKilometragePrevu(14000L);
+        m2.setKilometrageRealise(14200L);
+        m2.setPrestataire("Garage Central MEF Rabat");
+        m2.setCoutMainOeuvre(java.math.BigDecimal.valueOf(600));
+        m2.setCoutPieces(java.math.BigDecimal.valueOf(1850));
+        m2.setMontantTotal(java.math.BigDecimal.valueOf(2450));
+        m2.setPiecesRemplacees("Plaquettes de frein avant, Disques ventilés");
+        m2.setStatut(com.mef.parkauto.entity.StatutMaintenance.EN_COURS);
+        m2.setImmobilisation(true); // Immobilizes vehicle!
+        m2.setDescription("Remplacement freins suite à grincement au freinage");
+        maintenanceRepository.save(m2);
+
+        // Update v2 status due to heavy maintenance immobilization
+        v2.setStatutAdministratif(com.mef.parkauto.entity.StatutAdministratif.EN_MAINTENANCE);
+        vehiculeRepository.save(v2);
+
+        log.info("Initialisation des données de démonstration du Sprint 4 terminée avec succès.");
     }
 }

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../services/api';
+import ConfirmModal from './ConfirmModal';
 
 function SpecItem({ icon: Icon, label, children }) {
   return (
@@ -31,6 +32,7 @@ export default function ConducteurDetailView() {
   const [notFound, setNotFound] = useState(false);
 
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, loading: false });
   const [formData, setFormData] = useState({
     matricule: '',
     nom: '',
@@ -94,14 +96,20 @@ export default function ConducteurDetailView() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm('Voulez-vous vraiment supprimer ce conducteur ?')) return;
+  const requestDelete = () => {
+    setDeleteModal({ isOpen: true, loading: false });
+  };
+
+  const confirmDelete = async () => {
     try {
+      setDeleteModal({ isOpen: true, loading: true });
       await api.delete(`/conducteurs/${conducteur.id}`);
-      toast.success('Conducteur supprimé');
+      toast.success(`Conducteur ${conducteur.prenom} ${conducteur.nom} supprimé avec succès !`);
+      setDeleteModal({ isOpen: false, loading: false });
       navigate('/conducteurs');
     } catch (err) {
       toast.error('Erreur lors de la suppression');
+      setDeleteModal({ isOpen: false, loading: false });
     }
   };
 
@@ -196,7 +204,7 @@ export default function ConducteurDetailView() {
                   <Edit className="w-4 h-4" /> Modifier
                 </button>
                 <button
-                  onClick={handleDelete}
+                  onClick={requestDelete}
                   className="bg-red-50 border border-red-200 text-red-600 font-extrabold text-xs px-4 py-2.5 rounded-xl hover:bg-red-500 hover:text-white hover:border-red-500 flex items-center gap-2 transition-all cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4" /> Supprimer
@@ -392,6 +400,19 @@ export default function ConducteurDetailView() {
           </div>
         </div>
       )}
+      {/* Premium Confirm Modal */}
+      <ConfirmModal
+        isOpen={deleteModal.isOpen}
+        title="Suppression de Fiche Conducteur"
+        message={`Voulez-vous vraiment supprimer la fiche du conducteur ${conducteur?.prenom} ${conducteur?.nom} (Permis N° ${conducteur?.numeroPermis}) ?`}
+        badgeText="La suppression sera enregistrée dans le journal d'audit du Ministère"
+        confirmText="Supprimer le conducteur"
+        cancelText="Annuler"
+        variant="danger"
+        loading={deleteModal.loading}
+        onConfirm={confirmDelete}
+        onClose={() => setDeleteModal({ isOpen: false, loading: false })}
+      />
     </div>
   );
 }

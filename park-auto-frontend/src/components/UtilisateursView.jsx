@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, RotateCw, Search, UserPlus, X, Edit, Trash2, Shield, Check } from 'lucide-react';
+import { Users, Plus, RotateCw, Search, UserPlus, X, Edit, Trash2, Shield, Check, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
+import ConfirmModal from './ConfirmModal';
 
 const roleColors = {
   'ADMIN': 'bg-amber-50 text-amber-700 border-amber-200',
@@ -10,8 +11,11 @@ const roleColors = {
   'RESPONSABLE_FINANCIER': 'bg-violet-50 text-violet-700 border-violet-200',
   'RESPONSABLE_SERVICE': 'bg-violet-50 text-violet-700 border-violet-200',
   'CONDUCTEUR': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  'CONSULTATION': 'bg-gray-50 text-gray-600 border-gray-200',
+  'CONSULTATION': 'bg-slate-50 text-slate-600 border-slate-200',
 };
+
+const inputCls = "w-full px-3.5 py-2.5 text-sm border border-[#E2E8F0] rounded-xl bg-white text-[#0A1E3F] focus:border-[#C59B27] focus:ring-2 focus:ring-[#C59B27]/15 outline-none transition-all placeholder:text-slate-400";
+const labelCls = "block text-xs font-bold text-[#0A1E3F] mb-1.5";
 
 export default function UtilisateursView() {
   const emptyForm = {
@@ -28,6 +32,11 @@ export default function UtilisateursView() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [deactivateModal, setDeactivateModal] = useState({
+    isOpen: false,
+    user: null,
+    loading: false
+  });
 
   const [formData, setFormData] = useState(emptyForm);
 
@@ -108,7 +117,7 @@ export default function UtilisateursView() {
     }
   };
 
-  const handleDeactivateUser = async (userToDeactivate) => {
+  const handleDeactivateUser = (userToDeactivate) => {
     const currentUserStr = localStorage.getItem('user');
     const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
 
@@ -131,14 +140,25 @@ export default function UtilisateursView() {
       }
     }
 
-    if (!window.confirm(`Voulez-vous vraiment désactiver le compte de ${userToDeactivate.prenom} ${userToDeactivate.nom} ? (Accès bloqué en BDD conforme au Cahier des Charges)`)) return;
+    setDeactivateModal({
+      isOpen: true,
+      user: userToDeactivate,
+      loading: false
+    });
+  };
 
+  const confirmDeactivateUser = async () => {
+    if (!deactivateModal.user) return;
+    const userToDeactivate = deactivateModal.user;
     try {
+      setDeactivateModal(prev => ({ ...prev, loading: true }));
       await api.delete(`/utilisateurs/${userToDeactivate.id}`);
-      toast.success(`Compte agent ${userToDeactivate.nom} désactivé avec succès !`);
+      toast.success(`Compte agent ${userToDeactivate.prenom} ${userToDeactivate.nom} désactivé avec succès !`);
+      setDeactivateModal({ isOpen: false, user: null, loading: false });
       fetchUsers();
     } catch (err) {
       toast.error('Erreur lors de la désactivation du compte');
+      setDeactivateModal(prev => ({ ...prev, loading: false }));
     }
   };
 
@@ -158,7 +178,7 @@ export default function UtilisateursView() {
       roleName = typeof r === 'object' ? (r.nom || r.name) : r;
     }
     return (
-      <span className={`${roleColors[roleName] || roleColors['CONSULTATION']} border px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wide`}>
+      <span className={`${roleColors[roleName] || roleColors['CONSULTATION']} border px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide`}>
         {roleName}
       </span>
     );
@@ -179,89 +199,136 @@ export default function UtilisateursView() {
     return `MEF-${String(nextNum).padStart(3, '0')}`;
   };
 
+  const directionOptions = [
+    { value: 'Direction du Budget', label: 'Direction du Budget (DB)' },
+    { value: 'Direction Générale des Impôts', label: 'Direction Générale des Impôts (DGI)' },
+    { value: 'Administration des Douanes et Impôts Indirects', label: 'Administration des Douanes et Impôts Indirects (ADII)' },
+    { value: 'Trésorerie Générale du Royaume', label: 'Trésorerie Générale du Royaume (TGR)' },
+    { value: 'Direction des Entreprises Publiques et de la Privatisation', label: 'Direction des Entreprises Publiques et de la Privatisation (DEPP)' },
+    { value: 'Direction du Trésor et des Finances Extérieures', label: 'Direction du Trésor et des Finances Extérieures (DTFE)' },
+    { value: 'Direction des Affaires Domestiques et Générales', label: 'Direction des Affaires Domestiques et Générales (DAG)' },
+    { value: 'Inspection Générale des Finances', label: 'Inspection Générale des Finances (IGF)' },
+    { value: 'Direction des Études et des Prévisions Financières', label: 'Direction des Études et des Prévisions Financières (DEPF)' },
+  ];
+
+  const roleOptions = [
+    'ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL',
+    'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONDUCTEUR', 'CONSULTATION'
+  ];
+
   return (
-    <div className="p-8">
-      <div className="max-w-[1400px] mx-auto space-y-6">
-        
-        {/* Page Header */}
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Gestion des Utilisateurs</h1>
-            <p className="text-description text-gray-500 mt-1">Conformité Cahier des Charges MEF — Sécurité, Contrôle des Accès & Rôles Agent</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={fetchUsers} className="h-9 px-3 bg-white border border-gray-200 rounded-lg text-[13px] font-medium text-gray-600 flex items-center gap-1.5 hover:bg-gray-50 shadow-xs cursor-pointer">
-              <RotateCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Actualiser
-            </button>
-            <button onClick={() => { 
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div>
+          <h1 className="text-xl font-black text-[#0A1E3F] tracking-wide uppercase flex items-center gap-2">
+            <Users className="w-6 h-6 text-[#C59B27]" />
+            Gestion des Utilisateurs & Habilitations
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Conformité Cahier des Charges MEF — Sécurité, Contrôle des Accès & Rôles Agent
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={fetchUsers}
+            className="bg-white border border-slate-300 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-2 shadow-sm hover:bg-slate-50 cursor-pointer"
+          >
+            <RotateCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Actualiser
+          </button>
+          <button
+            onClick={() => { 
               const autoMatricule = generateNextUserMatricule(users);
               setFormData({ ...emptyForm, matricule: autoMatricule }); 
               setIsModalOpen(true); 
-            }} className="h-9 px-4 gold-gradient-bg text-white rounded-lg text-[13px] font-semibold flex items-center gap-1.5 hover:opacity-90 shadow-sm cursor-pointer">
-              <UserPlus className="w-3.5 h-3.5" /> Nouveau Compte
-            </button>
-          </div>
+            }}
+            className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md hover:brightness-105 transition-all cursor-pointer"
+          >
+            <UserPlus className="w-4 h-4" />
+            Nouveau Compte
+          </button>
+        </div>
+      </div>
+
+      {/* Filter Bar */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex items-center justify-between gap-4">
+        <div className="relative flex-1 max-w-[360px]">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Rechercher par nom, email, matricule..."
+            className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#C59B27]/30 focus:border-[#C59B27] transition-all"
+          />
+        </div>
+        <span className="text-[11px] font-bold text-slate-400">{filteredUsers.length} utilisateur{filteredUsers.length !== 1 ? 's' : ''}</span>
+      </div>
+
+      {/* Data Table */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-slate-100 flex justify-between items-center">
+          <h3 className="font-outfit font-extrabold text-sm text-slate-900">Registre des Agents MEF</h3>
+          <span className="text-[11px] font-bold text-slate-400">
+            {filteredUsers.length} agent{filteredUsers.length !== 1 ? 's' : ''} affiché{filteredUsers.length !== 1 ? 's' : ''}
+          </span>
         </div>
 
-        {/* Filter Bar */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between gap-4 shadow-sm">
-          <div className="relative flex-1 max-w-[360px]">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder="Rechercher par nom, email, matricule..."
-              className="w-full h-9 pl-9 pr-3 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 placeholder:text-gray-400 outline-none focus:border-[#C59B27]" />
-          </div>
-          <span className="text-[13px] text-gray-500 font-medium">{filteredUsers.length} utilisateur{filteredUsers.length !== 1 ? 's' : ''}</span>
-        </div>
-
-        {/* Table with CRUD Actions */}
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-          {filteredUsers.length === 0 ? (
-            <div className="p-16 text-center">
-              <Users className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-              <p className="text-[14px] font-medium text-gray-600">{loading ? 'Chargement...' : 'Aucun utilisateur trouvé'}</p>
-              <p className="text-description text-gray-400 mt-1">{!loading && 'Créez un nouveau compte pour commencer.'}</p>
+        {filteredUsers.length === 0 ? (
+          <div className="p-16 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-[#F4F6FB] flex items-center justify-center mx-auto mb-4">
+              <Users className="w-8 h-8 text-slate-300" />
             </div>
-          ) : (
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#0A1E3F] text-[#D7B14A] uppercase font-bold text-[10px]">
+            <h3 className="font-outfit font-bold text-lg text-[#0A1E3F] mb-1">{loading ? 'Chargement...' : 'Aucun utilisateur trouvé'}</h3>
+            <p className="text-sm text-slate-400">{!loading && 'Créez un nouveau compte pour commencer.'}</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="enterprise-table">
+              <thead>
                 <tr>
-                  <th className="p-3.5">Matricule</th>
-                  <th className="p-3.5">Utilisateur</th>
-                  <th className="p-3.5">Email</th>
-                  <th className="p-3.5">Direction MEF</th>
-                  <th className="p-3.5">Rôles Attribués</th>
-                  <th className="p-3.5">Statut Compte</th>
-                  <th className="p-3.5 text-center">Actions CRUD</th>
+                  <th>Matricule</th>
+                  <th>Utilisateur</th>
+                  <th>Email</th>
+                  <th>Direction MEF</th>
+                  <th>Rôle</th>
+                  <th>Statut</th>
+                  <th className="!text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody>
                 {filteredUsers.map((u) => (
-                  <tr key={u.id} className="hover:bg-gray-50/80">
-                    <td className="p-3.5 font-mono text-[13px] font-bold text-gray-800">{u.matricule}</td>
-                    <td className="p-3.5">
+                  <tr key={u.id}>
+                    <td>
+                      <span className="font-mono text-xs font-black text-[#0A1E3F]">{u.matricule}</span>
+                    </td>
+                    <td>
                       <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-md bg-gray-100 text-gray-700 text-[10px] font-extrabold flex items-center justify-center flex-shrink-0 border border-gray-200">
-                          {u.prenom?.[0]}{u.nom?.[0]}
+                        <div className="w-8 h-8 rounded-lg bg-[#0A1E3F]/5 border border-[#0A1E3F]/10 flex items-center justify-center flex-shrink-0">
+                          <span className="text-[10px] font-extrabold text-[#0A1E3F]">{u.prenom?.[0]}{u.nom?.[0]}</span>
                         </div>
-                        <span className="font-bold text-gray-900">{u.prenom} {u.nom}</span>
+                        <span className="text-xs font-extrabold text-slate-900">{u.prenom} {u.nom}</span>
                       </div>
                     </td>
-                    <td className="p-3.5 text-gray-600 font-medium">{u.email}</td>
-                    <td className="p-3.5 text-gray-600">{u.direction || 'Direction du Budget'}</td>
-                    <td className="p-3.5">
-                      {getRoleBadge(u)}
+                    <td>
+                      <span className="text-xs text-slate-600 font-medium">{u.email}</span>
                     </td>
-                    <td className="p-3.5">
-                      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold">
-                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${u.statut === 'ACTIVE' ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]' : 'bg-red-500'}`} />
-                        <span className={u.statut === 'ACTIVE' ? 'text-emerald-700' : 'text-red-600'}>
+                    <td>
+                      <span className="text-xs font-semibold text-slate-700 block max-w-[200px] truncate">{u.direction || 'Direction du Budget'}</span>
+                    </td>
+                    <td>{getRoleBadge(u)}</td>
+                    <td>
+                      <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold">
+                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${u.statut === 'ACTIVE' ? 'bg-[#0D7A5F] shadow-[0_0_6px_rgba(13,122,95,0.5)]' : 'bg-red-500'}`} />
+                        <span className={u.statut === 'ACTIVE' ? 'text-[#0D7A5F]' : 'text-red-600'}>
                           {u.statut === 'ACTIVE' ? 'Actif' : 'Désactivé'}
                         </span>
                       </span>
                     </td>
-                    <td className="p-3.5">
-                      <div className="flex items-center justify-center gap-1.5">
+                    <td>
+                      <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => {
                             setEditingUser(u);
@@ -280,15 +347,14 @@ export default function UtilisateursView() {
                             });
                             setIsEditModalOpen(true);
                           }}
-                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-blue-200"
+                          className="w-8 h-8 rounded-lg bg-[#C59B27]/10 border border-[#C59B27]/40 text-[#94700E] hover:bg-[#C59B27] hover:text-[#0A1E3F] flex items-center justify-center transition-all cursor-pointer"
                           title="Modifier les informations & le statut"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
-
                         <button
                           onClick={() => handleDeactivateUser(u)}
-                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-red-200"
+                          className="w-8 h-8 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-500 hover:text-white hover:border-red-500 flex items-center justify-center transition-all cursor-pointer"
                           title="Désactiver / Bloquer le compte"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -299,49 +365,65 @@ export default function UtilisateursView() {
                 ))}
               </tbody>
             </table>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Create User Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-[540px] rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
-            <div className="flex items-center justify-between p-5 bg-[#0A1E3F] text-white">
-              <div>
-                <h3 className="text-[16px] font-bold font-['Outfit']">Créer un Compte Agent MEF</h3>
-                <p className="text-[11px] text-[#D7B14A]">Enregistrement et attribution des habilitations</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A1E3F]/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 w-full max-w-[580px] max-h-[90vh] overflow-y-auto">
+            {/* Modal header */}
+            <div className="flex items-center justify-between p-6 border-b border-[#E2E8F0]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl gold-gradient-bg flex items-center justify-center text-[#071530]">
+                  <UserPlus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="font-outfit font-extrabold text-lg text-[#0A1E3F]">Créer un Compte Agent MEF</h2>
+                  <p className="text-[10px] text-[#C59B27] font-bold">Enregistrement et attribution des habilitations</p>
+                </div>
               </div>
-              <button onClick={() => setIsModalOpen(false)} className="w-7 h-7 rounded-md flex items-center justify-center text-gray-400 hover:bg-white/10 cursor-pointer"><X className="w-4 h-4" /></button>
+              <button onClick={() => setIsModalOpen(false)} className="p-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">
+                <X className="w-5 h-5 text-slate-400" />
+              </button>
             </div>
+            {/* Modal body */}
             <form onSubmit={handleCreateUser} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="text-xs font-bold text-gray-700 block mb-1">Matricule *</label><input type="text" value={formData.matricule} onChange={(e) => setFormData({...formData, matricule: e.target.value})} placeholder="MEF-2026-099" className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]" required /></div>
-                <div><label className="text-xs font-bold text-gray-700 block mb-1">Nom *</label><input type="text" value={formData.nom} onChange={(e) => setFormData({...formData, nom: e.target.value})} placeholder="El Mansouri" className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]" required /></div>
-                <div><label className="text-xs font-bold text-gray-700 block mb-1">Prénom *</label><input type="text" value={formData.prenom} onChange={(e) => setFormData({...formData, prenom: e.target.value})} placeholder="Khadija" className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]" required /></div>
-                <div><label className="text-xs font-bold text-gray-700 block mb-1">Email Professionnel *</label><input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="k.mansouri@mef.gov.ma" className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]" required /></div>
-                <div><label className="text-xs font-bold text-gray-700 block mb-1">Rôle Système *</label><select value={formData.role || 'GESTIONNAIRE_LOCAL'} onChange={(e) => setFormData({...formData, role: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs cursor-pointer outline-none font-medium focus:border-[#C59B27]">
-                  <option value="ADMIN">ADMIN</option>
-                  <option value="GESTIONNAIRE_CENTRAL">GESTIONNAIRE_CENTRAL</option>
-                  <option value="GESTIONNAIRE_LOCAL">GESTIONNAIRE_LOCAL</option>
-                  <option value="RESPONSABLE_FINANCIER">RESPONSABLE_FINANCIER</option>
-                  <option value="RESPONSABLE_SERVICE">RESPONSABLE_SERVICE</option>
-                  <option value="CONDUCTEUR">CONDUCTEUR</option>
-                  <option value="CONSULTATION">CONSULTATION</option>
-                </select></div>
-                <div><label className="text-xs font-bold text-gray-700 block mb-1">Direction MEF *</label><select value={formData.direction} onChange={(e) => setFormData({...formData, direction: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs cursor-pointer outline-none font-medium focus:border-[#C59B27]">
-                  <option value="Direction du Budget">Direction du Budget (DB)</option>
-                  <option value="Direction Générale des Impôts">Direction Générale des Impôts (DGI)</option>
-                  <option value="Administration des Douanes et Impôts Indirects">Administration des Douanes et Impôts Indirects (ADII)</option>
-                  <option value="Trésorerie Générale du Royaume">Trésorerie Générale du Royaume (TGR)</option>
-                  <option value="Direction des Entreprises Publiques et de la Privatisation">Direction des Entreprises Publiques et de la Privatisation (DEPP)</option>
-                  <option value="Direction du Trésor et des Finances Extérieures">Direction du Trésor et des Finances Extérieures (DTFE)</option>
-                  <option value="Direction des Affaires Domestiques et Générales">Direction des Affaires Domestiques et Générales (DAG)</option>
-                  <option value="Inspection Générale des Finances">Inspection Générale des Finances (IGF)</option>
-                  <option value="Direction des Études et des Prévisions Financières">Direction des Études et des Prévisions Financières (DEPF)</option>
-                </select></div>
+                <div>
+                  <label className={labelCls}>Matricule *</label>
+                  <input type="text" value={formData.matricule} onChange={(e) => setFormData({...formData, matricule: e.target.value})} placeholder="MEF-2026-099" className={inputCls} required />
+                </div>
+                <div>
+                  <label className={labelCls}>Nom *</label>
+                  <input type="text" value={formData.nom} onChange={(e) => setFormData({...formData, nom: e.target.value})} placeholder="El Mansouri" className={inputCls} required />
+                </div>
+                <div>
+                  <label className={labelCls}>Prénom *</label>
+                  <input type="text" value={formData.prenom} onChange={(e) => setFormData({...formData, prenom: e.target.value})} placeholder="Khadija" className={inputCls} required />
+                </div>
+                <div>
+                  <label className={labelCls}>Email Professionnel *</label>
+                  <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="k.mansouri@mef.gov.ma" className={inputCls} required />
+                </div>
+                <div>
+                  <label className={labelCls}>Rôle Système *</label>
+                  <select value={formData.role || 'GESTIONNAIRE_LOCAL'} onChange={(e) => setFormData({...formData, role: e.target.value})} className={`${inputCls} cursor-pointer`}>
+                    {roleOptions.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Direction MEF *</label>
+                  <select value={formData.direction} onChange={(e) => setFormData({...formData, direction: e.target.value})} className={`${inputCls} cursor-pointer`}>
+                    {directionOptions.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                  </select>
+                </div>
               </div>
-              <div><label className="text-xs font-bold text-gray-700 block mb-1">Téléphone</label><input type="tel" value={formData.telephone} onChange={(e) => setFormData({...formData, telephone: e.target.value})} placeholder="+212 6XX XX XX XX" className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]" /></div>
+              <div>
+                <label className={labelCls}>Téléphone</label>
+                <input type="tel" value={formData.telephone} onChange={(e) => setFormData({...formData, telephone: e.target.value})} placeholder="+212 6XX XX XX XX" className={inputCls} />
+              </div>
               
               {/* Premium Institutional Warning Alert */}
               <div className="bg-[#0A1E3F] border border-[#C59B27]/40 rounded-xl p-3.5 text-xs text-white flex items-start gap-3 shadow-lg">
@@ -354,9 +436,13 @@ export default function UtilisateursView() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="h-9 px-4 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-600 hover:bg-gray-50 cursor-pointer">Annuler</button>
-                <button type="submit" className="h-9 px-5 gold-gradient-bg text-[#0A1E3F] rounded-xl text-xs font-black hover:opacity-95 shadow-md cursor-pointer">Créer le Compte</button>
+              {/* Modal footer */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-[#E2E8F0]">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="border border-[#E2E8F0] text-[#0A1E3F] font-bold text-xs px-4 py-2.5 rounded-xl hover:bg-[#F4F6FB] transition-all cursor-pointer">Annuler</button>
+                <button type="submit" className="gold-gradient-bg text-[#071530] font-extrabold text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md hover:brightness-105 transition-all cursor-pointer">
+                  <Check className="w-4 h-4" />
+                  Créer le Compte
+                </button>
               </div>
             </form>
           </div>
@@ -365,67 +451,83 @@ export default function UtilisateursView() {
 
       {/* Edit User Modal */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-[540px] rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
-            <div className="flex items-center justify-between p-5 bg-[#0A1E3F] text-white">
-              <div>
-                <h3 className="text-[16px] font-bold font-['Outfit']">Modifier l'Agent #{editingUser?.id}</h3>
-                <p className="text-[11px] text-[#D7B14A]">{editingUser?.prenom} {editingUser?.nom} — {editingUser?.matricule}</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A1E3F]/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 w-full max-w-[580px] max-h-[90vh] overflow-y-auto">
+            {/* Modal header */}
+            <div className="flex items-center justify-between p-6 border-b border-[#E2E8F0]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl gold-gradient-bg flex items-center justify-center text-[#071530]">
+                  <Edit className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="font-outfit font-extrabold text-lg text-[#0A1E3F]">Modifier l'Agent #{editingUser?.id}</h2>
+                  <p className="text-[10px] text-[#C59B27] font-bold">{editingUser?.prenom} {editingUser?.nom} — {editingUser?.matricule}</p>
+                </div>
               </div>
-              <button onClick={() => setIsEditModalOpen(false)} className="w-7 h-7 rounded-md flex items-center justify-center text-gray-400 hover:bg-white/10 cursor-pointer"><X className="w-4 h-4" /></button>
+              <button onClick={() => setIsEditModalOpen(false)} className="p-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">
+                <X className="w-5 h-5 text-slate-400" />
+              </button>
             </div>
+            {/* Modal body */}
             <form onSubmit={handleUpdateUser} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="text-xs font-bold text-gray-700 block mb-1">Matricule *</label><input type="text" value={formData.matricule} onChange={(e) => setFormData({...formData, matricule: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]" required /></div>
-                <div><label className="text-xs font-bold text-gray-700 block mb-1">Nom *</label><input type="text" value={formData.nom} onChange={(e) => setFormData({...formData, nom: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]" required /></div>
-                <div><label className="text-xs font-bold text-gray-700 block mb-1">Prénom *</label><input type="text" value={formData.prenom} onChange={(e) => setFormData({...formData, prenom: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]" required /></div>
-                <div><label className="text-xs font-bold text-gray-700 block mb-1">Email *</label><input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]" required /></div>
-                <div><label className="text-xs font-bold text-gray-700 block mb-1">Rôle Système *</label><select value={formData.role || 'GESTIONNAIRE_LOCAL'} onChange={(e) => setFormData({...formData, role: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs cursor-pointer outline-none font-medium focus:border-[#C59B27]">
-                  <option value="ADMIN">ADMIN</option>
-                  <option value="GESTIONNAIRE_CENTRAL">GESTIONNAIRE_CENTRAL</option>
-                  <option value="GESTIONNAIRE_LOCAL">GESTIONNAIRE_LOCAL</option>
-                  <option value="RESPONSABLE_FINANCIER">RESPONSABLE_FINANCIER</option>
-                  <option value="RESPONSABLE_SERVICE">RESPONSABLE_SERVICE</option>
-                  <option value="CONDUCTEUR">CONDUCTEUR</option>
-                  <option value="CONSULTATION">CONSULTATION</option>
-                </select></div>
-                <div><label className="text-xs font-bold text-gray-700 block mb-1">Direction MEF *</label><select value={formData.direction} onChange={(e) => setFormData({...formData, direction: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs cursor-pointer outline-none font-medium focus:border-[#C59B27]">
-                  <option value="Direction du Budget">Direction du Budget (DB)</option>
-                  <option value="Direction Générale des Impôts">Direction Générale des Impôts (DGI)</option>
-                  <option value="Administration des Douanes et Impôts Indirects">Administration des Douanes et Impôts Indirects (ADII)</option>
-                  <option value="Trésorerie Générale du Royaume">Trésorerie Générale du Royaume (TGR)</option>
-                  <option value="Direction des Entreprises Publiques et de la Privatisation">Direction des Entreprises Publiques et de la Privatisation (DEPP)</option>
-                  <option value="Direction du Trésor et des Finances Extérieures">Direction du Trésor et des Finances Extérieures (DTFE)</option>
-                  <option value="Direction des Affaires Domestiques et Générales">Direction des Affaires Domestiques et Générales (DAG)</option>
-                  <option value="Inspection Générale des Finances">Inspection Générale des Finances (IGF)</option>
-                  <option value="Direction des Études et des Prévisions Financières">Direction des Études et des Prévisions Financières (DEPF)</option>
-                </select></div>
+                <div>
+                  <label className={labelCls}>Matricule *</label>
+                  <input type="text" value={formData.matricule} onChange={(e) => setFormData({...formData, matricule: e.target.value})} className={inputCls} required />
+                </div>
+                <div>
+                  <label className={labelCls}>Nom *</label>
+                  <input type="text" value={formData.nom} onChange={(e) => setFormData({...formData, nom: e.target.value})} className={inputCls} required />
+                </div>
+                <div>
+                  <label className={labelCls}>Prénom *</label>
+                  <input type="text" value={formData.prenom} onChange={(e) => setFormData({...formData, prenom: e.target.value})} className={inputCls} required />
+                </div>
+                <div>
+                  <label className={labelCls}>Email *</label>
+                  <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className={inputCls} required />
+                </div>
+                <div>
+                  <label className={labelCls}>Rôle Système *</label>
+                  <select value={formData.role || 'GESTIONNAIRE_LOCAL'} onChange={(e) => setFormData({...formData, role: e.target.value})} className={`${inputCls} cursor-pointer`}>
+                    {roleOptions.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Direction MEF *</label>
+                  <select value={formData.direction} onChange={(e) => setFormData({...formData, direction: e.target.value})} className={`${inputCls} cursor-pointer`}>
+                    {directionOptions.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                  </select>
+                </div>
               </div>
 
-              <div><label className="text-xs font-bold text-gray-700 block mb-1">Téléphone</label><input type="tel" value={formData.telephone} onChange={(e) => setFormData({...formData, telephone: e.target.value})} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:border-[#C59B27]" /></div>
-
-              {/* High-End iOS Style Toggle Switch for Account Status */}
               <div>
-                <label className="text-xs font-bold text-gray-700 block mb-1">Statut du Compte Agent *</label>
+                <label className={labelCls}>Téléphone</label>
+                <input type="tel" value={formData.telephone} onChange={(e) => setFormData({...formData, telephone: e.target.value})} className={inputCls} />
+              </div>
+
+              {/* Account Status Toggle */}
+              <div>
+                <label className={labelCls}>Statut du Compte Agent *</label>
                 <div 
                   onClick={() => setFormData({ ...formData, statut: formData.statut === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' })}
-                  className="flex items-center justify-between p-3.5 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:border-[#C59B27] transition-all select-none"
+                  className="flex items-center justify-between p-3.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl cursor-pointer hover:border-[#C59B27] transition-all select-none"
                 >
                   <div className="flex items-center gap-2.5">
-                    <span className={`w-3 h-3 rounded-full ${formData.statut === 'ACTIVE' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse' : 'bg-red-500'}`} />
+                    <span className={`w-3 h-3 rounded-full ${formData.statut === 'ACTIVE' ? 'bg-[#0D7A5F] shadow-[0_0_8px_rgba(13,122,95,0.6)] animate-pulse' : 'bg-red-500'}`} />
                     <div>
-                      <span className="text-xs font-bold text-gray-900 block">
+                      <span className="text-xs font-bold text-[#0A1E3F] block">
                         {formData.statut === 'ACTIVE' ? 'Compte Agent Actif' : 'Compte Agent Désactivé'}
                       </span>
-                      <span className="text-[10px] text-gray-500">
+                      <span className="text-[10px] text-slate-500">
                         {formData.statut === 'ACTIVE' ? 'Accès et fonctionnalités système autorisés' : 'Accès bloqué en base de données (Conforme Cahier des Charges)'}
                       </span>
                     </div>
                   </div>
 
-                  {/* iOS Style Custom Switch */}
+                  {/* Toggle Switch */}
                   <div className={`w-12 h-6.5 rounded-full p-0.5 transition-colors duration-300 flex items-center flex-shrink-0 ${
-                    formData.statut === 'ACTIVE' ? 'bg-emerald-500' : 'bg-slate-300'
+                    formData.statut === 'ACTIVE' ? 'bg-[#0D7A5F]' : 'bg-slate-300'
                   }`}>
                     <div className={`w-5.5 h-5.5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
                       formData.statut === 'ACTIVE' ? 'translate-x-[22px]' : 'translate-x-0'
@@ -434,14 +536,31 @@ export default function UtilisateursView() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
-                <button type="button" onClick={() => setIsEditModalOpen(false)} className="h-9 px-4 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-600 hover:bg-gray-50 cursor-pointer">Annuler</button>
-                <button type="submit" className="h-9 px-5 gold-gradient-bg text-[#0A1E3F] rounded-xl text-xs font-black hover:opacity-95 shadow-md cursor-pointer">Enregistrer les Modifications</button>
+              {/* Modal footer */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-[#E2E8F0]">
+                <button type="button" onClick={() => setIsEditModalOpen(false)} className="border border-[#E2E8F0] text-[#0A1E3F] font-bold text-xs px-4 py-2.5 rounded-xl hover:bg-[#F4F6FB] transition-all cursor-pointer">Annuler</button>
+                <button type="submit" className="gold-gradient-bg text-[#071530] font-extrabold text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md hover:brightness-105 transition-all cursor-pointer">
+                  <Check className="w-4 h-4" />
+                  Enregistrer les Modifications
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
+      {/* Premium Confirm Modal */}
+      <ConfirmModal
+        isOpen={deactivateModal.isOpen}
+        title="Désactivation du Compte Agent"
+        message={`Voulez-vous vraiment désactiver le compte de ${deactivateModal.user?.prenom} ${deactivateModal.user?.nom} ?`}
+        badgeText="Accès bloqué en BDD conforme au Cahier des Charges MEF"
+        confirmText="Désactiver le compte"
+        cancelText="Annuler"
+        variant="danger"
+        loading={deactivateModal.loading}
+        onConfirm={confirmDeactivateUser}
+        onClose={() => setDeactivateModal({ isOpen: false, user: null, loading: false })}
+      />
     </div>
   );
 }

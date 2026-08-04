@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import api from '../services/api';
 import VehiculeFormModal from './VehiculeFormModal';
 import { getVehiclePhoto, getStatusStyle, MoroccanPlate, DIRECTIONS_MEF, directionShort, FUEL_LABELS } from '../utils/vehicule';
+import ConfirmModal from './ConfirmModal';
 
 export default function VehiculesListView() {
   const navigate = useNavigate();
@@ -19,6 +20,11 @@ export default function VehiculesListView() {
   // Add/Edit modal state (editingVehicule = null → creation)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingVehicule, setEditingVehicule] = useState(null);
+  const [archiveModal, setArchiveModal] = useState({
+    isOpen: false,
+    vehicule: null,
+    loading: false
+  });
 
   const fetchVehicules = async () => {
     try {
@@ -51,14 +57,25 @@ export default function VehiculesListView() {
     return matchesSearch && matchesDirection && matchesCarburant && matchesStatut;
   });
 
-  const handleArchive = async (id) => {
-    if (!window.confirm('Voulez-vous vraiment archiver ce véhicule ?')) return;
+  const requestArchive = (vehicule) => {
+    setArchiveModal({
+      isOpen: true,
+      vehicule: vehicule,
+      loading: false
+    });
+  };
+
+  const confirmArchive = async () => {
+    if (!archiveModal.vehicule) return;
     try {
-      await api.delete(`/vehicules/${id}`);
+      setArchiveModal(prev => ({ ...prev, loading: true }));
+      await api.delete(`/vehicules/${archiveModal.vehicule.id}`);
       toast.success('Véhicule archivé avec succès');
+      setArchiveModal({ isOpen: false, vehicule: null, loading: false });
       fetchVehicules();
     } catch (err) {
       toast.error(err.message || 'Erreur lors de l\'archivage');
+      setArchiveModal(prev => ({ ...prev, loading: false }));
     }
   };
 
@@ -280,7 +297,7 @@ export default function VehiculesListView() {
                             <PenTool className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleArchive(v.id)}
+                            onClick={() => requestArchive(v)}
                             className="w-8 h-8 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-500 hover:text-white hover:border-red-500 flex items-center justify-center transition-all cursor-pointer"
                             title="Archiver (Soft delete)"
                           >
@@ -302,6 +319,20 @@ export default function VehiculesListView() {
         onClose={() => { setIsModalOpen(false); setEditingVehicule(null); }}
         onSaved={fetchVehicules}
         vehicule={editingVehicule}
+      />
+
+      {/* Premium Confirm Archive Modal */}
+      <ConfirmModal
+        isOpen={archiveModal.isOpen}
+        title="Archivage de Véhicule"
+        message={`Voulez-vous vraiment archiver le véhicule ${archiveModal.vehicule?.marque} ${archiveModal.vehicule?.modele} (${archiveModal.vehicule?.immatriculation}) ?`}
+        badgeText="Le statut du véhicule passera à ARCHIVE conformément aux règles du MEF"
+        confirmText="Archiver le véhicule"
+        cancelText="Annuler"
+        variant="danger"
+        loading={archiveModal.loading}
+        onConfirm={confirmArchive}
+        onClose={() => setArchiveModal({ isOpen: false, vehicule: null, loading: false })}
       />
     </div>
   );
