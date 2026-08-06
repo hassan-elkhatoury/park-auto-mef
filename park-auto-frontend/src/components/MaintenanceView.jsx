@@ -13,8 +13,12 @@ export default function MaintenanceView() {
   const [alertes, setAlertes] = useState([]);
   const [vehicules, setVehicules] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filterType, setFilterType] = useState('ALL'); // ALL, PREVENTIVE, CURATIVE
-  const [filterStatut, setFilterStatut] = useState('ALL');
+  const [filterSearch, setFilterSearch]     = useState('');
+  const [filterType, setFilterType]         = useState('ALL');
+  const [filterStatut, setFilterStatut]     = useState('ALL');
+  const [filterNature, setFilterNature]     = useState('ALL');
+  const [filterVehicule, setFilterVehicule] = useState('ALL');
+  const [filterImmob, setFilterImmob]       = useState('ALL'); // ALL, OUI, NON
 
   const [showModal, setShowModal] = useState(false);
   const [selectedInterventionForDetail, setSelectedInterventionForDetail] = useState(null);
@@ -179,10 +183,28 @@ export default function MaintenanceView() {
   };
 
   const filteredInterventions = interventions.filter(item => {
-    const matchType = filterType === 'ALL' || item.typeMaintenance === filterType;
-    const matchStatut = filterStatut === 'ALL' || item.statut === filterStatut;
-    return matchType && matchStatut;
+    const matchSearch = !filterSearch.trim() ||
+      (item.immatriculation || '').toLowerCase().includes(filterSearch.toLowerCase()) ||
+      (item.marqueModele   || '').toLowerCase().includes(filterSearch.toLowerCase()) ||
+      (item.prestataire    || '').toLowerCase().includes(filterSearch.toLowerCase()) ||
+      (item.description    || '').toLowerCase().includes(filterSearch.toLowerCase()) ||
+      (item.natureOperation|| '').toLowerCase().includes(filterSearch.toLowerCase());
+    const matchType    = filterType    === 'ALL' || item.typeMaintenance === filterType;
+    const matchStatut  = filterStatut  === 'ALL' || item.statut          === filterStatut;
+    const matchNature  = filterNature  === 'ALL' || item.natureOperation  === filterNature;
+    const matchVeh     = filterVehicule=== 'ALL' || String(item.vehiculeId || item.vehicule?.id) === filterVehicule;
+    const matchImmob   = filterImmob   === 'ALL' ||
+      (filterImmob === 'OUI' ? Boolean(item.immobilisation) : !item.immobilisation);
+    return matchSearch && matchType && matchStatut && matchNature && matchVeh && matchImmob;
   });
+
+  const hasActiveFilters = filterSearch || filterType !== 'ALL' || filterStatut !== 'ALL' ||
+    filterNature !== 'ALL' || filterVehicule !== 'ALL' || filterImmob !== 'ALL';
+
+  const resetFilters = () => {
+    setFilterSearch(''); setFilterType('ALL'); setFilterStatut('ALL');
+    setFilterNature('ALL'); setFilterVehicule('ALL'); setFilterImmob('ALL');
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -247,35 +269,130 @@ export default function MaintenanceView() {
       {activeTab === 'interventions' && (
         <div className="space-y-4">
           {/* Filters */}
-          <motion.div 
-            className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-wrap items-center gap-3 shadow-sm"
+          <motion.div
+            className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }}
           >
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-slate-400" />
-              <span className="text-xs font-bold text-slate-500">Filtrer:</span>
-            </div>
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold outline-none cursor-pointer"
-            >
-              <option value="ALL">Tous les Types</option>
-              <option value="PREVENTIVE">Maintenance Préventive</option>
-              <option value="CURATIVE">Réparation Curative</option>
-            </select>
+            {/* Row 1 : search + counters + reset */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-slate-400" />
+                <span className="text-xs font-bold text-slate-500">Filtres :</span>
+              </div>
 
-            <select
-              value={filterStatut}
-              onChange={(e) => setFilterStatut(e.target.value)}
-              className="px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold outline-none cursor-pointer"
-            >
-              <option value="ALL">Tous les Statuts</option>
-              <option value="PROGRAMMEE">Programmée</option>
-              <option value="EN_COURS">En cours</option>
-              <option value="TERMINEE">Terminée</option>
-              <option value="ANNULEE">Annulée</option>
-            </select>
+              {/* Search */}
+              <div className="relative flex-1 min-w-[200px]">
+                <input
+                  type="text"
+                  placeholder="Rechercher véhicule, prestataire, opération..."
+                  value={filterSearch}
+                  onChange={e => setFilterSearch(e.target.value)}
+                  className="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27] placeholder:text-slate-400"
+                />
+                <Filter className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                {filterSearch && (
+                  <button onClick={() => setFilterSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Result count badge */}
+              <span className="text-[11px] font-extrabold text-[#0A1E3F] bg-[#EBF3FA] border border-blue-100 px-3 py-1.5 rounded-full whitespace-nowrap">
+                {filteredInterventions.length} / {interventions.length} résultats
+              </span>
+
+              {/* Reset */}
+              {hasActiveFilters && (
+                <button
+                  onClick={resetFilters}
+                  className="flex items-center gap-1.5 text-[11px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" /> Réinitialiser
+                </button>
+              )}
+            </div>
+
+            {/* Row 2 : selects */}
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Type */}
+              <select
+                value={filterType}
+                onChange={e => setFilterType(e.target.value)}
+                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none cursor-pointer focus:ring-2 focus:ring-[#C59B27]"
+              >
+                <option value="ALL">Tous les Types</option>
+                <option value="PREVENTIVE">Préventive</option>
+                <option value="CURATIVE">Curative</option>
+                <option value="REGLEMENTAIRE">Réglementaire</option>
+                <option value="SINISTRE_ACCIDENT">Sinistre / Accident</option>
+              </select>
+
+              {/* Statut */}
+              <select
+                value={filterStatut}
+                onChange={e => setFilterStatut(e.target.value)}
+                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none cursor-pointer focus:ring-2 focus:ring-[#C59B27]"
+              >
+                <option value="ALL">Tous les Statuts</option>
+                <option value="PROGRAMMEE">Programmée</option>
+                <option value="EN_COURS">En cours</option>
+                <option value="TERMINEE">Terminée</option>
+                <option value="ANNULEE">Annulée</option>
+              </select>
+
+              {/* Nature */}
+              <select
+                value={filterNature}
+                onChange={e => setFilterNature(e.target.value)}
+                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none cursor-pointer focus:ring-2 focus:ring-[#C59B27]"
+              >
+                <option value="ALL">Toutes les Natures</option>
+                <option value="VIDANGE">Vidange</option>
+                <option value="FILTRES">Filtres</option>
+                <option value="REVISION_PERIODIQUE">Révision Périodique</option>
+                <option value="DISTRIBUTION">Distribution</option>
+                <option value="FREINS">Freins</option>
+                <option value="PNEUMATIQUES">Pneumatiques</option>
+                <option value="AMORTISSEURS_SUSPENSION">Amortisseurs</option>
+                <option value="BATTERIE">Batterie</option>
+                <option value="EMBRAYAGE_TRANSMISSION">Embrayage</option>
+                <option value="INJECTION_TURBO">Injection / Turbo</option>
+                <option value="CIRCUIT_REFROIDISSEMENT">Refroidissement</option>
+                <option value="REPARATION_PANNE">Réparation Panne</option>
+                <option value="CLIMATISATION">Climatisation</option>
+                <option value="ECLAIRAGE_SIGNALISATION">Éclairage</option>
+                <option value="PARE_BRISE_VITRAGE">Pare-Brise</option>
+                <option value="CARROSSERIE_PEINTURE">Carrosserie</option>
+                <option value="CONTROLE_TECHNIQUE">Contrôle Technique</option>
+                <option value="AUTRE">Autre</option>
+              </select>
+
+              {/* Véhicule */}
+              <select
+                value={filterVehicule}
+                onChange={e => setFilterVehicule(e.target.value)}
+                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none cursor-pointer focus:ring-2 focus:ring-[#C59B27] max-w-[200px]"
+              >
+                <option value="ALL">Tous les Véhicules</option>
+                {vehicules.map(v => (
+                  <option key={v.id} value={String(v.id)}>
+                    {v.immatriculation} — {v.marque} {v.modele}
+                  </option>
+                ))}
+              </select>
+
+              {/* Immobilisation */}
+              <select
+                value={filterImmob}
+                onChange={e => setFilterImmob(e.target.value)}
+                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none cursor-pointer focus:ring-2 focus:ring-[#C59B27]"
+              >
+                <option value="ALL">Toutes (Immob.)</option>
+                <option value="OUI">Immobilisé uniquement</option>
+                <option value="NON">Non immobilisé</option>
+              </select>
+            </div>
           </motion.div>
 
           {/* Table */}
