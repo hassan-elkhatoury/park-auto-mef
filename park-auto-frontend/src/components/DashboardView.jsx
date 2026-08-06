@@ -4,30 +4,34 @@ import { motion } from 'framer-motion';
 import {
   Car, CheckCircle2, Calendar, Wrench, RotateCw, BarChart3, Fuel,
   Send, ClipboardCheck, XCircle, Clock, ArrowRight, FileText, User, Loader2,
-  TrendingDown, TrendingUp, Activity, Droplets
+  TrendingDown, TrendingUp, Activity, Droplets, ShieldAlert, AlertTriangle, CreditCard, DollarSign
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
 import api from '../services/api';
-import { DIRECTIONS_MEF, FUEL_LABELS } from '../utils/vehicule';
+import { vehiculeService } from '../services/vehiculeService';
+import { carburantService } from '../services/carburantService';
+import { maintenanceService } from '../services/maintenanceService';
+import { DIRECTIONS_MEF, FUEL_LABELS, MoroccanPlate } from '../utils/vehicule';
 
 // Animated counter component
 function AnimatedCounter({ value, duration = 1.2 }) {
   const [display, setDisplay] = useState(0);
   useEffect(() => {
-    if (value === 0) { setDisplay(0); return; }
+    if (value === 0 || !value) { setDisplay(0); return; }
     let start = 0;
-    const step = Math.ceil(value / (duration * 60));
+    const numericValue = typeof value === 'number' ? Math.round(value) : parseInt(value, 10) || 0;
+    const step = Math.ceil(numericValue / (duration * 60)) || 1;
     const timer = setInterval(() => {
       start += step;
-      if (start >= value) { setDisplay(value); clearInterval(timer); }
+      if (start >= numericValue) { setDisplay(numericValue); clearInterval(timer); }
       else setDisplay(start);
     }, 1000 / 60);
     return () => clearInterval(timer);
   }, [value, duration]);
-  return <>{display}</>;
+  return <>{display.toLocaleString()}</>;
 }
 
 // 8-Pointed Star Moroccan Zellij Emblem SVG
@@ -53,7 +57,7 @@ const TOOLTIP_STYLE = {
   boxShadow: '0 8px 24px rgba(0,0,0,0.25)'
 };
 
-const isMaintenance = (v) => ['EN_ENTRETIEN', 'EN_REPARATION', 'IMMOBILISE'].includes(v.statutAdministratif);
+const isMaintenance = (v) => ['EN_ENTRETIEN', 'EN_REPARATION', 'IMMOBILISE', 'EN_MAINTENANCE'].includes(v.statutAdministratif);
 
 const DEMAND_STATUS = {
   EN_ATTENTE_VALIDATION: { badge: 'bg-amber-100 text-amber-800 border-amber-300', icon: Clock, label: 'En Attente N1' },
@@ -65,18 +69,27 @@ const DEMAND_STATUS = {
 
 const ROLE_LABELS = {
   ADMIN: 'Administrateur Système',
+  ADMIN_CENTRAL: 'Administrateur Central MEF',
   GESTIONNAIRE_CENTRAL: 'Gestionnaire Central du Parc',
   GESTIONNAIRE_LOCAL: 'Gestionnaire Local du Parc',
+  CHEF_PARC_REGIONAL: 'Chef du Parc Régional',
+  RESPONSABLE_PARC: 'Responsable du Parc MEF',
   RESPONSABLE_FINANCIER: 'Responsable Financier',
   RESPONSABLE_SERVICE: 'Responsable de Service',
-  CONDUCTEUR: 'Conducteur',
-  CONSULTATION: 'Consultation',
+  CONDUCTEUR: 'Conducteur / Chauffeur',
+  CHAUFFEUR: 'Conducteur / Chauffeur',
+  CONSULTATION: 'Auditeur / Consultation',
 };
 
 export default function DashboardView({ user }) {
   const navigate = useNavigate();
   const [vehicules, setVehicules] = useState([]);
   const [demandes, setDemandes] = useState([]);
+  const [pleins, setPleins] = useState([]);
+  const [cartes, setCartes] = useState([]);
+  const [anomalies, setAnomalies] = useState([]);
+  const [interventions, setInterventions] = useState([]);
+  const [alertes, setAlertes] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const roleName = user?.role?.nom || user?.role || 'CONSULTATION';
@@ -85,19 +98,43 @@ export default function DashboardView({ user }) {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [vehRes, demRes] = await Promise.allSettled([
-        api.get('/vehicules?size=100'),
+      const [vehRes, demRes, pleinsRes, cartesRes, anomRes, intervRes, alertesRes] = await Promise.allSettled([
+        vehiculeService.getAll(),
         api.get('/demandes'),
+        carburantService.getPleins(),
+        carburantService.getCartes(),
+        carburantService.getAnomalies(),
+        maintenanceService.getInterventions(),
+        maintenanceService.getAlertes(),
       ]);
 
       if (vehRes.status === 'fulfilled') {
-        const res = vehRes.value;
-        const list = res?.data?.content || res?.content || res?.data || (Array.isArray(res) ? res : []);
+        const list = vehRes.value?.content || vehRes.value?.data || (Array.isArray(vehRes.value) ? vehRes.value : []);
         setVehicules(Array.isArray(list) ? list : []);
       }
       if (demRes.status === 'fulfilled') {
-        const d = demRes.value;
-        setDemandes(Array.isArray(d) ? d : (d?.content || d?.data || []));
+        const d = demRes.value?.data || demRes.value;
+        setDemandes(Array.isArray(d) ? d : (d?.content || []));
+      }
+      if (pleinsRes.status === 'fulfilled') {
+        const p = pleinsRes.value?.data || pleinsRes.value;
+        setPleins(Array.isArray(p) ? p : []);
+      }
+      if (cartesRes.status === 'fulfilled') {
+        const c = cartesRes.value?.data || cartesRes.value;
+        setCartes(Array.isArray(c) ? c : []);
+      }
+      if (anomRes.status === 'fulfilled') {
+        const a = anomRes.value?.data || anomRes.value;
+        setAnomalies(Array.isArray(a) ? a : []);
+      }
+      if (intervRes.status === 'fulfilled') {
+        const i = intervRes.value?.data || intervRes.value;
+        setInterventions(Array.isArray(i) ? i : []);
+      }
+      if (alertesRes.status === 'fulfilled') {
+        const al = alertesRes.value?.data || alertesRes.value;
+        setAlertes(Array.isArray(al) ? al : []);
       }
     } catch (err) {
       console.error('Erreur de chargement du tableau de bord:', err);
@@ -113,53 +150,80 @@ export default function DashboardView({ user }) {
     return () => window.removeEventListener('parkauto:refresh', onGlobalRefresh);
   }, []);
 
-  const metrics = {
-    total: vehicules.length,
-    disponibles: vehicules.filter((v) => v.statutAdministratif === 'DISPONIBLE').length,
-    enMission: vehicules.filter((v) => ['AFFECTE', 'RESERVE'].includes(v.statutAdministratif)).length,
-    maintenance: vehicules.filter(isMaintenance).length,
-  };
+  const userDirection = user?.direction;
+  const filteredVehicules = useMemo(() => {
+    if (['CHEF_PARC_REGIONAL', 'CHEF_SERVICE', 'RESPONSABLE_SERVICE'].includes(roleName) && userDirection) {
+      return vehicules.filter(v => v.direction === userDirection);
+    }
+    return vehicules;
+  }, [vehicules, roleName, userDirection]);
 
-  const demandStats = {
+  const metrics = useMemo(() => ({
+    total: filteredVehicules.length,
+    disponibles: filteredVehicules.filter((v) => v.statutAdministratif === 'DISPONIBLE').length,
+    enMission: filteredVehicules.filter((v) => ['AFFECTE', 'RESERVE', 'EN_MISSION'].includes(v.statutAdministratif)).length,
+    maintenance: filteredVehicules.filter(isMaintenance).length,
+  }), [filteredVehicules]);
+
+  const financialMetrics = useMemo(() => {
+    const totalFuelSpent = pleins.reduce((sum, p) => sum + (parseFloat(p.montantTTC) || 0), 0);
+    const totalMaintenanceSpent = interventions.reduce((sum, i) => sum + (parseFloat(i.montantTotal) || 0), 0);
+    const activeCardsCount = cartes.filter(c => c.statut === 'ACTIVE').length;
+    
+    return {
+      totalFuelSpent,
+      totalMaintenanceSpent,
+      totalAlertes: alertes.length,
+      totalAnomalies: anomalies.length,
+      activeCardsCount
+    };
+  }, [pleins, interventions, alertes, anomalies, cartes]);
+
+  const demandStats = useMemo(() => ({
     enAttente: demandes.filter((d) => d.statut === 'EN_ATTENTE_VALIDATION').length,
     validees: demandes.filter((d) => d.statut === 'VALIDEE_SERVICE').length,
     affectees: demandes.filter((d) => ['APPROUVEE_AFFECTEE', 'EN_COURS'].includes(d.statut)).length,
     terminees: demandes.filter((d) => d.statut === 'TERMINEE').length,
     rejetees: demandes.filter((d) => d.statut === 'REJETEE').length,
-  };
+  }), [demandes]);
 
-  // Fleet count per official MEF direction
   const directionData = useMemo(() =>
     DIRECTIONS_MEF.map((d) => ({
       name: d.short,
       fullName: d.value,
-      véhicules: vehicules.filter((v) => v.direction === d.value).length,
+      véhicules: filteredVehicules.filter((v) => v.direction === d.value).length,
     })),
-  [vehicules]);
+  [filteredVehicules]);
 
-  // Fuel mix for donut chart
   const fuelData = useMemo(() =>
     Object.keys(FUEL_LABELS)
       .map((key) => ({
         name: FUEL_LABELS[key],
-        value: vehicules.filter((v) => v.typeCarburant === key).length,
+        value: filteredVehicules.filter((v) => v.typeCarburant === key).length,
         color: FUEL_COLORS[key],
       }))
       .filter((f) => f.value > 0),
-  [vehicules]);
+  [filteredVehicules]);
 
   const totalFuelVehicles = useMemo(() => fuelData.reduce((sum, f) => sum + f.value, 0), [fuelData]);
 
-  const kpiCards = [
+  const mainKpiCards = [
     { label: 'Total Flotte', sub: 'Véhicules enregistrés', value: metrics.total, icon: Car, iconBg: 'bg-[#0A1E3F]', bar: 'bg-[#0A1E3F]', delay: 0 },
     { label: 'Disponibles', sub: 'Prêts à être affectés', value: metrics.disponibles, icon: CheckCircle2, iconBg: 'bg-[#0D7A5F]', bar: 'bg-[#0D7A5F]', delay: 0.08 },
-    { label: 'En Mission', sub: 'Affectés / Réservés', value: metrics.enMission, icon: Calendar, iconBg: 'bg-[#1565C0]', bar: 'bg-[#1565C0]', delay: 0.16 },
-    { label: 'En Maintenance', sub: 'Entretien / Réparation', value: metrics.maintenance, icon: Wrench, iconBg: 'bg-[#C47D2B]', bar: 'bg-[#C47D2B]', delay: 0.24 },
+    { label: 'En Mission', sub: 'Affectés / En Service', value: metrics.enMission, icon: Calendar, iconBg: 'bg-[#1565C0]', bar: 'bg-[#1565C0]', delay: 0.16 },
+    { label: 'En Maintenance', sub: 'Entretien / Immobilisés', value: metrics.maintenance, icon: Wrench, iconBg: 'bg-[#C47D2B]', bar: 'bg-[#C47D2B]', delay: 0.24 },
+  ];
+
+  const financialKpiCards = [
+    { label: 'Carburant Total (MAD)', sub: 'Dépenses enregistrées', value: Math.round(financialMetrics.totalFuelSpent), icon: Fuel, iconBg: 'bg-[#0A1E3F]', bar: 'bg-[#C59B27]', isCurrency: true },
+    { label: 'Maintenance (MAD)', sub: 'Coût des interventions', value: Math.round(financialMetrics.totalMaintenanceSpent), icon: DollarSign, iconBg: 'bg-[#0D7A5F]', bar: 'bg-[#0D7A5F]', isCurrency: true },
+    { label: 'Alertes Légales & Km', sub: 'Échéances à traiter', value: financialMetrics.totalAlertes, icon: ShieldAlert, iconBg: 'bg-[#C47D2B]', bar: 'bg-[#C47D2B]' },
+    { label: 'Cartes Carburant', sub: 'Cartes actives MEF', value: financialMetrics.activeCardsCount, icon: CreditCard, iconBg: 'bg-[#1565C0]', bar: 'bg-[#1565C0]' },
   ];
 
   if (loading && vehicules.length === 0 && demandes.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center py-20">
         <Loader2 className="w-8 h-8 text-[#C59B27] animate-spin" />
       </div>
     );
@@ -167,8 +231,6 @@ export default function DashboardView({ user }) {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
-
-      {/* Header with Moroccan star background watermark */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm moroccan-star-bg relative overflow-hidden">
         <div className="flex items-center gap-4 relative z-10">
           <MoroccanStarEmblem />
@@ -195,49 +257,40 @@ export default function DashboardView({ user }) {
         </button>
       </div>
 
-      {/* ============ CONDUCTEUR : Mes missions & demandes ============ */}
-      {roleName === 'CONDUCTEUR' ? (
+      {roleName === 'CONDUCTEUR' || roleName === 'CHAUFFEUR' ? (
         <DriverDashboard
-          demandes={demandes}
-          userId={user?.id}
-          navigate={navigate}
-          onRefresh={fetchData}
-          loading={loading}
-        />
-      ) : roleName === 'CONSULTATION' ? (
-        <ConsultationOverview
-          kpiCards={kpiCards}
-          directionData={directionData}
-          fuelData={fuelData}
-          totalFuelVehicles={totalFuelVehicles}
-          demandes={demandes}
-          demandStats={demandStats}
-          navigate={navigate}
+          user={user}
           vehicules={vehicules}
+          pleins={pleins}
+          demandes={demandes}
+          interventions={interventions}
+          alertes={alertes}
+          navigate={navigate}
         />
       ) : (
         <ManagementDashboard
-          kpiCards={kpiCards}
+          mainKpiCards={mainKpiCards}
+          financialKpiCards={financialKpiCards}
           directionData={directionData}
           fuelData={fuelData}
           totalFuelVehicles={totalFuelVehicles}
           demandes={demandes}
           demandStats={demandStats}
           navigate={navigate}
-          vehicules={vehicules}
+          vehicules={filteredVehicules}
+          alertes={alertes}
+          interventions={interventions}
+          pleins={pleins}
         />
       )}
     </div>
   );
 }
 
-/* =====================================================================
-   KPI Cards
-   ===================================================================== */
-function KpiCards({ kpiCards }) {
+function KpiCardsGrid({ cards }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {kpiCards.map((card) => {
+      {cards.map((card) => {
         const Icon = card.icon;
         return (
           <motion.div
@@ -245,7 +298,7 @@ function KpiCards({ kpiCards }) {
             className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between relative overflow-hidden"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: card.delay }}
+            transition={{ duration: 0.3 }}
           >
             <div className="flex items-center gap-4">
               <div className={`w-12 h-12 rounded-full ${card.iconBg} flex items-center justify-center text-white shadow-sm`}>
@@ -253,8 +306,8 @@ function KpiCards({ kpiCards }) {
               </div>
               <div>
                 <span className="text-xs font-bold text-slate-800 block">{card.label}</span>
-                <span className="text-3xl font-black font-outfit text-[#0A1E3F]">
-                  <AnimatedCounter value={card.value} />
+                <span className="text-2xl font-black font-outfit text-[#0A1E3F]">
+                  <AnimatedCounter value={card.value} /> {card.isCurrency ? 'MAD' : ''}
                 </span>
                 <span className="text-[10px] font-semibold text-slate-500 block">{card.sub}</span>
               </div>
@@ -267,13 +320,9 @@ function KpiCards({ kpiCards }) {
   );
 }
 
-/* =====================================================================
-   Charts Row : Direction Bar + Fuel Donut
-   ===================================================================== */
 function FleetCharts({ directionData, fuelData, totalFuelVehicles }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-      {/* Bar Chart */}
       <motion.div
         className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-md transition-shadow"
         initial={{ opacity: 0, y: 20 }}
@@ -293,22 +342,21 @@ function FleetCharts({ directionData, fuelData, totalFuelVehicles }) {
           </div>
         </div>
 
-        <ResponsiveContainer width="100%" height={270}>
+        <ResponsiveContainer width="100%" height={260}>
           <BarChart data={directionData} margin={{ top: 10, right: 10, left: -18, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-            <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#475569', fontWeight: 700 }} axisLine={{ stroke: '#CBD5E1' }} tickLine={false} />
-            <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+            <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#475569', fontWeight: 700 }} axisLine={{ stroke: '#CBD5E1' }} tickLine={false} />
+            <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
             <Tooltip
               contentStyle={TOOLTIP_STYLE}
               cursor={{ fill: 'rgba(10,30,63,0.04)' }}
               labelFormatter={(label) => directionData.find((d) => d.name === label)?.fullName || label}
             />
-            <Bar dataKey="véhicules" fill="#0A1E3F" radius={[4, 4, 0, 0]} maxBarSize={38} />
+            <Bar dataKey="véhicules" fill="#0A1E3F" radius={[4, 4, 0, 0]} maxBarSize={36} />
           </BarChart>
         </ResponsiveContainer>
       </motion.div>
 
-      {/* Donut Chart */}
       <motion.div
         className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-md transition-shadow"
         initial={{ opacity: 0, y: 20 }}
@@ -329,16 +377,16 @@ function FleetCharts({ directionData, fuelData, totalFuelVehicles }) {
         </div>
 
         <div className="relative">
-          <ResponsiveContainer width="100%" height={240}>
+          <ResponsiveContainer width="100%" height={220}>
             <PieChart>
               <Pie
-                data={fuelData.length > 0 ? fuelData : [{ name: 'Diesel', value: totalFuelVehicles || 4, color: '#0A1E3F' }]}
+                data={fuelData.length > 0 ? fuelData : [{ name: 'Diesel', value: totalFuelVehicles || 1, color: '#0A1E3F' }]}
                 dataKey="value"
                 nameKey="name"
                 cx="50%"
                 cy="50%"
-                innerRadius={64}
-                outerRadius={92}
+                innerRadius={60}
+                outerRadius={88}
                 stroke="#fff"
                 strokeWidth={3}
               >
@@ -352,13 +400,13 @@ function FleetCharts({ directionData, fuelData, totalFuelVehicles }) {
 
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
             <span className="text-3xl font-black font-outfit text-[#0A1E3F] block leading-none">
-              {totalFuelVehicles || 4}
+              {totalFuelVehicles}
             </span>
-            <span className="text-[11px] font-semibold text-slate-400 block mt-1">Véhicules</span>
+            <span className="text-[10px] font-semibold text-slate-400 block mt-1">Véhicules</span>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-3 text-[11px] font-bold text-slate-700">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-2 text-[11px] font-bold text-slate-700">
           {(fuelData.length > 0 ? fuelData : [{ name: 'Diesel', color: '#0A1E3F', value: 0 }]).map((f) => (
             <span key={f.name} className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: f.color }} />
@@ -371,210 +419,6 @@ function FleetCharts({ directionData, fuelData, totalFuelVehicles }) {
   );
 }
 
-/* =====================================================================
-   Demand Pipeline (status summary)
-   ===================================================================== */
-function DemandPipeline({ demandStats }) {
-  const items = [
-    { label: 'En Attente N1', count: demandStats.enAttente, icon: Clock, color: 'bg-amber-500' },
-    { label: 'Validées Service', count: demandStats.validees, icon: ClipboardCheck, color: 'bg-blue-500' },
-    { label: 'Affectées / En Cours', count: demandStats.affectees, icon: CheckCircle2, color: 'bg-emerald-500' },
-    { label: 'Terminées', count: demandStats.terminees, icon: FileText, color: 'bg-slate-500' },
-    { label: 'Rejetées', count: demandStats.rejetees, icon: XCircle, color: 'bg-red-500' },
-  ];
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-      {items.map((it) => {
-        const Icon = it.icon;
-        return (
-          <div key={it.label} className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-sm flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${it.color}`}>
-              <Icon className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-500 font-medium">{it.label}</p>
-              <p className="text-2xl font-black text-[#0A1E3F]">{it.count}</p>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-/* =====================================================================
-   Activité Récente – last actions with status badges
-   ===================================================================== */
-function ActiviteRecente({ demandes, navigate }) {
-  const ACTIVITY_STATUS_MAP = {
-    TERMINEE: { label: 'Terminé', bg: 'bg-[#0D7A5F]/10', text: 'text-[#0D7A5F]', dot: 'bg-[#0D7A5F]' },
-    VALIDEE_SERVICE: { label: 'Confirmé', bg: 'bg-[#1565C0]/10', text: 'text-[#1565C0]', dot: 'bg-[#1565C0]' },
-    APPROUVEE_AFFECTEE: { label: 'Confirmé', bg: 'bg-[#1565C0]/10', text: 'text-[#1565C0]', dot: 'bg-[#1565C0]' },
-    EN_ATTENTE_VALIDATION: { label: 'En cours', bg: 'bg-[#C47D2B]/10', text: 'text-[#C47D2B]', dot: 'bg-[#C47D2B]' },
-    EN_COURS: { label: 'En cours', bg: 'bg-[#C47D2B]/10', text: 'text-[#C47D2B]', dot: 'bg-[#C47D2B]' },
-    REJETEE: { label: 'Rejeté', bg: 'bg-red-100', text: 'text-red-600', dot: 'bg-red-500' },
-  };
-
-  const recent = [...demandes]
-    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
-    .slice(0, 5);
-
-  return (
-    <motion.div
-      className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-md transition-shadow"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: 0.3 }}
-    >
-      <div className="flex items-center gap-3 mb-5">
-        <div className="w-10 h-10 rounded-xl gold-gradient-bg flex items-center justify-center text-[#071530] shadow-sm">
-          <Activity className="w-5 h-5" />
-        </div>
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-1 h-5 rounded-full bg-[#C59B27]" />
-            <h3 className="font-outfit font-extrabold text-sm text-[#0A1E3F]">Activité Récente</h3>
-          </div>
-          <p className="text-[11px] text-slate-400 mt-0.5">Dernières actions et mises à jour</p>
-        </div>
-      </div>
-
-      {recent.length === 0 ? (
-        <div className="text-center py-8">
-          <Activity className="w-7 h-7 text-slate-300 mx-auto mb-2" />
-          <p className="text-xs font-bold text-slate-400">Aucune activité récente</p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {recent.map((d) => {
-            const status = ACTIVITY_STATUS_MAP[d.statut] || ACTIVITY_STATUS_MAP.EN_ATTENTE_VALIDATION;
-            return (
-              <button
-                key={d.id}
-                onClick={() => navigate(`/demandes/${d.id}`)}
-                className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors text-left cursor-pointer group"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-full bg-slate-100 text-[#0A1E3F] flex items-center justify-center flex-shrink-0 group-hover:bg-[#C59B27]/10">
-                    <Send className="w-3.5 h-3.5" />
-                  </div>
-                  <div className="min-w-0">
-                    <span className="text-xs font-bold text-[#0A1E3F] block truncate">
-                      {d.motif || d.reference || 'Demande'}
-                    </span>
-                    <span className="text-[10px] text-slate-400 block">
-                      {d.destination || ''}
-                      {d.dateHeureDepart ? ` · ${new Date(d.dateHeureDepart).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}` : ''}
-                    </span>
-                  </div>
-                </div>
-                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold inline-flex items-center gap-1 flex-shrink-0 ml-2 ${status.bg} ${status.text}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
-                  {status.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </motion.div>
-  );
-}
-
-/* =====================================================================
-   Consommation Moyenne – computed from real vehicule data
-   ===================================================================== */
-function ConsommationMoyenne({ vehicules }) {
-  // Compute average consumption from vehicules that have consommationMoyenne field
-  const vehiculesWithConso = vehicules.filter((v) => v.consommationMoyenne && v.consommationMoyenne > 0);
-  const avgConso = vehiculesWithConso.length > 0
-    ? (vehiculesWithConso.reduce((sum, v) => sum + v.consommationMoyenne, 0) / vehiculesWithConso.length).toFixed(1)
-    : null;
-
-  // Generate trend data from vehicule consumption values (sorted by id as proxy for time)
-  const consoData = vehiculesWithConso
-    .sort((a, b) => (a.id || 0) - (b.id || 0))
-    .map((v, idx) => ({
-      name: `V${idx + 1}`,
-      conso: v.consommationMoyenne,
-    }));
-
-  // If we don't have enough data points for a meaningful chart, pad with the average
-  const chartData = consoData.length >= 2
-    ? consoData
-    : avgConso
-      ? [{ name: 'Moy', conso: parseFloat(avgConso) }]
-      : [];
-
-  return (
-    <motion.div
-      className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-md transition-shadow"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: 0.35 }}
-    >
-      <div className="flex items-center gap-3 mb-5">
-        <div className="w-10 h-10 rounded-xl gold-gradient-bg flex items-center justify-center text-[#071530] shadow-sm">
-          <Droplets className="w-5 h-5" />
-        </div>
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-1 h-5 rounded-full bg-[#C59B27]" />
-            <h3 className="font-outfit font-extrabold text-sm text-[#0A1E3F]">Consommation Moyenne</h3>
-          </div>
-          <p className="text-[11px] text-slate-400 mt-0.5">Moyenne flotte enregistrée</p>
-        </div>
-      </div>
-
-      <div className="flex items-end gap-4 mb-4">
-        <span className="text-4xl font-black font-outfit text-[#0A1E3F] leading-none">
-          {avgConso || '—'}
-        </span>
-        <span className="text-sm font-bold text-slate-500 pb-0.5">L/100km</span>
-      </div>
-
-      {vehiculesWithConso.length > 0 && (
-        <div className="flex items-center gap-2 mb-4">
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#00A896]/10 text-[#00A896]">
-            <TrendingDown className="w-3 h-3" />
-            {vehiculesWithConso.length} véhicule{vehiculesWithConso.length > 1 ? 's' : ''} avec données
-          </span>
-        </div>
-      )}
-
-      {chartData.length >= 2 ? (
-        <ResponsiveContainer width="100%" height={100}>
-          <AreaChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
-            <defs>
-              <linearGradient id="consoGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#00A896" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#00A896" stopOpacity={0.02} />
-              </linearGradient>
-            </defs>
-            <Area
-              type="monotone"
-              dataKey="conso"
-              stroke="#00A896"
-              strokeWidth={2.5}
-              fill="url(#consoGradient)"
-              dot={false}
-            />
-            <Tooltip
-              contentStyle={TOOLTIP_STYLE}
-              formatter={(val) => [`${val} L/100km`, 'Consommation']}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      ) : (
-        <div className="h-[100px] flex items-center justify-center">
-          <p className="text-[11px] text-slate-400 font-medium">
-            {avgConso ? 'Données insuffisantes pour le graphique' : 'Aucune donnée de consommation'}
-          </p>
-        </div>
-      )}
-    </motion.div>
-  );
-}
 
 /* =====================================================================
    Recent Demandes List (real data from /demandes)

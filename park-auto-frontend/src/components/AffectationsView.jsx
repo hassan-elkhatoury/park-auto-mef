@@ -245,7 +245,7 @@ export default function AffectationsView({ selectedDemandeForAffectation, onClos
                   return (
                     <tr key={aff.id} className="cursor-pointer" onClick={() => navigate(`/affectations/${aff.id}`)}>
                       <td>
-                        <span className="font-mono text-xs font-black text-[#C59B27] bg-[#C59B27]/10 px-2.5 py-1 rounded-lg border border-[#C59B27]/20">
+                        <span className="font-mono text-xs font-black text-[#C59B27] bg-[#C59B27]/10 px-2.5 py-1 rounded-lg border border-[#C59B27]/20 whitespace-nowrap inline-block">
                           {aff.reference || `AFF-2026-${String(aff.id).padStart(4, '0')}`}
                         </span>
                       </td>

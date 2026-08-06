@@ -11,6 +11,8 @@ import java.util.Optional;
 @Repository
 public interface CarteCarburantRepository extends JpaRepository<CarteCarburant, Long> {
     Optional<CarteCarburant> findByNumeroCarte(String numeroCarte);
+    boolean existsByNumeroCarte(String numeroCarte);
+    boolean existsByNumeroCarteAndIdNot(String numeroCarte, Long id);
     List<CarteCarburant> findByStatut(CarteCarburantStatut statut);
     List<CarteCarburant> findByVehiculeId(Long vehiculeId);
 }

@@ -9,6 +9,7 @@ import com.mef.parkauto.entity.Conducteur;
 import com.mef.parkauto.entity.PleinCarburant;
 import com.mef.parkauto.entity.TypeCarburant;
 import com.mef.parkauto.entity.Vehicule;
+import com.mef.parkauto.exception.DuplicateResourceException;
 import com.mef.parkauto.exception.ResourceNotFoundException;
 import com.mef.parkauto.repository.CarteCarburantRepository;
 import com.mef.parkauto.repository.ConducteurRepository;
@@ -80,16 +81,32 @@ public class CarburantService {
         CarteCarburant carte = null;
         if (request.getCarteCarburantId() != null) {
             carte = carteCarburantRepository.findById(request.getCarteCarburantId()).orElse(null);
-            if (carte != null && carte.getSolde() != null && request.getMontantTTC() != null) {
-                // Déduction du solde si disponible
-                if (carte.getSolde().compareTo(request.getMontantTTC()) >= 0) {
-                    carte.setSolde(carte.getSolde().subtract(request.getMontantTTC()));
-                    carteCarburantRepository.save(carte);
+            if (carte != null) {
+                if (carte.getStatut() != null && carte.getStatut() != CarteCarburantStatut.ACTIVE) {
+                    throw new IllegalArgumentException("Impossible d'enregistrer le plein : La carte carburant N° " + 
+                        carte.getNumeroCarte() + " est désactivée ou suspendue (" + carte.getStatut() + ").");
+                }
+                // Règle d'attribution : Si la carte est attribuée à un autre véhicule spécifique, refuser l'utilisation
+                if (carte.getVehicule() != null && !carte.getVehicule().getId().equals(vehicule.getId())) {
+                    throw new IllegalArgumentException("Impossible d'utiliser la carte N° " + carte.getNumeroCarte() + 
+                        " : Cette carte est spécifiquement attribuée au véhicule " + carte.getVehicule().getImmatriculation() + 
+                        " et ne peut pas être utilisée pour " + vehicule.getImmatriculation() + ".");
+                }
+                if (carte.getSolde() != null && request.getMontantTTC() != null) {
+                    // Déduction du solde si disponible
+                    if (carte.getSolde().compareTo(request.getMontantTTC()) >= 0) {
+                        carte.setSolde(carte.getSolde().subtract(request.getMontantTTC()));
+                        carteCarburantRepository.save(carte);
+                    }
                 }
             }
         }
 
         PleinCarburant plein = new PleinCarburant();
+        if (request.getId() != null) {
+            plein = pleinCarburantRepository.findById(request.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Plein non trouvé avec l'id : " + request.getId()));
+        }
         plein.setVehicule(vehicule);
         plein.setConducteur(conducteur);
         plein.setCarteCarburant(carte);
@@ -147,6 +164,16 @@ public class CarburantService {
 
     @Transactional
     public CarteCarburantDto enregistrerCarte(CarteCarburantDto dto) {
+        if (dto.getId() == null) {
+            if (carteCarburantRepository.existsByNumeroCarte(dto.getNumeroCarte())) {
+                throw new DuplicateResourceException("Action impossible : La carte carburant N° " + dto.getNumeroCarte() + " existe déjà dans le système.");
+            }
+        } else {
+            if (carteCarburantRepository.existsByNumeroCarteAndIdNot(dto.getNumeroCarte(), dto.getId())) {
+                throw new DuplicateResourceException("Action impossible : Le numéro de carte " + dto.getNumeroCarte() + " est déjà attribué à une autre carte.");
+            }
+        }
+
         CarteCarburant carte = new CarteCarburant();
         if (dto.getId() != null) {
             carte = carteCarburantRepository.findById(dto.getId())

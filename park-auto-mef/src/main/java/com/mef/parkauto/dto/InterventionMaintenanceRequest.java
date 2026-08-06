@@ -12,6 +12,8 @@ import java.time.LocalDate;
 @Data
 public class InterventionMaintenanceRequest {
 
+    private Long id;
+
     @NotNull(message = "Le véhicule est obligatoire")
     private Long vehiculeId;
 

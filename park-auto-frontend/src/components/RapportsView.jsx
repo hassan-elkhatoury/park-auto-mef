@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { FileBarChart, Download, FileSpreadsheet, FileText, TrendingUp, DollarSign, Fuel, Wrench, Building2, Car, AlertTriangle, RefreshCw, Leaf } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { reportingService } from '../services/reportingService';
+import { MoroccanPlate } from '../utils/vehicule';
 
 export default function RapportsView() {
   const [summary, setSummary] = useState(null);
@@ -289,9 +290,7 @@ export default function RapportsView() {
                 {tcoVehicules.map((v) => (
                   <tr key={v.vehiculeId}>
                     <td>
-                      <span className="font-mono font-bold text-[#0A1E3F] bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-xs">
-                        {v.immatriculation}
-                      </span>
+                      <MoroccanPlate immatriculation={v.immatriculation} />
                       <div className="text-xs text-slate-500 mt-1">{v.marqueModele}</div>
                     </td>
                     <td className="font-medium text-slate-700">{v.direction}</td>

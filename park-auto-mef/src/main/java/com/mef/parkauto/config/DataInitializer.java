@@ -316,7 +316,7 @@ public class DataInitializer implements CommandLineRunner {
         p2.setCarteCarburant(card2);
         p2.setDatePlein(java.time.LocalDateTime.now().minusDays(2));
         p2.setStationService("Afriquia Autoroute Casa-Rabat");
-        p2.setTypeCarburant(com.mef.parkauto.entity.TypeCarburant.ESSENCE);
+        p2.setTypeCarburant(com.mef.parkauto.entity.TypeCarburant.DIESEL);
         p2.setQuantiteLitres(68.0);
         p2.setPrixUnitaire(java.math.BigDecimal.valueOf(14.50));
         p2.setMontantTTC(java.math.BigDecimal.valueOf(986.00));

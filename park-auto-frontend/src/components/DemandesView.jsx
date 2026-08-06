@@ -403,7 +403,7 @@ export default function DemandesView({ onOpenAffectationModal }) {
                 {filteredDemandes.map((d) => (
                   <tr key={d.id} className="cursor-pointer" onClick={() => navigate(`/demandes/${d.id}`)}>
                     <td>
-                      <span className="font-mono text-xs font-black text-[#C59B27] bg-[#C59B27]/10 px-2.5 py-1 rounded-lg border border-[#C59B27]/20">
+                      <span className="font-mono text-xs font-black text-[#C59B27] bg-[#C59B27]/10 px-2.5 py-1 rounded-lg border border-[#C59B27]/20 whitespace-nowrap inline-block">
                         {d.reference}
                       </span>
                     </td>
@@ -489,7 +489,7 @@ export default function DemandesView({ onOpenAffectationModal }) {
 
       {/* Modal New Request */}
       {isNewModalOpen && (
-        <div className="fixed inset-0 bg-[#0A1E3F]/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-[#0A1E3F]/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-extrabold text-[#0A1E3F] uppercase flex items-center gap-2">
@@ -548,7 +548,7 @@ export default function DemandesView({ onOpenAffectationModal }) {
 
       {/* Modal Validation N1 */}
       {isValidN1ModalOpen && selectedDemande && (
-        <div className="fixed inset-0 bg-[#0A1E3F]/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-[#0A1E3F]/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-extrabold text-[#0A1E3F] uppercase flex items-center gap-2">

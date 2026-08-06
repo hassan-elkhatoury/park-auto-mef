@@ -11,6 +11,8 @@ import java.time.LocalDateTime;
 @Data
 public class PleinCarburantRequest {
 
+    private Long id;
+
     @NotNull(message = "Le véhicule est obligatoire")
     private Long vehiculeId;
 

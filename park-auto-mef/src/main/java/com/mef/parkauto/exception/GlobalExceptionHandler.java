@@ -97,15 +97,45 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(HttpStatus.FORBIDDEN.value(), "Accès refusé"));
     }
 
+    // ---- 400 Bad Request (IllegalArgument) ----
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException ex) {
+        log.warn("Argument invalide : {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), ex.getMessage()));
+    }
+
+    // ---- 409 Conflict (DataIntegrityViolation) ----
+
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrity(org.springframework.dao.DataIntegrityViolationException ex) {
+        log.warn("Erreur d'intégrité des données : {}", ex.getMessage());
+        String userMsg = "Action impossible : Une contrainte d'unicité a été violée (ex: numéro de carte ou immatriculation déjà existante).";
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(HttpStatus.CONFLICT.value(), userMsg));
+    }
+
+    // ---- 400 JSON Deserialization / Date Format Error ----
+
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadable(org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        log.warn("Format JSON invalide : {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), "Format de données invalide (ex: date d'expiration ou champ numérique)."));
+    }
+
     // ---- 500 Internal Server Error (fallback) ----
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
         log.error("Erreur interne inattendue", ex);
+        String msg = (ex.getMessage() != null && !ex.getMessage().isBlank()) ? ex.getMessage() : "Erreur inattendue lors du traitement.";
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error(
-                        HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                        "Une erreur interne est survenue. Veuillez réessayer plus tard."));
+                .body(ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), msg));
     }
 }

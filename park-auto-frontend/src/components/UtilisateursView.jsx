@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, RotateCw, Search, UserPlus, X, Edit, Trash2, Shield, Check, Eye } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Users, Plus, RotateCw, Search, UserPlus, X, Edit, Trash2, Shield, Check, Filter } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 import ConfirmModal from './ConfirmModal';
 
-const roleColors = {
-  'ADMIN': 'bg-amber-50 text-amber-700 border-amber-200',
-  'GESTIONNAIRE_CENTRAL': 'bg-blue-50 text-blue-700 border-blue-200',
-  'GESTIONNAIRE_LOCAL': 'bg-sky-50 text-sky-700 border-sky-200',
-  'RESPONSABLE_FINANCIER': 'bg-violet-50 text-violet-700 border-violet-200',
-  'RESPONSABLE_SERVICE': 'bg-violet-50 text-violet-700 border-violet-200',
-  'CONDUCTEUR': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  'CONSULTATION': 'bg-slate-50 text-slate-600 border-slate-200',
+const roleBadgeStyles = {
+  'ADMIN': 'bg-amber-100 text-amber-900 border-amber-300',
+  'GESTIONNAIRE_CENTRAL': 'bg-blue-100 text-blue-900 border-blue-300',
+  'GESTIONNAIRE_LOCAL': 'bg-sky-100 text-sky-900 border-sky-300',
+  'RESPONSABLE_FINANCIER': 'bg-violet-100 text-violet-900 border-violet-300',
+  'RESPONSABLE_SERVICE': 'bg-purple-100 text-purple-900 border-purple-300',
+  'CONDUCTEUR': 'bg-emerald-100 text-emerald-900 border-emerald-300',
+  'CONSULTATION': 'bg-slate-100 text-slate-700 border-slate-300',
 };
 
-const inputCls = "w-full px-3.5 py-2.5 text-sm border border-[#E2E8F0] rounded-xl bg-white text-[#0A1E3F] focus:border-[#C59B27] focus:ring-2 focus:ring-[#C59B27]/15 outline-none transition-all placeholder:text-slate-400";
+const inputCls = "w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]";
 const labelCls = "block text-xs font-bold text-[#0A1E3F] mb-1.5";
 
 export default function UtilisateursView() {
@@ -27,6 +28,8 @@ export default function UtilisateursView() {
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [statutFilter, setStatutFilter] = useState('');
 
   // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -103,7 +106,6 @@ export default function UtilisateursView() {
       };
       await api.put(`/utilisateurs/${editingUser.id}`, payload);
 
-      // Also update role if changed
       if (formData.role) {
         await api.put(`/utilisateurs/${editingUser.id}/roles`, { role: formData.role });
       }
@@ -117,22 +119,29 @@ export default function UtilisateursView() {
     }
   };
 
+  const getUserRoleName = (u) => {
+    if (u.role) {
+      return typeof u.role === 'object' ? (u.role.nom || u.role.name) : u.role;
+    } else if (u.roles && u.roles.length > 0) {
+      const r = u.roles[0];
+      return typeof r === 'object' ? (r.nom || r.name) : r;
+    }
+    return 'CONSULTATION';
+  };
+
   const handleDeactivateUser = (userToDeactivate) => {
     const currentUserStr = localStorage.getItem('user');
     const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
 
-    // Protection 1: Cannot deactivate oneself
     if (currentUser && (currentUser.id === userToDeactivate.id || currentUser.email === userToDeactivate.email)) {
       toast.error("Action impossible : Vous ne pouvez pas désactiver votre propre compte d'administrateur.");
       return;
     }
 
-    // Protection 2: Must keep at least one active ADMIN in system
-    const targetRoleName = userToDeactivate.role ? (typeof userToDeactivate.role === 'object' ? userToDeactivate.role.nom : userToDeactivate.role) : (userToDeactivate.roles?.[0]?.nom || userToDeactivate.roles?.[0]);
+    const targetRoleName = getUserRoleName(userToDeactivate);
     if (targetRoleName === 'ADMIN' && userToDeactivate.statut === 'ACTIVE') {
       const activeAdmins = users.filter(u => {
-        const rName = u.role ? (typeof u.role === 'object' ? u.role.nom : u.role) : (u.roles?.[0]?.nom || u.roles?.[0]);
-        return rName === 'ADMIN' && u.statut === 'ACTIVE';
+        return getUserRoleName(u) === 'ADMIN' && u.statut === 'ACTIVE';
       });
       if (activeAdmins.length <= 1) {
         toast.error("Action impossible : Il doit toujours rester au moins un Administrateur actif dans le système.");
@@ -162,23 +171,24 @@ export default function UtilisateursView() {
     }
   };
 
-  const filteredUsers = users.filter(u => 
-    !search || u.nom?.toLowerCase().includes(search.toLowerCase()) ||
-    u.prenom?.toLowerCase().includes(search.toLowerCase()) ||
-    u.email?.toLowerCase().includes(search.toLowerCase()) ||
-    u.matricule?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredUsers = users.filter(u => {
+    const matchesSearch = !search || 
+      u.nom?.toLowerCase().includes(search.toLowerCase()) ||
+      u.prenom?.toLowerCase().includes(search.toLowerCase()) ||
+      u.email?.toLowerCase().includes(search.toLowerCase()) ||
+      u.matricule?.toLowerCase().includes(search.toLowerCase());
+    
+    const uRole = getUserRoleName(u);
+    const matchesRole = !roleFilter || uRole === roleFilter;
+    const matchesStatut = !statutFilter || u.statut === statutFilter;
+
+    return matchesSearch && matchesRole && matchesStatut;
+  });
 
   const getRoleBadge = (u) => {
-    let roleName = 'CONSULTATION';
-    if (u.role) {
-      roleName = typeof u.role === 'object' ? (u.role.nom || u.role.name) : u.role;
-    } else if (u.roles && u.roles.length > 0) {
-      const r = u.roles[0];
-      roleName = typeof r === 'object' ? (r.nom || r.name) : r;
-    }
+    const roleName = getUserRoleName(u);
     return (
-      <span className={`${roleColors[roleName] || roleColors['CONSULTATION']} border px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide`}>
+      <span className={`px-2.5 py-1 rounded-full text-[9px] font-extrabold uppercase whitespace-nowrap border ${roleBadgeStyles[roleName] || roleBadgeStyles['CONSULTATION']}`}>
         {roleName}
       </span>
     );
@@ -216,6 +226,10 @@ export default function UtilisateursView() {
     'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONDUCTEUR', 'CONSULTATION'
   ];
 
+  const countAdmins = users.filter(u => ['ADMIN', 'GESTIONNAIRE_CENTRAL'].includes(getUserRoleName(u))).length;
+  const countGestionnaires = users.filter(u => ['GESTIONNAIRE_LOCAL', 'RESPONSABLE_SERVICE', 'RESPONSABLE_FINANCIER'].includes(getUserRoleName(u))).length;
+  const countActifs = users.filter(u => u.statut === 'ACTIVE').length;
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
 
@@ -236,7 +250,7 @@ export default function UtilisateursView() {
             className="bg-white border border-slate-300 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-2 shadow-sm hover:bg-slate-50 cursor-pointer"
           >
             <RotateCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Actualiser
+            <span>Actualiser</span>
           </button>
           <button
             onClick={() => { 
@@ -247,28 +261,106 @@ export default function UtilisateursView() {
             className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md hover:brightness-105 transition-all cursor-pointer"
           >
             <UserPlus className="w-4 h-4" />
-            Nouveau Compte
+            <span>Nouveau Compte</span>
           </button>
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-[360px]">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+      {/* KPI Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <motion.div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-black text-slate-400 uppercase tracking-wider">Total Comptes</span>
+            <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+              <Users className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="text-2xl font-black text-[#0A1E3F] mt-3">{users.length} <span className="text-xs font-normal text-slate-500">Utilisateurs</span></div>
+          <div className="mt-2 text-xs text-slate-500 font-medium">Parc Automatique MEF</div>
+        </motion.div>
+
+        <motion.div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-black text-slate-400 uppercase tracking-wider">Administrateurs</span>
+            <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+              <Shield className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="text-2xl font-black text-[#0A1E3F] mt-3">{countAdmins} <span className="text-xs font-normal text-slate-500">Admin & Central</span></div>
+          <div className="mt-2 text-xs text-slate-500 font-medium">Habilitations système complètes</div>
+        </motion.div>
+
+        <motion.div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }}>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-black text-slate-400 uppercase tracking-wider">Gestionnaires</span>
+            <div className="w-9 h-9 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center">
+              <UserPlus className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="text-2xl font-black text-[#0A1E3F] mt-3">{countGestionnaires} <span className="text-xs font-normal text-slate-500">Gestionnaires</span></div>
+          <div className="mt-2 text-xs text-slate-500 font-medium">Services & Régions MEF</div>
+        </motion.div>
+
+        <motion.div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.24 }}>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-black text-slate-400 uppercase tracking-wider">Comptes Actifs</span>
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <Check className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="text-2xl font-black text-[#0A1E3F] mt-3">{countActifs} <span className="text-xs font-normal text-slate-500">Actifs</span></div>
+          <div className="mt-2 text-xs text-emerald-600 font-bold">Accès réseau MEF autorisés</div>
+        </motion.div>
+      </div>
+
+      {/* Toolbar Search + Filters */}
+      <motion.div
+        className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-wrap items-center gap-3 shadow-sm"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.15 }}
+      >
+        <div className="relative flex-1 min-w-[240px]">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher par nom, email, matricule..."
-            className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#C59B27]/30 focus:border-[#C59B27] transition-all"
+            placeholder="Rechercher par nom, prénom, email, matricule..."
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs outline-none"
           />
         </div>
-        <span className="text-[11px] font-bold text-slate-400">{filteredUsers.length} utilisateur{filteredUsers.length !== 1 ? 's' : ''}</span>
-      </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <Filter className="w-4 h-4 text-slate-400" />
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold outline-none cursor-pointer"
+          >
+            <option value="">Tous les rôles</option>
+            {roleOptions.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+
+          <select
+            value={statutFilter}
+            onChange={(e) => setStatutFilter(e.target.value)}
+            className="px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold outline-none cursor-pointer"
+          >
+            <option value="">Tous les statuts</option>
+            <option value="ACTIVE">Actif</option>
+            <option value="INACTIVE">Désactivé</option>
+          </select>
+        </div>
+      </motion.div>
 
       {/* Data Table */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+      <motion.div
+        className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.25 }}
+      >
         <div className="px-5 py-3.5 border-b border-slate-100 flex justify-between items-center">
           <h3 className="font-outfit font-extrabold text-sm text-slate-900">Registre des Agents MEF</h3>
           <span className="text-[11px] font-bold text-slate-400">
@@ -276,55 +368,63 @@ export default function UtilisateursView() {
           </span>
         </div>
 
-        {filteredUsers.length === 0 ? (
-          <div className="p-16 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-[#F4F6FB] flex items-center justify-center mx-auto mb-4">
-              <Users className="w-8 h-8 text-slate-300" />
-            </div>
-            <h3 className="font-outfit font-bold text-lg text-[#0A1E3F] mb-1">{loading ? 'Chargement...' : 'Aucun utilisateur trouvé'}</h3>
-            <p className="text-sm text-slate-400">{!loading && 'Créez un nouveau compte pour commencer.'}</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="enterprise-table">
-              <thead>
+        <div className="overflow-x-auto">
+          <table className="enterprise-table">
+            <thead>
+              <tr>
+                <th>Matricule</th>
+                <th>Utilisateur</th>
+                <th>Email</th>
+                <th>Direction MEF</th>
+                <th>Rôle</th>
+                <th>Statut</th>
+                <th className="!text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredUsers.length === 0 ? (
                 <tr>
-                  <th>Matricule</th>
-                  <th>Utilisateur</th>
-                  <th>Email</th>
-                  <th>Direction MEF</th>
-                  <th>Rôle</th>
-                  <th>Statut</th>
-                  <th className="!text-right">Actions</th>
+                  <td colSpan={7} className="!py-16 text-center">
+                    <Users className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+                    <p className="text-xs font-bold text-slate-500">{loading ? 'Chargement des utilisateurs...' : 'Aucun utilisateur trouvé'}</p>
+                    {!loading && <p className="text-[11px] text-slate-400 mt-1">Modifiez vos filtres ou cliquez sur « Nouveau Compte ».</p>}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.map((u) => (
+              ) : (
+                filteredUsers.map((u) => (
                   <tr key={u.id}>
                     <td>
-                      <span className="font-mono text-xs font-black text-[#0A1E3F]">{u.matricule}</span>
+                      <span className="font-mono text-xs font-black text-[#C59B27] bg-[#C59B27]/10 px-2.5 py-1 rounded-lg border border-[#C59B27]/20 whitespace-nowrap inline-block">
+                        {u.matricule}
+                      </span>
                     </td>
                     <td>
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-[#0A1E3F]/5 border border-[#0A1E3F]/10 flex items-center justify-center flex-shrink-0">
-                          <span className="text-[10px] font-extrabold text-[#0A1E3F]">{u.prenom?.[0]}{u.nom?.[0]}</span>
+                        <div className="w-9 h-9 rounded-xl bg-[#0A1E3F] text-white flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0">
+                          {u.prenom?.[0]}{u.nom?.[0]}
                         </div>
-                        <span className="text-xs font-extrabold text-slate-900">{u.prenom} {u.nom}</span>
+                        <div className="min-w-0">
+                          <span className="text-xs font-extrabold text-slate-900 block leading-tight">{u.prenom} {u.nom}</span>
+                          <span className="text-[10px] text-slate-400 block">{u.telephone || 'N/A'}</span>
+                        </div>
                       </div>
                     </td>
                     <td>
                       <span className="text-xs text-slate-600 font-medium">{u.email}</span>
                     </td>
                     <td>
-                      <span className="text-xs font-semibold text-slate-700 block max-w-[200px] truncate">{u.direction || 'Direction du Budget'}</span>
+                      <span className="px-2 py-1 rounded-md bg-[#0A1E3F]/5 border border-[#0A1E3F]/10 text-[11px] font-extrabold text-[#0A1E3F] whitespace-nowrap">
+                        {u.direction || 'Direction du Budget'}
+                      </span>
                     </td>
                     <td>{getRoleBadge(u)}</td>
                     <td>
-                      <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold">
-                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${u.statut === 'ACTIVE' ? 'bg-[#0D7A5F] shadow-[0_0_6px_rgba(13,122,95,0.5)]' : 'bg-red-500'}`} />
-                        <span className={u.statut === 'ACTIVE' ? 'text-[#0D7A5F]' : 'text-red-600'}>
-                          {u.statut === 'ACTIVE' ? 'Actif' : 'Désactivé'}
-                        </span>
+                      <span className={`px-2.5 py-1 rounded-full text-[9px] font-extrabold uppercase whitespace-nowrap border ${
+                        u.statut === 'ACTIVE'
+                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                          : 'bg-red-100 text-red-800 border-red-300'
+                      }`}>
+                        {u.statut === 'ACTIVE' ? 'Actif' : 'Désactivé'}
                       </span>
                     </td>
                     <td>
@@ -332,7 +432,7 @@ export default function UtilisateursView() {
                         <button
                           onClick={() => {
                             setEditingUser(u);
-                            const roleVal = u.role ? (typeof u.role === 'object' ? u.role.nom : u.role) : (u.roles?.[0]?.nom || u.roles?.[0] || 'GESTIONNAIRE_LOCAL');
+                            const roleVal = getUserRoleName(u);
                             setFormData({
                               matricule: u.matricule,
                               nom: u.nom,
@@ -362,16 +462,16 @@ export default function UtilisateursView() {
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </motion.div>
 
       {/* Create User Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A1E3F]/60 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0A1E3F]/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 w-full max-w-[580px] max-h-[90vh] overflow-y-auto">
             {/* Modal header */}
             <div className="flex items-center justify-between p-6 border-b border-[#E2E8F0]">
@@ -425,7 +525,7 @@ export default function UtilisateursView() {
                 <input type="tel" value={formData.telephone} onChange={(e) => setFormData({...formData, telephone: e.target.value})} placeholder="+212 6XX XX XX XX" className={inputCls} />
               </div>
               
-              {/* Premium Institutional Warning Alert */}
+              {/* Security Warning */}
               <div className="bg-[#0A1E3F] border border-[#C59B27]/40 rounded-xl p-3.5 text-xs text-white flex items-start gap-3 shadow-lg">
                 <Shield className="w-4 h-4 text-[#D7B14A] flex-shrink-0 mt-0.5" />
                 <div className="space-y-0.5">
@@ -451,7 +551,7 @@ export default function UtilisateursView() {
 
       {/* Edit User Modal */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A1E3F]/60 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0A1E3F]/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 w-full max-w-[580px] max-h-[90vh] overflow-y-auto">
             {/* Modal header */}
             <div className="flex items-center justify-between p-6 border-b border-[#E2E8F0]">
@@ -520,7 +620,7 @@ export default function UtilisateursView() {
                         {formData.statut === 'ACTIVE' ? 'Compte Agent Actif' : 'Compte Agent Désactivé'}
                       </span>
                       <span className="text-[10px] text-slate-500">
-                        {formData.statut === 'ACTIVE' ? 'Accès et fonctionnalités système autorisés' : 'Accès bloqué en base de données (Conforme Cahier des Charges)'}
+                        {formData.statut === 'ACTIVE' ? 'Accès et fonctionnalités système autorisés' : 'Accès bloqué en base de données'}
                       </span>
                     </div>
                   </div>
@@ -548,7 +648,8 @@ export default function UtilisateursView() {
           </div>
         </div>
       )}
-      {/* Premium Confirm Modal */}
+
+      {/* Confirm Deactivate Modal */}
       <ConfirmModal
         isOpen={deactivateModal.isOpen}
         title="Désactivation du Compte Agent"

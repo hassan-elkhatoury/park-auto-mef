@@ -157,7 +157,7 @@ export default function AffectationDetailView() {
               </div>
               <div>
                 <div className="flex items-center gap-2.5 flex-wrap">
-                  <span className="font-mono text-sm font-black text-[#C59B27] bg-[#C59B27]/10 px-3 py-1.5 rounded-lg border border-[#C59B27]/20">
+                  <span className="font-mono text-sm font-black text-[#C59B27] bg-[#C59B27]/10 px-3 py-1.5 rounded-lg border border-[#C59B27]/20 whitespace-nowrap inline-block">
                     {affectation.reference || `AFF-2026-${String(affectation.id).padStart(4, '0')}`}
                   </span>
                   <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase inline-flex items-center gap-1.5 border ${

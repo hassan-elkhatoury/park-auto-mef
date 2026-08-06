@@ -54,6 +54,10 @@ public class MaintenanceService {
                 .orElseThrow(() -> new ResourceNotFoundException("Véhicule non trouvé avec l'id : " + request.getVehiculeId()));
 
         InterventionMaintenance intervention = new InterventionMaintenance();
+        if (request.getId() != null) {
+            intervention = maintenanceRepository.findById(request.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Intervention non trouvée avec l'id : " + request.getId()));
+        }
         intervention.setVehicule(vehicule);
         intervention.setTypeMaintenance(request.getTypeMaintenance());
         intervention.setNatureOperation(request.getNatureOperation());
