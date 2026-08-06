@@ -5,10 +5,15 @@ import com.lowagie.text.Document;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
 import com.lowagie.text.FontFactory;
+import com.lowagie.text.Image;
 import com.lowagie.text.PageSize;
 import com.lowagie.text.Paragraph;
 import com.lowagie.text.Phrase;
+import com.lowagie.text.Rectangle;
+import com.lowagie.text.pdf.BaseFont;
+import com.lowagie.text.pdf.ColumnText;
 import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPageEventHelper;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 import com.mef.parkauto.dto.ExecutiveSummaryDto;
@@ -34,6 +39,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -398,8 +404,9 @@ public class ReportingService {
      */
     public byte[] generatePdfReport() {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            Document document = new Document(PageSize.A4.rotate(), 20, 20, 20, 20);
-            PdfWriter.getInstance(document, out);
+            Document document = new Document(PageSize.A4.rotate(), 24, 24, 24, 30);
+            PdfWriter writer = PdfWriter.getInstance(document, out);
+            writer.setPageEvent(new ReportPageEvent());
             document.open();
 
             // Colors
@@ -416,50 +423,20 @@ public class ReportingService {
             Font fontBold = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, navyColor);
             Font fontSection = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11, navyColor);
 
-            // 1. Logos & Official Header (identical to Ordre de Mission)
+            // 1. Official header with both institutional logos above the report title.
             Image royaumeLogo = loadLogoImage("royaume_du_maroc_logo.png");
             Image mefLogo = loadLogoImage("logo.png");
+            addOfficialPdfHeader(document, royaumeLogo, mefLogo, navyColor, goldColor);
 
-            if (royaumeLogo != null || mefLogo != null) {
-                PdfPTable logoTable = new PdfPTable(2);
-                logoTable.setWidthPercentage(100);
-
-                PdfPCell leftLogoCell = new PdfPCell();
-                leftLogoCell.setBorder(PdfPCell.NO_BORDER);
-                leftLogoCell.setHorizontalAlignment(Element.ALIGN_LEFT);
-                leftLogoCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-                if (royaumeLogo != null) {
-                    royaumeLogo.scaleToFit(110, 110);
-                    leftLogoCell.addElement(royaumeLogo);
-                }
-                logoTable.addCell(leftLogoCell);
-
-                PdfPCell rightLogoCell = new PdfPCell();
-                rightLogoCell.setBorder(PdfPCell.NO_BORDER);
-                rightLogoCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
-                rightLogoCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-                if (mefLogo != null) {
-                    mefLogo.scaleToFit(95, 95);
-                    rightLogoCell.addElement(mefLogo);
-                }
-                logoTable.addCell(rightLogoCell);
-
-                document.add(logoTable);
-            }
-
-            // 2. Main Title Banner
-            Paragraph pHeader = new Paragraph("ROYAUME DU MAROC\nMINISTÈRE DE L'ÉCONOMIE ET DES FINANCES\nPARC AUTOMOBILE MINISTÉRIEL", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, Color.DARK_GRAY));
-            pHeader.setAlignment(Element.ALIGN_CENTER);
-            document.add(pHeader);
-
-            Paragraph pTitle = new Paragraph("RAPPORT EXÉCUTIF DU PARC AUTOMOBILE — BILAN TCO & FLOTTE", fontTitle);
+            Paragraph pTitle = new Paragraph("RAPPORT EXÉCUTIF DU PARC AUTOMOBILE - BILAN TCO & FLOTTE", fontTitle);
             pTitle.setAlignment(Element.ALIGN_CENTER);
-            pTitle.setSpacingBefore(6);
+            pTitle.setSpacingBefore(9);
             document.add(pTitle);
 
-            Paragraph pSub = new Paragraph("Document de Synthèse pour la Direction du Budget et du DAG — Généré le : " + new Date(), fontSubTitle);
+            String generatedAt = new SimpleDateFormat("dd/MM/yyyy 'à' HH:mm", Locale.FRENCH).format(new Date());
+            Paragraph pSub = new Paragraph("Document de synthèse - Direction du Budget / DAG - Généré le " + generatedAt, fontSubTitle);
             pSub.setAlignment(Element.ALIGN_CENTER);
-            pSub.setSpacingAfter(12);
+            pSub.setSpacingAfter(10);
             document.add(pSub);
 
             // 3. Executive Summary KPIs
@@ -484,6 +461,7 @@ public class ReportingService {
             dirTable.setWidthPercentage(100);
             dirTable.setWidths(new float[]{28, 9, 15, 15, 15, 18, 16});
             dirTable.setSpacingAfter(14);
+            dirTable.setHeaderRows(1);
 
             String[] dirHeaders = {"Direction MEF", "Nb Véh.", "Acquisition", "Carburant", "Maintenance", "TCO Total (MAD)", "TCO Moyen / Véh."};
             for (String h : dirHeaders) {
@@ -508,6 +486,8 @@ public class ReportingService {
                 idx++;
             }
 
+            addDirectionTotalRow(dirTable, summary, navyColor);
+
             document.add(dirTable);
 
             // 5. Detailed Vehicle Table
@@ -515,11 +495,13 @@ public class ReportingService {
             vehTitle.setSpacingAfter(6);
             document.add(vehTitle);
 
-            PdfPTable vehTable = new PdfPTable(8);
+            PdfPTable vehTable = new PdfPTable(9);
             vehTable.setWidthPercentage(100);
-            vehTable.setWidths(new float[]{16, 20, 18, 11, 14, 14, 17, 10});
+            vehTable.setWidths(new float[]{14, 17, 17, 10, 13, 13, 13, 15, 9});
+            vehTable.setHeaderRows(1);
+            vehTable.setSplitRows(true);
 
-            String[] vehHeaders = {"Immatriculation", "Marque & Modèle", "Direction MEF", "Km Actuel", "Carburant", "Maintenance", "TCO Total (MAD)", "Conso"};
+            String[] vehHeaders = {"Immatriculation", "Marque & Modèle", "Direction MEF", "Km Actuel", "Acquisition", "Carburant", "Maintenance", "TCO Total", "Conso"};
             for (String h : vehHeaders) {
                 PdfPCell cell = new PdfPCell(new Phrase(h, fontHeader));
                 cell.setBackgroundColor(headerBg);
@@ -536,18 +518,118 @@ public class ReportingService {
                 addBodyCell(vehTable, v.getMarqueModele(), fontData, bg, Element.ALIGN_LEFT);
                 addBodyCell(vehTable, v.getDirection(), fontData, bg, Element.ALIGN_LEFT);
                 addBodyCell(vehTable, (v.getKilometrageActuel() != null ? v.getKilometrageActuel().toString() : "0") + " km", fontData, bg, Element.ALIGN_RIGHT);
+                addBodyCell(vehTable, formatMad(v.getCoutAcquisition()), fontData, bg, Element.ALIGN_RIGHT);
                 addBodyCell(vehTable, formatMad(v.getCoutCarburantTotal()), fontData, bg, Element.ALIGN_RIGHT);
                 addBodyCell(vehTable, formatMad(v.getCoutMaintenanceTotal()), fontData, bg, Element.ALIGN_RIGHT);
                 addBodyCell(vehTable, formatMad(v.getTcoTotal()), fontBold, bg, Element.ALIGN_RIGHT);
-                addBodyCell(vehTable, v.getConsommationMoyenne() != null ? v.getConsommationMoyenne() + " L" : "N/A", fontData, bg, Element.ALIGN_CENTER);
+                addBodyCell(vehTable, v.getConsommationMoyenne() != null ? v.getConsommationMoyenne() + " L/100" : "N/A", fontData, bg, Element.ALIGN_CENTER);
                 idx++;
             }
+
+            addFleetTotalRow(vehTable, summary, navyColor);
 
             document.add(vehTable);
             document.close();
             return out.toByteArray();
         } catch (Exception e) {
             throw new RuntimeException("Erreur lors de la génération du rapport PDF : " + e.getMessage(), e);
+        }
+    }
+
+    private void addOfficialPdfHeader(Document document, Image royaumeLogo, Image mefLogo, Color navyColor, Color goldColor) throws Exception {
+        PdfPTable header = new PdfPTable(3);
+        header.setWidthPercentage(100);
+        header.setWidths(new float[]{31, 38, 31});
+
+        header.addCell(createLogoCell(royaumeLogo, 195, 58, Element.ALIGN_LEFT));
+
+        Font institutionFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, navyColor);
+        PdfPCell identityCell = new PdfPCell(new Phrase("ROYAUME DU MAROC\nMINISTÈRE DE L'ÉCONOMIE ET DES FINANCES\nPARC AUTOMOBILE MINISTÉRIEL", institutionFont));
+        identityCell.setBorder(PdfPCell.NO_BORDER);
+        identityCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        identityCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        identityCell.setPaddingTop(7);
+        header.addCell(identityCell);
+
+        header.addCell(createLogoCell(mefLogo, 185, 58, Element.ALIGN_RIGHT));
+        document.add(header);
+
+        PdfPTable rule = new PdfPTable(1);
+        rule.setWidthPercentage(100);
+        PdfPCell ruleCell = new PdfPCell(new Phrase(" "));
+        ruleCell.setFixedHeight(3);
+        ruleCell.setBackgroundColor(goldColor);
+        ruleCell.setBorder(PdfPCell.NO_BORDER);
+        rule.addCell(ruleCell);
+        document.add(rule);
+    }
+
+    private PdfPCell createLogoCell(Image logo, float maxWidth, float maxHeight, int alignment) {
+        PdfPCell cell = new PdfPCell();
+        cell.setBorder(PdfPCell.NO_BORDER);
+        cell.setHorizontalAlignment(alignment);
+        cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        cell.setPadding(2);
+        if (logo != null) {
+            logo.scaleToFit(maxWidth, maxHeight);
+            logo.setAlignment(alignment);
+            cell.addElement(logo);
+        }
+        return cell;
+    }
+
+    private void addDirectionTotalRow(PdfPTable table, ExecutiveSummaryDto summary, Color navyColor) {
+        BigDecimal acquisition = summary.getTcoParDirection().stream()
+                .map(TcoDirectionDto::getTotalAcquisition).reduce(BigDecimal.ZERO, BigDecimal::add);
+        Font totalFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, Color.WHITE);
+        addTotalCell(table, "TOTAL MEF", totalFont, navyColor, Element.ALIGN_LEFT);
+        addTotalCell(table, String.valueOf(summary.getTotalVehicules()), totalFont, navyColor, Element.ALIGN_CENTER);
+        addTotalCell(table, formatMad(acquisition), totalFont, navyColor, Element.ALIGN_RIGHT);
+        addTotalCell(table, formatMad(summary.getCoutTotalCarburant()), totalFont, navyColor, Element.ALIGN_RIGHT);
+        addTotalCell(table, formatMad(summary.getCoutTotalMaintenance()), totalFont, navyColor, Element.ALIGN_RIGHT);
+        addTotalCell(table, formatMad(summary.getTcoGlobal()), totalFont, navyColor, Element.ALIGN_RIGHT);
+        addTotalCell(table, summary.getTotalVehicules() > 0
+                ? formatMad(summary.getTcoGlobal().divide(BigDecimal.valueOf(summary.getTotalVehicules()), 2, RoundingMode.HALF_UP))
+                : formatMad(BigDecimal.ZERO), totalFont, navyColor, Element.ALIGN_RIGHT);
+    }
+
+    private void addFleetTotalRow(PdfPTable table, ExecutiveSummaryDto summary, Color navyColor) {
+        BigDecimal acquisition = summary.getTcoGlobal()
+                .subtract(summary.getCoutTotalCarburant())
+                .subtract(summary.getCoutTotalMaintenance());
+        Font totalFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, Color.WHITE);
+        addTotalCell(table, "TOTAL FLOTTE", totalFont, navyColor, Element.ALIGN_LEFT);
+        addTotalCell(table, summary.getTotalVehicules() + " véhicules", totalFont, navyColor, Element.ALIGN_CENTER);
+        addTotalCell(table, "", totalFont, navyColor, Element.ALIGN_LEFT);
+        addTotalCell(table, "", totalFont, navyColor, Element.ALIGN_RIGHT);
+        addTotalCell(table, formatMad(acquisition), totalFont, navyColor, Element.ALIGN_RIGHT);
+        addTotalCell(table, formatMad(summary.getCoutTotalCarburant()), totalFont, navyColor, Element.ALIGN_RIGHT);
+        addTotalCell(table, formatMad(summary.getCoutTotalMaintenance()), totalFont, navyColor, Element.ALIGN_RIGHT);
+        addTotalCell(table, formatMad(summary.getTcoGlobal()), totalFont, navyColor, Element.ALIGN_RIGHT);
+        addTotalCell(table, "", totalFont, navyColor, Element.ALIGN_CENTER);
+    }
+
+    private void addTotalCell(PdfPTable table, String text, Font font, Color bg, int align) {
+        PdfPCell cell = new PdfPCell(new Phrase(text, font));
+        cell.setBackgroundColor(bg);
+        cell.setHorizontalAlignment(align);
+        cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        cell.setPadding(5);
+        table.addCell(cell);
+    }
+
+    private static class ReportPageEvent extends PdfPageEventHelper {
+        private final Font footerFont = FontFactory.getFont(FontFactory.HELVETICA, 7, new Color(100, 116, 139));
+
+        @Override
+        public void onEndPage(PdfWriter writer, Document document) {
+            Rectangle page = document.getPageSize();
+            ColumnText.showTextAligned(writer.getDirectContent(), Element.ALIGN_LEFT,
+                    new Phrase("MEF - Parc Automobile | Rapport exécutif confidentiel", footerFont),
+                    document.left(), page.getBottom() + 15, 0);
+            ColumnText.showTextAligned(writer.getDirectContent(), Element.ALIGN_RIGHT,
+                    new Phrase("Page " + writer.getPageNumber(), footerFont),
+                    document.right(), page.getBottom() + 15, 0);
         }
     }
 
