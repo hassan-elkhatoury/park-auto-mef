@@ -246,24 +246,26 @@ export default function AffectationsView({ selectedDemandeForAffectation, onClos
                     <tr key={aff.id} className="cursor-pointer" onClick={() => navigate(`/affectations/${aff.id}`)}>
                       <td>
                         <span className="font-mono text-xs font-black text-[#C59B27] bg-[#C59B27]/10 px-2.5 py-1 rounded-lg border border-[#C59B27]/20">
-                          {aff.reference}
+                          {aff.reference || `AFF-2026-${String(aff.id).padStart(4, '0')}`}
                         </span>
                       </td>
                       <td>
                         <span className="flex items-center gap-1.5 text-xs font-bold text-slate-800 whitespace-nowrap">
-                          <Car className="w-3.5 h-3.5 text-[#94700E]" /> {aff.vehiculeImmatriculation}
+                          <Car className="w-3.5 h-3.5 text-[#94700E]" /> {aff.vehiculeImmatriculation || 'Véhicule'}
                         </span>
                         <span className="text-[10px] text-slate-400 block">{aff.vehiculeMarqueModele}</span>
                       </td>
                       <td>
                         <span className="flex items-center gap-1.5 text-xs font-bold text-slate-800 whitespace-nowrap">
-                          <UserCheck className="w-3.5 h-3.5 text-[#94700E]" /> {aff.conducteurNomComplet}
+                          <UserCheck className="w-3.5 h-3.5 text-[#94700E]" /> {aff.conducteurNomComplet || 'Chauffeur non spécifié'}
                         </span>
-                        <span className="text-[10px] text-slate-400 block">Permis N° {aff.conducteurNumeroPermis}</span>
+                        <span className="text-[10px] text-slate-400 block">{aff.conducteurNumeroPermis ? `Permis N° ${aff.conducteurNumeroPermis}` : ''}</span>
                       </td>
                       <td>
-                        <span className="text-xs text-slate-600 block max-w-[200px] truncate">{aff.demandeMotif || aff.demandeReference}</span>
-                        <span className="text-[10px] text-slate-400 font-mono">Réf {aff.demandeReference}</span>
+                        <span className="text-xs text-slate-600 block max-w-[200px] truncate">{aff.demandeMotif || aff.demandeReference || 'Déplacement professionnel'}</span>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {aff.demandeReference ? `Réf ${aff.demandeReference}` : (aff.demandeDeplacementId ? `Réf DEM-2026-${String(aff.demandeDeplacementId).padStart(4, '0')}` : '')}
+                        </span>
                       </td>
                       <td>
                         <span className="text-xs font-semibold text-slate-700 whitespace-nowrap">Départ: {aff.kilometrageDepart} km</span>
@@ -321,7 +323,7 @@ export default function AffectationsView({ selectedDemandeForAffectation, onClos
 
       {/* Modal Level 2 Affectation (Gestionnaire du Parc) */}
       {isAffectationModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-[#0A1E3F]/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
             <h2 className="text-base font-extrabold text-[#0A1E3F] uppercase flex items-center gap-2">
               <Key className="w-5 h-5 text-[#C59B27]" />
@@ -424,7 +426,7 @@ export default function AffectationsView({ selectedDemandeForAffectation, onClos
 
       {/* Modal Restitution */}
       {isRestitutionModalOpen && selectedAffectation && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-[#0A1E3F]/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
             <h2 className="text-base font-extrabold text-[#0A1E3F] uppercase flex items-center gap-2">
               <RotateCcw className="w-5 h-5 text-[#C59B27]" />

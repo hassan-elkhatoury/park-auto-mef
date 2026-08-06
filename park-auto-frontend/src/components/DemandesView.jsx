@@ -225,9 +225,9 @@ export default function DemandesView({ onOpenAffectationModal }) {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-5">
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 md:p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
         <div>
           <h1 className="text-lg md:text-xl font-black text-[#0A1E3F] tracking-wide uppercase flex items-center gap-2">
             <Send className="w-5 h-5 md:w-6 md:h-6 text-[#C59B27]" />
@@ -489,7 +489,7 @@ export default function DemandesView({ onOpenAffectationModal }) {
 
       {/* Modal New Request */}
       {isNewModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-[#0A1E3F]/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-extrabold text-[#0A1E3F] uppercase flex items-center gap-2">
@@ -548,7 +548,7 @@ export default function DemandesView({ onOpenAffectationModal }) {
 
       {/* Modal Validation N1 */}
       {isValidN1ModalOpen && selectedDemande && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-[#0A1E3F]/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-extrabold text-[#0A1E3F] uppercase flex items-center gap-2">

@@ -27,45 +27,6 @@ function StarEmblem() {
   );
 }
 
-// Zellige architectural silhouette for sidebar bottom
-function ZelligeSilhouette() {
-  return (
-    <svg
-      className="w-full opacity-20"
-      viewBox="0 0 280 120"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      {/* Mosque / arch silhouette */}
-      <path
-        d="M20 120 Q40 85 70 95 Q90 70 110 80 Q130 55 140 60 Q150 55 170 80 Q190 70 210 95 Q240 85 260 120 Z"
-        fill="url(#zellige-grad)" opacity="0.4"
-      />
-      {/* Central dome */}
-      <ellipse cx="140" cy="70" rx="28" ry="22" stroke="#C59B27" strokeWidth="1.2" fill="none" opacity="0.5" />
-      {/* Minarets */}
-      <rect x="65" y="75" width="6" height="45" rx="2" fill="#C59B27" opacity="0.25" />
-      <rect x="209" y="75" width="6" height="45" rx="2" fill="#C59B27" opacity="0.25" />
-      {/* Star ornament */}
-      <polygon
-        points="140,52 143,60 152,63 143,66 140,74 137,66 128,63 137,60"
-        fill="#C59B27" opacity="0.45"
-      />
-      {/* Small arches */}
-      <path d="M85 120 Q95 100 105 120" stroke="#C59B27" strokeWidth="0.8" fill="none" opacity="0.3" />
-      <path d="M175 120 Q185 100 195 120" stroke="#C59B27" strokeWidth="0.8" fill="none" opacity="0.3" />
-      <path d="M125 120 Q140 95 155 120" stroke="#C59B27" strokeWidth="1" fill="none" opacity="0.35" />
-      <defs>
-        <linearGradient id="zellige-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#C59B27" stopOpacity="0.3" />
-          <stop offset="100%" stopColor="#C59B27" stopOpacity="0.08" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
-}
-
 export default function Sidebar({ user, collapsed }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -153,14 +114,6 @@ export default function Sidebar({ user, collapsed }) {
           );
         })}
       </nav>
-
-      {/* Bottom Zellige Architectural Watermark */}
-      <div className="flex-shrink-0 px-2 pb-1 pointer-events-none select-none">
-        <ZelligeSilhouette />
-      </div>
-
-      {/* Bottom gold accent line */}
-      <div className="absolute bottom-0 left-0 right-0 h-[2px] gold-gradient-bg opacity-70" />
     </aside>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Fuel, CreditCard, AlertTriangle, Plus, Search, Filter, RefreshCw, CheckCircle2, TrendingUp, X, MapPin, Gauge } from 'lucide-react';
+import { Fuel, CreditCard, AlertTriangle, Plus, Search, Filter, RefreshCw, MapPin, Gauge, X, Info } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { carburantService } from '../services/carburantService';
 import { vehiculeService } from '../services/vehiculeService';
 
@@ -17,8 +18,6 @@ export default function CarburantView() {
   // Modals state
   const [showPleinModal, setShowPleinModal] = useState(false);
   const [showCarteModal, setShowCarteModal] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
 
   // Form State - Refuel
   const [pleinForm, setPleinForm] = useState({
@@ -59,12 +58,14 @@ export default function CarburantView() {
         vehiculeService.getVehicules().catch(() => []),
         carburantService.getAnomalies().catch(() => [])
       ]);
-      setPleins(pData || []);
-      setCartes(cData || []);
-      setVehicules(vData || []);
-      setAnomalies(aData || []);
+      setPleins(Array.isArray(pData) ? pData : (pData?.data || pData?.content || []));
+      setCartes(Array.isArray(cData) ? cData : (cData?.data || cData?.content || []));
+      const vList = Array.isArray(vData) ? vData : (vData?.content || vData?.data || []);
+      setVehicules(Array.isArray(vList) ? vList : []);
+      setAnomalies(Array.isArray(aData) ? aData : (aData?.data || aData?.content || []));
     } catch (err) {
       console.error('Erreur chargement données carburant:', err);
+      toast.error('Erreur lors du chargement des données');
     } finally {
       setLoading(false);
     }
@@ -72,7 +73,6 @@ export default function CarburantView() {
 
   const handlePleinSubmit = async (e) => {
     e.preventDefault();
-    setErrorMsg('');
     try {
       const payload = {
         ...pleinForm,
@@ -84,19 +84,17 @@ export default function CarburantView() {
         kilometrage: parseInt(pleinForm.kilometrage)
       };
       await carburantService.enregistrerPlein(payload);
-      setSuccessMsg('Plein de carburant enregistré avec succès');
+      toast.success('Plein de carburant enregistré avec succès');
       setShowPleinModal(false);
       setPleinForm({ vehiculeId: '', carteCarburantId: '', quantiteLitres: '', prixUnitaire: '12.80', montantTTC: '', kilometrage: '', stationService: 'TotalEnergies Agdal Rabat', referenceTicket: '', referenceFacture: '', observation: '' });
       fetchData();
-      setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err) {
-      setErrorMsg(err.message || 'Erreur lors de l’enregistrement du plein');
+      toast.error(err.message || 'Erreur lors de l’enregistrement du plein');
     }
   };
 
   const handleCarteSubmit = async (e) => {
     e.preventDefault();
-    setErrorMsg('');
     try {
       const payload = {
         ...carteForm,
@@ -105,17 +103,15 @@ export default function CarburantView() {
         solde: parseFloat(carteForm.solde)
       };
       await carburantService.enregistrerCarte(payload);
-      setSuccessMsg('Carte carburant enregistrée avec succès');
+      toast.success('Carte carburant enregistrée avec succès');
       setShowCarteModal(false);
       setCarteForm({ numeroCarte: '', fournisseur: 'TotalEnergies', vehiculeId: '', serviceAttribue: '', plafondMensuel: '3500', solde: '3500', dateExpiration: '', observation: '' });
       fetchData();
-      setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err) {
-      setErrorMsg(err.message || 'Erreur lors de l’enregistrement de la carte');
+      toast.error(err.message || 'Erreur lors de l’enregistrement de la carte');
     }
   };
 
-  // Filtered pleins sorted by date descending
   const filteredPleins = pleins.filter(p => {
     const matchesSearch = 
       (p.immatriculation && p.immatriculation.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -128,365 +124,377 @@ export default function CarburantView() {
   const directionsList = Array.from(new Set(pleins.map(p => p.direction).filter(Boolean)));
 
   return (
-    <div className="flex-1 p-7 overflow-y-auto zellige-pattern min-h-screen">
-      <div className="max-w-[1380px] mx-auto flex flex-col gap-6">
-
-        {/* Banner */}
-        <motion.div
-          className="relative bg-white rounded-2xl border border-cardline shadow-sm px-6 py-5 overflow-hidden"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div className="absolute inset-0 card-zellij-watermark opacity-60 pointer-events-none" />
-          <div className="relative flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-xl bg-[#C47D2B] flex items-center justify-center text-white shadow-md">
-                <Fuel className="w-6 h-6" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-2xl font-black font-outfit text-[#0A1E3F] leading-tight">
-                    Suivi du Carburant & Cartes Dotation
-                  </h2>
-                  <span className="font-amiri text-sm text-[#C59B27] font-bold" dir="rtl">تتبع الوقود وبطاقات التزويد</span>
-                </div>
-                <p className="text-xs text-slate-500 mt-0.5 font-medium">
-                  Gestion des consommations (L/100km), cartes Total/Afriquia et alerte de surconsommation
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowCarteModal(true)}
-                className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-[#0A1E3F] font-bold text-xs px-4 py-2.5 rounded-xl transition-colors border border-slate-200"
-              >
-                <CreditCard className="w-4 h-4 text-[#C59B27]" />
-                Nouvelle Carte
-              </button>
-              <button
-                onClick={() => setShowPleinModal(true)}
-                className="inline-flex items-center gap-2 gold-gradient-bg text-[#071530] font-black text-xs px-5 py-2.5 rounded-xl shadow-sm hover:shadow-md transition-all"
-              >
-                <Plus className="w-4 h-4" />
-                Saisir un Plein
-              </button>
-            </div>
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      
+      {/* Header */}
+      <motion.div 
+        className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="flex items-center gap-4">
+          <Fuel className="w-6 h-6 text-[#C59B27]" />
+          <div>
+            <h1 className="text-xl font-black text-[#0A1E3F] tracking-wide uppercase flex items-center gap-2">
+              Suivi du Carburant & Cartes Dotation
+            </h1>
+            <p className="text-xs text-slate-500 mt-1">
+              Gestion des consommations (L/100km), cartes Total/Afriquia et alerte de surconsommation
+            </p>
           </div>
-        </motion.div>
-
-        {/* Notifications */}
-        {successMsg && (
-          <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-between">
-            <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> {successMsg}</span>
-            <button onClick={() => setSuccessMsg('')}><X className="w-4 h-4" /></button>
-          </div>
-        )}
-        {errorMsg && (
-          <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center justify-between">
-            <span className="flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-rose-600" /> {errorMsg}</span>
-            <button onClick={() => setErrorMsg('')}><X className="w-4 h-4" /></button>
-          </div>
-        )}
-
-        {/* Navigation Tabs */}
-        <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setActiveTab('pleins')}
-              className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
-                activeTab === 'pleins'
-                  ? 'bg-[#0A1E3F] text-white shadow-sm'
-                  : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <Fuel className="w-4 h-4" />
-              Historique des Pleins ({pleins.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('cartes')}
-              className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
-                activeTab === 'cartes'
-                  ? 'bg-[#0A1E3F] text-white shadow-sm'
-                  : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <CreditCard className="w-4 h-4" />
-              Cartes Carburant ({cartes.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('anomalies')}
-              className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
-                activeTab === 'anomalies'
-                  ? 'bg-amber-600 text-white shadow-sm'
-                  : 'text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200'
-              }`}
-            >
-              <AlertTriangle className="w-4 h-4" />
-              Anomalies de Surconsommation ({anomalies.length})
-            </button>
-          </div>
-
-          <button onClick={fetchData} className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowCarteModal(true)}
+            className="border border-[#E2E8F0] text-[#0A1E3F] font-bold text-xs px-4 py-2.5 rounded-xl hover:bg-[#F4F6FB] transition-all cursor-pointer flex items-center gap-2"
+          >
+            <CreditCard className="w-4 h-4" />
+            Nouvelle Carte
+          </button>
+          <button
+            onClick={() => setShowPleinModal(true)}
+            className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-gold flex items-center gap-2 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            Saisir un Plein
           </button>
         </div>
+      </motion.div>
 
-        {/* Tab 1: Refuels List */}
-        {activeTab === 'pleins' && (
-          <div className="bg-white rounded-2xl border border-cardline shadow-sm p-6 flex flex-col gap-5">
-            {/* Filters */}
-            <div className="flex items-center gap-4 flex-wrap justify-between">
-              <div className="relative flex-1 min-w-[260px]">
-                <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Rechercher par immatriculation, marque, station..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-[#C59B27] outline-none"
-                />
-              </div>
+      {/* Tabs */}
+      <motion.div 
+        className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-wrap items-center gap-3 shadow-sm"
+        initial={{ opacity: 0, y: -5 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
+        <button
+          onClick={() => setActiveTab('pleins')}
+          className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === 'pleins' ? 'gold-gradient-bg text-[#0A1E3F]' : 'bg-white text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <Fuel className="w-4 h-4" />
+          Historique des Pleins ({pleins.length})
+        </button>
+        
+        <button
+          onClick={() => setActiveTab('cartes')}
+          className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === 'cartes' ? 'gold-gradient-bg text-[#0A1E3F]' : 'bg-white text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <CreditCard className="w-4 h-4" />
+          Cartes Carburant ({cartes.length})
+        </button>
 
-              {directionsList.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <Filter className="w-3.5 h-3.5 text-slate-400" />
-                  <select
-                    value={directionFilter}
-                    onChange={(e) => setDirectionFilter(e.target.value)}
-                    className="py-2 px-3 rounded-xl border border-slate-200 text-xs bg-white text-slate-700 outline-none"
-                  >
-                    <option value="ALL">Toutes les Directions MEF</option>
-                    {directionsList.map(d => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
+        <button
+          onClick={() => setActiveTab('anomalies')}
+          className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === 'anomalies' ? 'gold-gradient-bg text-[#0A1E3F]' : 'bg-white text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <AlertTriangle className="w-4 h-4" />
+          Anomalies de Surconsommation ({anomalies.length})
+        </button>
+
+        <button 
+          onClick={fetchData} 
+          className="ml-auto p-2.5 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+        </button>
+      </motion.div>
+
+      {/* Tab 1: Refuels List */}
+      {activeTab === 'pleins' && (
+        <motion.div 
+          className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <div className="px-5 py-3.5 border-b border-slate-100 flex flex-wrap justify-between items-center gap-4">
+            <div className="relative flex-1 min-w-[260px] max-w-md">
+              <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Rechercher par immatriculation, marque, station..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs outline-none focus:border-[#C59B27] transition-colors"
+              />
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto border border-slate-100 rounded-xl">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-black text-[#0A1E3F] uppercase tracking-wider">
-                    <th className="py-3 px-4">Date & Station</th>
-                    <th className="py-3 px-4">Véhicule</th>
-                    <th className="py-3 px-4">Litrage & Carburant</th>
-                    <th className="py-3 px-4">Montant TTC</th>
-                    <th className="py-3 px-4">Kilométrage</th>
-                    <th className="py-3 px-4">Consommation & Alerte</th>
-                    <th className="py-3 px-4">Carte / Réf</th>
+            {directionsList.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-slate-400" />
+                <select
+                  value={directionFilter}
+                  onChange={(e) => setDirectionFilter(e.target.value)}
+                  className="px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold outline-none cursor-pointer focus:border-[#C59B27] transition-colors"
+                >
+                  <option value="ALL">Toutes les Directions</option>
+                  {directionsList.map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="enterprise-table">
+              <thead>
+                <tr>
+                  <th>Date & Station</th>
+                  <th>Véhicule</th>
+                  <th>Litrage & Carburant</th>
+                  <th>Montant TTC</th>
+                  <th>Kilométrage</th>
+                  <th>Consommation & Alerte</th>
+                  <th>Carte / Réf</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredPleins.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="py-12">
+                      <div className="flex flex-col items-center justify-center text-center gap-3">
+                        <Info className="w-8 h-8 text-slate-300" />
+                        <span className="text-xs font-bold text-slate-500">Aucun plein de carburant enregistré.</span>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-xs">
-                  {filteredPleins.length === 0 ? (
-                    <tr>
-                      <td colSpan="7" className="py-8 text-center text-slate-400 font-medium">
-                        Aucun plein de carburant enregistré.
+                ) : (
+                  filteredPleins.map((p) => (
+                    <tr key={p.id}>
+                      <td>
+                        <div className="font-bold text-[#0A1E3F]">
+                          {new Date(p.datePlein).toLocaleDateString('fr-FR')} {new Date(p.datePlein).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                        <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-3 h-3 text-[#C59B27]" /> {p.stationService}
+                        </div>
+                      </td>
+
+                      <td>
+                        <span className="font-mono font-bold text-[#0A1E3F] bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-[11px]">
+                          {p.immatriculation}
+                        </span>
+                        <div className="text-[11px] text-slate-500 mt-1 font-medium">{p.marqueModele}</div>
+                      </td>
+
+                      <td className="font-bold text-[#0A1E3F]">
+                        {p.quantiteLitres} L
+                        <span className="ml-2 text-[10px] uppercase font-bold text-[#C59B27] bg-[#C59B27]/10 px-1.5 py-0.5 rounded">
+                          {p.typeCarburant}
+                        </span>
+                      </td>
+
+                      <td className="font-extrabold text-[#0A1E3F]">
+                        {p.montantTTC ? p.montantTTC.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) : '0.00'} MAD
+                      </td>
+
+                      <td className="font-mono text-slate-700">
+                        {p.kilometrage ? p.kilometrage.toLocaleString() : '-'} km
+                      </td>
+
+                      <td>
+                        {p.anomalieSurconsommation ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black bg-amber-50 text-amber-700 border border-amber-200 shadow-sm">
+                            <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                            ⚠️ Surconsommation ({p.consommationMoyenne} L/100km)
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-slate-600 font-semibold bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full text-[11px]">
+                            <Gauge className="w-3 h-3 text-slate-400" />
+                            {p.consommationMoyenne || '7.5'} L/100km
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="text-slate-500 text-[11px]">
+                        {p.numeroCarteCarburant ? (
+                          <div className="font-mono text-[#0A1E3F] font-bold">💳 {p.numeroCarteCarburant}</div>
+                        ) : (
+                          <div>Espèces / Bon</div>
+                        )}
+                        {p.referenceTicket && <div className="text-slate-400">Réf: {p.referenceTicket}</div>}
                       </td>
                     </tr>
-                  ) : (
-                    filteredPleins.map((p) => (
-                      <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-3.5 px-4">
-                          <div className="font-bold text-[#0A1E3F]">
-                            {new Date(p.datePlein).toLocaleDateString('fr-FR')} {new Date(p.datePlein).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                          </div>
-                          <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
-                            <MapPin className="w-3 h-3 text-[#C59B27]" /> {p.stationService}
-                          </div>
-                        </td>
-
-                        <td className="py-3.5 px-4">
-                          <span className="font-mono font-bold text-[#0A1E3F] bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-[11px]">
-                            {p.immatriculation}
-                          </span>
-                          <div className="text-[11px] text-slate-500 mt-1 font-medium">{p.marqueModele}</div>
-                        </td>
-
-                        <td className="py-3.5 px-4 font-bold text-[#0A1E3F]">
-                          {p.quantiteLitres} L
-                          <span className="ml-2 text-[10px] uppercase font-bold text-[#C59B27] bg-[#C59B27]/10 px-1.5 py-0.5 rounded">
-                            {p.typeCarburant}
-                          </span>
-                        </td>
-
-                        <td className="py-3.5 px-4 font-extrabold text-[#0A1E3F]">
-                          {p.montantTTC ? p.montantTTC.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) : '0.00'} MAD
-                        </td>
-
-                        <td className="py-3.5 px-4 font-mono text-slate-700">
-                          {p.kilometrage ? p.kilometrage.toLocaleString() : '-'} km
-                        </td>
-
-                        {/* Pro-Tip 2: Highlight overconsumption rows with an amber/orange warning badge */}
-                        <td className="py-3.5 px-4">
-                          {p.anomalieSurconsommation ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black bg-amber-100 text-amber-800 border border-amber-300 shadow-sm animate-pulse">
-                              <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-                              ⚠️ Surconsommation ({p.consommationMoyenne} L/100km)
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-slate-700 font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full text-[11px]">
-                              <Gauge className="w-3 h-3" />
-                              {p.consommationMoyenne || '7.5'} L/100km
-                            </span>
-                          )}
-                        </td>
-
-                        <td className="py-3.5 px-4 text-slate-500 text-[11px]">
-                          {p.numeroCarteCarburant ? (
-                            <div className="font-mono text-[#0A1E3F] font-bold">💳 {p.numeroCarteCarburant}</div>
-                          ) : (
-                            <div>Espèces / Bon</div>
-                          )}
-                          {p.referenceTicket && <div className="text-slate-400">Réf: {p.referenceTicket}</div>}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
+        </motion.div>
+      )}
 
-        {/* Tab 2: Fuel Cards */}
-        {activeTab === 'cartes' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {cartes.map((c) => (
-              <motion.div
-                key={c.id}
-                className="bg-white rounded-2xl border border-cardline shadow-sm p-5 relative overflow-hidden flex flex-col justify-between"
-                whileHover={{ y: -2 }}
-              >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#C59B27]/10 to-transparent pointer-events-none rounded-bl-full" />
-                <div>
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <span className="font-extrabold text-[#0A1E3F] text-sm flex items-center gap-2">
+      {/* Tab 2: Fuel Cards */}
+      {activeTab === 'cartes' && (
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          {cartes.map((c) => (
+            <div
+              key={c.id}
+              className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 flex flex-col justify-between hover:shadow-md transition-shadow"
+            >
+              <div>
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <span className="font-extrabold text-[#0A1E3F] text-sm flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-[#F4F6FB] flex items-center justify-center">
                       <CreditCard className="w-4 h-4 text-[#C59B27]" />
-                      {c.fournisseur}
-                    </span>
-                    <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${
-                      c.statut === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                    }`}>
-                      {c.statut}
-                    </span>
-                  </div>
-
-                  <div className="mt-4 font-mono font-extrabold text-lg text-[#0A1E3F] tracking-wider">
-                    {c.numeroCarte}
-                  </div>
-
-                  <div className="mt-3 flex flex-col gap-1 text-xs text-slate-600">
-                    <div><span className="font-semibold text-slate-400">Véhicule :</span> {c.vehiculeImmatriculation || 'Non attribué'} ({c.vehiculeMarqueModele || '-'})</div>
-                    <div><span className="font-semibold text-slate-400">Service :</span> {c.serviceAttribue || 'Non spécifié'}</div>
-                  </div>
+                    </div>
+                    {c.fournisseur}
+                  </span>
+                  <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full ${
+                    c.statut === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
+                  }`}>
+                    {c.statut}
+                  </span>
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Solde Restant</span>
-                    <span className="text-sm font-black text-[#0A1E3F]">{c.solde ? c.solde.toLocaleString() : '0'} MAD</span>
+                <div className="mt-4 font-mono font-extrabold text-lg text-[#0A1E3F] tracking-wider">
+                  {c.numeroCarte}
+                </div>
+
+                <div className="mt-4 flex flex-col gap-2 text-xs text-slate-600">
+                  <div className="flex justify-between bg-slate-50 p-2 rounded-lg">
+                    <span className="font-semibold text-slate-500">Véhicule</span> 
+                    <span className="font-bold text-[#0A1E3F]">{c.vehiculeImmatriculation || 'Non attribué'}</span>
                   </div>
-                  <div className="text-right">
-                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Plafond Mensuel</span>
-                    <span className="text-xs font-bold text-slate-600">{c.plafondMensuel ? c.plafondMensuel.toLocaleString() : '0'} MAD</span>
+                  <div className="flex justify-between bg-slate-50 p-2 rounded-lg">
+                    <span className="font-semibold text-slate-500">Service</span> 
+                    <span className="font-bold text-[#0A1E3F]">{c.serviceAttribue || 'Non spécifié'}</span>
                   </div>
                 </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
+              </div>
 
-        {/* Tab 3: Anomalies */}
-        {activeTab === 'anomalies' && (
-          <div className="bg-white rounded-2xl border border-amber-200 shadow-sm p-6 flex flex-col gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700">
+              <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Solde Restant</span>
+                  <span className="text-sm font-black text-[#0A1E3F]">{c.solde ? c.solde.toLocaleString() : '0'} MAD</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Plafond Mensuel</span>
+                  <span className="text-xs font-bold text-slate-600">{c.plafondMensuel ? c.plafondMensuel.toLocaleString() : '0'} MAD</span>
+                </div>
+              </div>
+            </div>
+          ))}
+          {cartes.length === 0 && (
+            <div className="col-span-full bg-white rounded-2xl border border-slate-200 shadow-sm p-12 flex flex-col items-center justify-center gap-3">
+              <CreditCard className="w-8 h-8 text-slate-300" />
+              <span className="text-xs font-bold text-slate-500">Aucune carte carburant enregistrée.</span>
+            </div>
+          )}
+        </motion.div>
+      )}
+
+      {/* Tab 3: Anomalies */}
+      {activeTab === 'anomalies' && (
+        <motion.div 
+          className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+             <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 border border-amber-100">
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-lg font-black text-[#0A1E3F]">Surconsommations & Irrégularités Détectées</h3>
-                <p className="text-xs text-slate-500">Pleins dépassant 12 L/100km ou +20% par rapport à la consommation théorique du véhicule</p>
+                <h3 className="text-sm font-black text-[#0A1E3F]">Surconsommations & Irrégularités Détectées</h3>
+                <p className="text-xs text-slate-500">Pleins dépassant 12 L/100km ou +20% par rapport à la consommation théorique</p>
               </div>
             </div>
+          </div>
 
-            <div className="overflow-x-auto border border-amber-100 rounded-xl">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-amber-50/70 border-b border-amber-200 text-[11px] font-black text-amber-900 uppercase">
-                    <th className="py-3 px-4">Véhicule</th>
-                    <th className="py-3 px-4">Date</th>
-                    <th className="py-3 px-4">Consommation Réelle</th>
-                    <th className="py-3 px-4">Litres & Montant</th>
-                    <th className="py-3 px-4">Observation</th>
+          <div className="overflow-x-auto">
+            <table className="enterprise-table">
+              <thead>
+                <tr>
+                  <th>Véhicule</th>
+                  <th>Date</th>
+                  <th>Consommation Réelle</th>
+                  <th>Litres & Montant</th>
+                  <th>Observation</th>
+                </tr>
+              </thead>
+              <tbody>
+                {anomalies.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="py-12">
+                      <div className="flex flex-col items-center justify-center text-center gap-3">
+                        <AlertTriangle className="w-8 h-8 text-slate-300" />
+                        <span className="text-xs font-bold text-slate-500">Aucune anomalie de surconsommation détectée.</span>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-amber-100 text-xs">
-                  {anomalies.length === 0 ? (
-                    <tr>
-                      <td colSpan="5" className="py-8 text-center text-slate-400 font-medium">
-                        Aucune anomalie de surconsommation détectée.
+                ) : (
+                  anomalies.map((a) => (
+                    <tr key={a.id}>
+                      <td className="font-bold text-[#0A1E3F]">
+                        {a.immatriculation} <span className="text-slate-500 font-normal">({a.marqueModele})</span>
+                      </td>
+                      <td className="text-slate-600">
+                        {new Date(a.datePlein).toLocaleDateString('fr-FR')}
+                      </td>
+                      <td>
+                        <span className="px-2.5 py-1 rounded-full text-[11px] font-black bg-amber-50 text-amber-700 border border-amber-200 shadow-sm">
+                          ⚠️ {a.consommationMoyenne} L/100km
+                        </span>
+                      </td>
+                      <td className="font-bold text-[#0A1E3F]">
+                        {a.quantiteLitres} L <span className="text-slate-400 font-normal">({a.montantTTC} MAD)</span>
+                      </td>
+                      <td className="text-slate-500 italic">
+                        {a.observation || 'Anomalie automatique surconsommation'}
                       </td>
                     </tr>
-                  ) : (
-                    anomalies.map((a) => (
-                      <tr key={a.id} className="bg-amber-50/30 hover:bg-amber-50/60">
-                        <td className="py-3.5 px-4 font-bold text-[#0A1E3F]">
-                          {a.immatriculation} ({a.marqueModele})
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-600">
-                          {new Date(a.datePlein).toLocaleDateString('fr-FR')}
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <span className="px-2.5 py-1 rounded-full text-xs font-black bg-amber-500 text-white shadow-sm">
-                            ⚠️ {a.consommationMoyenne} L/100km
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 font-bold text-[#0A1E3F]">
-                          {a.quantiteLitres} L ({a.montantTTC} MAD)
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-500 italic">
-                          {a.observation || 'Anomalie automatique surconsommation'}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
-
-      </div>
+        </motion.div>
+      )}
 
       {/* Modal - Saisir un Plein */}
       <AnimatePresence>
         {showPleinModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A1E3F]/60 backdrop-blur-sm p-4">
             <motion.div
-              className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-cardline overflow-hidden"
+              className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 w-full max-w-[580px] max-h-[90vh] overflow-y-auto"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
             >
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center justify-between border-b border-slate-100 p-5">
                 <h3 className="text-lg font-black font-outfit text-[#0A1E3F] flex items-center gap-2">
-                  <Fuel className="w-5 h-5 text-[#C47D2B]" /> Saisir un Plein de Carburant
+                   <div className="w-8 h-8 rounded-xl bg-[#C59B27]/10 flex items-center justify-center text-[#C59B27]">
+                    <Fuel className="w-4 h-4" />
+                  </div>
+                  Saisir un Plein de Carburant
                 </h3>
-                <button onClick={() => setShowPleinModal(false)}><X className="w-5 h-5 text-slate-400 hover:text-slate-600" /></button>
+                <button onClick={() => setShowPleinModal(false)} className="p-2 hover:bg-slate-50 rounded-lg transition-colors"><X className="w-5 h-5 text-slate-400 hover:text-slate-600" /></button>
               </div>
 
-              <form onSubmit={handlePleinSubmit} className="mt-4 flex flex-col gap-4 text-xs">
+              <form onSubmit={handlePleinSubmit} className="p-5 flex flex-col gap-4 text-xs">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Véhicule *</label>
+                  <label className="font-bold text-[#0A1E3F] block mb-1.5">Véhicule *</label>
                   <select
                     required
                     value={pleinForm.vehiculeId}
                     onChange={(e) => setPleinForm({ ...pleinForm, vehiculeId: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#C59B27] outline-none"
+                    className="w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]"
                   >
                     <option value="">Sélectionner un véhicule...</option>
                     {vehicules.map(v => (
@@ -497,9 +505,9 @@ export default function CarburantView() {
                   </select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="font-bold text-slate-700 block mb-1">Quantité (Litres) *</label>
+                    <label className="font-bold text-[#0A1E3F] block mb-1.5">Quantité (Litres) *</label>
                     <input
                       type="number"
                       step="0.1"
@@ -507,54 +515,54 @@ export default function CarburantView() {
                       placeholder="ex: 55.0"
                       value={pleinForm.quantiteLitres}
                       onChange={(e) => setPleinForm({ ...pleinForm, quantiteLitres: e.target.value })}
-                      className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#C59B27] outline-none"
+                      className="w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]"
                     />
                   </div>
 
                   <div>
-                    <label className="font-bold text-slate-700 block mb-1">Prix Unitaire (MAD/L)</label>
+                    <label className="font-bold text-[#0A1E3F] block mb-1.5">Prix Unitaire (MAD/L)</label>
                     <input
                       type="number"
                       step="0.01"
                       value={pleinForm.prixUnitaire}
                       onChange={(e) => setPleinForm({ ...pleinForm, prixUnitaire: e.target.value })}
-                      className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#C59B27] outline-none"
+                      className="w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="font-bold text-slate-700 block mb-1">Kilométrage du Plein *</label>
+                    <label className="font-bold text-[#0A1E3F] block mb-1.5">Kilométrage du Plein *</label>
                     <input
                       type="number"
                       required
                       placeholder="Km au moment du plein"
                       value={pleinForm.kilometrage}
                       onChange={(e) => setPleinForm({ ...pleinForm, kilometrage: e.target.value })}
-                      className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#C59B27] outline-none"
+                      className="w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]"
                     />
                   </div>
 
                   <div>
-                    <label className="font-bold text-slate-700 block mb-1">Montant TTC (MAD)</label>
+                    <label className="font-bold text-[#0A1E3F] block mb-1.5">Montant TTC (MAD)</label>
                     <input
                       type="number"
                       step="0.01"
                       placeholder="Calculé automatiquement"
                       value={pleinForm.montantTTC}
                       onChange={(e) => setPleinForm({ ...pleinForm, montantTTC: e.target.value })}
-                      className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#C59B27] outline-none"
+                      className="w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Carte Carburant</label>
+                  <label className="font-bold text-[#0A1E3F] block mb-1.5">Carte Carburant</label>
                   <select
                     value={pleinForm.carteCarburantId}
                     onChange={(e) => setPleinForm({ ...pleinForm, carteCarburantId: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#C59B27] outline-none"
+                    className="w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]"
                   >
                     <option value="">Espèces / Bon papier</option>
                     {cartes.map(c => (
@@ -564,26 +572,26 @@ export default function CarburantView() {
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Station Service</label>
+                  <label className="font-bold text-[#0A1E3F] block mb-1.5">Station Service</label>
                   <input
                     type="text"
                     value={pleinForm.stationService}
                     onChange={(e) => setPleinForm({ ...pleinForm, stationService: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#C59B27] outline-none"
+                    className="w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]"
                   />
                 </div>
 
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <div className="flex justify-end gap-3 pt-4 border-t border-[#E2E8F0]">
                   <button
                     type="button"
                     onClick={() => setShowPleinModal(false)}
-                    className="px-4 py-2 rounded-xl text-slate-600 font-bold hover:bg-slate-100"
+                    className="border border-[#E2E8F0] text-[#0A1E3F] font-bold text-xs px-4 py-2.5 rounded-xl hover:bg-[#F4F6FB] transition-all cursor-pointer"
                   >
                     Annuler
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl gold-gradient-bg text-[#071530] font-black shadow-sm"
+                    className="gold-gradient-bg text-[#071530] font-extrabold text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md hover:brightness-105 transition-all cursor-pointer"
                   >
                     Enregistrer le Plein
                   </button>
@@ -597,40 +605,43 @@ export default function CarburantView() {
       {/* Modal - Carte Carburant */}
       <AnimatePresence>
         {showCarteModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A1E3F]/60 backdrop-blur-sm p-4">
             <motion.div
-              className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-cardline overflow-hidden"
+              className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 w-full max-w-[580px] max-h-[90vh] overflow-y-auto"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
             >
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center justify-between border-b border-slate-100 p-5">
                 <h3 className="text-lg font-black font-outfit text-[#0A1E3F] flex items-center gap-2">
-                  <CreditCard className="w-5 h-5 text-[#C59B27]" /> Ajouter une Carte Carburant
+                  <div className="w-8 h-8 rounded-xl bg-[#C59B27]/10 flex items-center justify-center text-[#C59B27]">
+                    <CreditCard className="w-4 h-4" />
+                  </div>
+                  Ajouter une Carte Carburant
                 </h3>
-                <button onClick={() => setShowCarteModal(false)}><X className="w-5 h-5 text-slate-400 hover:text-slate-600" /></button>
+                <button onClick={() => setShowCarteModal(false)} className="p-2 hover:bg-slate-50 rounded-lg transition-colors"><X className="w-5 h-5 text-slate-400 hover:text-slate-600" /></button>
               </div>
 
-              <form onSubmit={handleCarteSubmit} className="mt-4 flex flex-col gap-3 text-xs">
+              <form onSubmit={handleCarteSubmit} className="p-5 flex flex-col gap-4 text-xs">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Numéro de Carte *</label>
+                  <label className="font-bold text-[#0A1E3F] block mb-1.5">Numéro de Carte *</label>
                   <input
                     type="text"
                     required
                     placeholder="ex: 7001-9988-1234-0005"
                     value={carteForm.numeroCarte}
                     onChange={(e) => setCarteForm({ ...carteForm, numeroCarte: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#C59B27] outline-none font-mono"
+                    className="w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27] font-mono"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="font-bold text-slate-700 block mb-1">Fournisseur</label>
+                    <label className="font-bold text-[#0A1E3F] block mb-1.5">Fournisseur</label>
                     <select
                       value={carteForm.fournisseur}
                       onChange={(e) => setCarteForm({ ...carteForm, fournisseur: e.target.value })}
-                      className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#C59B27] outline-none"
+                      className="w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]"
                     >
                       <option value="TotalEnergies">TotalEnergies</option>
                       <option value="Afriquia">Afriquia</option>
@@ -640,22 +651,22 @@ export default function CarburantView() {
                   </div>
 
                   <div>
-                    <label className="font-bold text-slate-700 block mb-1">Plafond Mensuel (MAD)</label>
+                    <label className="font-bold text-[#0A1E3F] block mb-1.5">Plafond Mensuel (MAD)</label>
                     <input
                       type="number"
                       value={carteForm.plafondMensuel}
                       onChange={(e) => setCarteForm({ ...carteForm, plafondMensuel: e.target.value, solde: e.target.value })}
-                      className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#C59B27] outline-none"
+                      className="w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Attribué au Véhicule</label>
+                  <label className="font-bold text-[#0A1E3F] block mb-1.5">Attribué au Véhicule</label>
                   <select
                     value={carteForm.vehiculeId}
                     onChange={(e) => setCarteForm({ ...carteForm, vehiculeId: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#C59B27] outline-none"
+                    className="w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]"
                   >
                     <option value="">Aucun (Carte de réserve)</option>
                     {vehicules.map(v => (
@@ -665,26 +676,26 @@ export default function CarburantView() {
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Date d'Expiration</label>
+                  <label className="font-bold text-[#0A1E3F] block mb-1.5">Date d'Expiration</label>
                   <input
                     type="date"
                     value={carteForm.dateExpiration}
                     onChange={(e) => setCarteForm({ ...carteForm, dateExpiration: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#C59B27] outline-none"
+                    className="w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]"
                   />
                 </div>
 
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <div className="flex justify-end gap-3 pt-4 border-t border-[#E2E8F0]">
                   <button
                     type="button"
                     onClick={() => setShowCarteModal(false)}
-                    className="px-4 py-2 rounded-xl text-slate-600 font-bold hover:bg-slate-100"
+                    className="border border-[#E2E8F0] text-[#0A1E3F] font-bold text-xs px-4 py-2.5 rounded-xl hover:bg-[#F4F6FB] transition-all cursor-pointer"
                   >
                     Annuler
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl bg-[#0A1E3F] text-white font-bold shadow-sm"
+                    className="gold-gradient-bg text-[#071530] font-extrabold text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md hover:brightness-105 transition-all cursor-pointer"
                   >
                     Créer la Carte
                   </button>
