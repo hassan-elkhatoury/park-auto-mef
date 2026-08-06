@@ -19,6 +19,17 @@ export default {
           200: '#E9EEF6',
         },
         cardline: '#E2E8F0',
+        surface: {
+          DEFAULT: '#FFFFFF',
+          muted: '#F8FAFC',
+          sunken: '#F1F5F9',
+          dark: '#0A1E3F',
+        },
+        line: {
+          DEFAULT: '#E2E8F0',
+          soft: '#F1F5F9',
+          strong: '#CBD5E1',
+        },
         navy: {
           DEFAULT: '#0A1E3F',
           950: '#071530',
@@ -27,6 +38,10 @@ export default {
           700: '#122B55',
           600: '#1A3666',
           500: '#22407A',
+          400: '#3A5590',
+          300: '#7488B4',
+          100: '#DCE3F0',
+          50: '#EEF2F9',
         },
         gold: {
           DEFAULT: '#C59B27',
@@ -58,6 +73,15 @@ export default {
           600: '#0F4E96',
           700: '#0B3C73',
         },
+        info: {
+          DEFAULT: '#1565C0',
+          50: '#EBF2FC',
+          100: '#D6E4FA',
+          200: '#AECBF5',
+          500: '#1565C0',
+          600: '#0F4E96',
+          700: '#0B3C73',
+        },
         mint: {
           DEFAULT: '#00A896',
           50: '#E6FBFA',
@@ -76,6 +100,24 @@ export default {
           600: '#007A5E',
           700: '#075E4B',
           800: '#054A3B',
+        },
+        warning: {
+          DEFAULT: '#D97706',
+          50: '#FEF6EC',
+          100: '#FCE9CE',
+          200: '#F7D29E',
+          500: '#D97706',
+          600: '#B45309',
+          700: '#92400E',
+        },
+        danger: {
+          DEFAULT: '#C1272D',
+          50: '#FDF2F2',
+          100: '#FBE3E4',
+          200: '#F5C2C4',
+          500: '#C1272D',
+          600: '#A31F25',
+          700: '#82191E',
         },
         ivory: {
           DEFAULT: '#FAF8F4',
@@ -98,6 +140,9 @@ export default {
         sm: '6px',
         md: '10px',
         lg: '12px',
+        xl: '14px',
+        '2xl': '18px',
+        '3xl': '24px',
       },
       boxShadow: {
         'xs': '0 1px 2px rgba(0, 0, 0, 0.04)',
@@ -105,8 +150,15 @@ export default {
         'md': '0 4px 6px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.03)',
         'lg': '0 10px 15px rgba(0, 0, 0, 0.05), 0 4px 6px rgba(0, 0, 0, 0.03)',
         'gold': '0 4px 20px rgba(197, 155, 39, 0.35)',
+        'gold-sm': '0 2px 10px rgba(197, 155, 39, 0.22)',
         'card-hover': '0 12px 40px rgba(197, 155, 39, 0.18), 0 4px 12px rgba(0, 0, 0, 0.06)',
         'navy-lg': '0 24px 48px rgba(10, 30, 63, 0.35)',
+        'card': '0 1px 2px rgba(10, 30, 63, 0.04), 0 1px 3px rgba(10, 30, 63, 0.05)',
+        'card-lg': '0 12px 28px -8px rgba(10, 30, 63, 0.16), 0 4px 10px -4px rgba(10, 30, 63, 0.08)',
+        'header': '0 1px 0 rgba(226, 232, 240, 1), 0 6px 20px -12px rgba(10, 30, 63, 0.25)',
+        'focus-gold': '0 0 0 4px rgba(197, 155, 39, 0.18)',
+        'glow-mission': '0 4px 20px rgba(21, 101, 192, 0.28)',
+        'inset-line': 'inset 0 1px 0 rgba(255, 255, 255, 0.06)',
       },
       fontSize: {
         'page-title': ['36px', { lineHeight: '44px', fontWeight: '700' }],
@@ -115,6 +167,10 @@ export default {
         'card-title': ['16px', { lineHeight: '24px', fontWeight: '500' }],
         'label': ['14px', { lineHeight: '20px', fontWeight: '500' }],
         'description': ['13px', { lineHeight: '18px', fontWeight: '400' }],
+        'kpi': ['28px', { lineHeight: '34px', fontWeight: '800' }],
+        'eyebrow': ['11px', { lineHeight: '14px', fontWeight: '600', letterSpacing: '0.08em' }],
+        'micro': ['10px', { lineHeight: '14px', fontWeight: '600', letterSpacing: '0.06em' }],
+        'table': ['12px', { lineHeight: '18px', fontWeight: '400' }],
       },
       spacing: {
         '4.5': '1.125rem',
@@ -122,6 +178,48 @@ export default {
         '6.5': '1.625rem',
         '18': '4.5rem',
         '22': '5.5rem',
+      },
+      backgroundImage: {
+        'gold-gradient': 'linear-gradient(135deg, #E3C873 0%, #C59B27 50%, #B8860B 100%)',
+        'navy-gradient': 'linear-gradient(135deg, #091B36 0%, #0A1E3F 55%, #122B55 100%)',
+        'navy-mesh':
+          'radial-gradient(1000px 400px at 100% -20%, rgba(197,155,39,0.18), transparent 60%), radial-gradient(700px 320px at -10% 120%, rgba(21,101,192,0.22), transparent 60%), linear-gradient(135deg, #071530 0%, #0A1E3F 60%, #122B55 100%)',
+        'canvas-mesh':
+          'radial-gradient(900px 380px at 100% -10%, rgba(197,155,39,0.07), transparent 60%), radial-gradient(700px 320px at -5% 110%, rgba(21,101,192,0.06), transparent 60%)',
+        'sheen': 'linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent)',
+      },
+      transitionTimingFunction: {
+        premium: 'cubic-bezier(0.4, 0, 0.2, 1)',
+        'out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+      keyframes: {
+        'ds-fade-in': {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
+        'ds-rise': {
+          from: { opacity: '0', transform: 'translateY(10px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        'ds-pop': {
+          from: { opacity: '0', transform: 'scale(0.96)' },
+          to: { opacity: '1', transform: 'scale(1)' },
+        },
+        'ds-sheen': {
+          from: { transform: 'translateX(-100%)' },
+          to: { transform: 'translateX(100%)' },
+        },
+        'ds-pulse-ring': {
+          '0%, 100%': { boxShadow: '0 0 0 0 rgba(197, 155, 39, 0.40)' },
+          '50%': { boxShadow: '0 0 0 8px rgba(197, 155, 39, 0)' },
+        },
+      },
+      animation: {
+        'ds-fade-in': 'ds-fade-in 0.3s ease-out both',
+        'ds-rise': 'ds-rise 0.4s cubic-bezier(0.16, 1, 0.3, 1) both',
+        'ds-pop': 'ds-pop 0.22s cubic-bezier(0.16, 1, 0.3, 1) both',
+        'ds-sheen': 'ds-sheen 1.6s infinite',
+        'ds-pulse-ring': 'ds-pulse-ring 2s infinite',
       },
     },
   },

@@ -99,7 +99,7 @@ export default function DashboardView({ user }) {
     try {
       setLoading(true);
       const [vehRes, demRes, pleinsRes, cartesRes, anomRes, intervRes, alertesRes] = await Promise.allSettled([
-        vehiculeService.getAll(),
+        vehiculeService.getVehicules(),
         api.get('/demandes'),
         carburantService.getPleins(),
         carburantService.getCartes(),
@@ -287,10 +287,10 @@ export default function DashboardView({ user }) {
   );
 }
 
-function KpiCardsGrid({ cards }) {
+function KpiCardsGrid({ cards = [] }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {cards.map((card) => {
+      {(Array.isArray(cards) ? cards : []).map((card) => {
         const Icon = card.icon;
         return (
           <motion.div
@@ -319,6 +319,8 @@ function KpiCardsGrid({ cards }) {
     </div>
   );
 }
+
+const KpiCards = ({ kpiCards }) => <KpiCardsGrid cards={kpiCards} />;
 
 function FleetCharts({ directionData, fuelData, totalFuelVehicles }) {
   return (
@@ -543,21 +545,281 @@ function DriverDashboard({ demandes, userId, navigate, onRefresh, loading }) {
 }
 
 /* =====================================================================
+   Demand Pipeline
+   ===================================================================== */
+function DemandPipeline({ demandStats = {} }) {
+  const items = [
+    { label: 'En Attente N1', count: demandStats.enAttente || 0, icon: Clock, color: 'bg-amber-500' },
+    { label: 'Validées Service', count: demandStats.validees || 0, icon: ClipboardCheck, color: 'bg-blue-500' },
+    { label: 'Affectées / En Cours', count: demandStats.affectees || 0, icon: CheckCircle2, color: 'bg-emerald-500' },
+    { label: 'Terminées', count: demandStats.terminees || 0, icon: FileText, color: 'bg-slate-500' },
+    { label: 'Rejetées', count: demandStats.rejetees || 0, icon: XCircle, color: 'bg-red-500' },
+  ];
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      {items.map((it) => {
+        const Icon = it.icon;
+        return (
+          <div key={it.label} className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-sm flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${it.color}`}>
+              <Icon className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 font-medium">{it.label}</p>
+              <p className="text-2xl font-black text-[#0A1E3F]">{it.count}</p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* =====================================================================
+   Activité Récente
+   ===================================================================== */
+function ActiviteRecente({ demandes = [], navigate }) {
+  const ACTIVITY_STATUS_MAP = {
+    TERMINEE: { label: 'Terminé', bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+    VALIDEE_SERVICE: { label: 'Validée', bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500' },
+    APPROUVEE_AFFECTEE: { label: 'Affectée', bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500' },
+    EN_ATTENTE_VALIDATION: { label: 'En attente', bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
+    EN_COURS: { label: 'En cours', bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
+    REJETEE: { label: 'Rejeté', bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-500' },
+  };
+
+  const recent = [...demandes]
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    .slice(0, 5);
+
+  return (
+    <motion.div
+      className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-md transition-shadow"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: 0.3 }}
+    >
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-10 h-10 rounded-xl gold-gradient-bg flex items-center justify-center text-[#071530] shadow-sm">
+          <Activity className="w-5 h-5" />
+        </div>
+        <div>
+          <div className="flex items-center gap-2.5">
+            <div className="w-1 h-5 rounded-full bg-[#C59B27]" />
+            <h3 className="font-outfit font-extrabold text-sm text-[#0A1E3F]">Activité Récente</h3>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-0.5">Dernières actions et mises à jour</p>
+        </div>
+      </div>
+
+      {recent.length === 0 ? (
+        <div className="text-center py-8">
+          <Activity className="w-7 h-7 text-slate-300 mx-auto mb-2" />
+          <p className="text-xs font-bold text-slate-400">Aucune activité récente</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {recent.map((d) => {
+            const status = ACTIVITY_STATUS_MAP[d.statut] || ACTIVITY_STATUS_MAP.EN_ATTENTE_VALIDATION;
+            return (
+              <button
+                key={d.id}
+                onClick={() => navigate(`/demandes/${d.id}`)}
+                className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors text-left cursor-pointer group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-full bg-slate-100 text-[#0A1E3F] flex items-center justify-center flex-shrink-0 group-hover:bg-[#C59B27]/10">
+                    <Send className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-xs font-bold text-[#0A1E3F] block truncate">{d.motif || d.reference || 'Demande'}</span>
+                    <span className="text-[10px] text-slate-400 block">
+                      {d.destination || ''}
+                      {d.dateHeureDepart ? ` · ${new Date(d.dateHeureDepart).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}` : ''}
+                    </span>
+                  </div>
+                </div>
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold inline-flex items-center gap-1 flex-shrink-0 ml-2 ${status.bg} ${status.text}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                  {status.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+/* =====================================================================
+   Consommation Moyenne — computed from real pleins (fuel records)
+   ===================================================================== */
+function ConsommationMoyenne({ pleins = [] }) {
+  // Use real consommationMoyenne from fuel records (set by backend per plein)
+  const pleinsWithConso = pleins.filter((p) => p.consommationMoyenne && p.consommationMoyenne > 0);
+  const avgConso = pleinsWithConso.length > 0
+    ? (pleinsWithConso.reduce((sum, p) => sum + p.consommationMoyenne, 0) / pleinsWithConso.length).toFixed(1)
+    : null;
+
+  // Chart: last 10 fuel records sorted by date ascending
+  const consoData = [...pleinsWithConso]
+    .sort((a, b) => new Date(a.datePlein || 0) - new Date(b.datePlein || 0))
+    .slice(-10)
+    .map((p, idx) => ({
+      name: p.datePlein ? new Date(p.datePlein).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) : `P${idx + 1}`,
+      conso: p.consommationMoyenne,
+    }));
+
+  return (
+    <motion.div
+      className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-md transition-shadow"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: 0.35 }}
+    >
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-10 h-10 rounded-xl gold-gradient-bg flex items-center justify-center text-[#071530] shadow-sm">
+          <Droplets className="w-5 h-5" />
+        </div>
+        <div>
+          <div className="flex items-center gap-2.5">
+            <div className="w-1 h-5 rounded-full bg-[#C59B27]" />
+            <h3 className="font-outfit font-extrabold text-sm text-[#0A1E3F]">Consommation Moyenne</h3>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-0.5">Moyenne flotte enregistrée</p>
+        </div>
+      </div>
+
+      <div className="flex items-end gap-4 mb-4">
+        <span className="text-4xl font-black font-outfit text-[#0A1E3F] leading-none">{avgConso || '—'}</span>
+        <span className="text-sm font-bold text-slate-500 pb-0.5">L/100km</span>
+      </div>
+
+      {consoData.length >= 2 ? (
+        <ResponsiveContainer width="100%" height={100}>
+          <AreaChart data={consoData} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
+            <defs>
+              <linearGradient id="consoGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#00A896" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#00A896" stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <Area type="monotone" dataKey="conso" stroke="#00A896" strokeWidth={2.5} fill="url(#consoGradient)" dot={false} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(val) => [`${val} L/100km`, 'Consommation']} />
+          </AreaChart>
+        </ResponsiveContainer>
+      ) : (
+        <div className="h-[100px] flex items-center justify-center">
+          <p className="text-[11px] text-slate-400 font-medium">
+            {avgConso ? 'Données insuffisantes pour le graphique' : 'Aucune donnée de consommation'}
+          </p>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+/* =====================================================================
+   Live Alert Center Table (Sprint 3 Integration)
+   ===================================================================== */
+function DashboardAlertCenter({ alertes = [], navigate }) {
+  const topAlertes = alertes.slice(0, 5);
+
+  return (
+    <motion.div
+      className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm"
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-7 rounded-full bg-[#C59B27]" />
+          <h3 className="font-outfit font-extrabold text-sm text-[#0A1E3F] flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-[#C59B27]" />
+            Alertes &amp; Échéances à Traiter ({alertes.length})
+          </h3>
+        </div>
+        <button
+          onClick={() => navigate('/maintenance')}
+          className="text-[11px] font-bold text-[#C59B27] hover:text-[#94700E] flex items-center gap-1 transition-colors cursor-pointer"
+        >
+          Voir tout <ArrowRight className="w-3 h-3" />
+        </button>
+      </div>
+
+      {topAlertes.length === 0 ? (
+        <div className="py-8 text-center bg-slate-50 rounded-xl border border-slate-100">
+          <CheckCircle2 className="w-7 h-7 text-emerald-500 mx-auto mb-2" />
+          <p className="text-xs font-bold text-slate-500">Toutes les échéances et seuils de maintenance sont à jour.</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="enterprise-table w-full">
+            <thead>
+              <tr>
+                <th>Niveau</th>
+                <th>Immatriculation</th>
+                <th>Alerte / Échéance</th>
+                <th>Direction</th>
+                <th className="!text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {topAlertes.map((a, idx) => {
+                const isCrit = a.niveauSeverite === 'CRITIQUE';
+                return (
+                  <tr key={a.id || idx}>
+                    <td>
+                      <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                        isCrit ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-amber-50 text-amber-700 border-amber-200'
+                      }`}>
+                        <AlertTriangle className="w-3 h-3" />
+                        {a.typeAlerte || 'ALERTE'}
+                      </span>
+                    </td>
+                    <td className="font-mono font-bold text-[#0A1E3F] text-xs">{a.immatriculation || '—'}</td>
+                    <td>
+                      <div className="font-bold text-[#0A1E3F] text-xs">{a.titre || a.message}</div>
+                      {a.titre && a.message && <div className="text-[10px] text-slate-500 line-clamp-1">{a.message}</div>}
+                    </td>
+                    <td className="text-xs font-bold text-[#C59B27]">{a.direction || '—'}</td>
+                    <td className="!text-right">
+                      <button
+                        onClick={() => navigate('/maintenance')}
+                        className="gold-gradient-bg text-[#0A1E3F] font-black text-[10px] px-2.5 py-1 rounded-lg shadow-sm hover:brightness-105 transition-all cursor-pointer"
+                      >
+                        Traiter
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+/* =====================================================================
    CONSULTATION : Read-only fleet overview
    ===================================================================== */
-function ConsultationOverview({ kpiCards, directionData, fuelData, totalFuelVehicles, demandes, demandStats, navigate, vehicules }) {
+function ConsultationOverview({ mainKpiCards, financialKpiCards, directionData, fuelData, totalFuelVehicles, demandes, demandStats, navigate, vehicules, pleins }) {
   return (
     <div className="space-y-6">
-      <KpiCards kpiCards={kpiCards} />
-      <FleetCharts directionData={directionData} fuelData={fuelData} totalFuelVehicles={totalFuelVehicles} />
-      <DemandPipeline demandStats={demandStats} />
+      <KpiCardsGrid cards={mainKpiCards || []} />
+      <KpiCardsGrid cards={financialKpiCards || []} />
+      <FleetCharts directionData={directionData || []} fuelData={fuelData || []} totalFuelVehicles={totalFuelVehicles || 0} />
+      <DemandPipeline demandStats={demandStats || { enAttente: 0, validees: 0, affectees: 0, terminees: 0, rejetees: 0 }} />
 
       {/* Bottom Row: Activité Récente + Consommation Moyenne */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2">
-          <ActiviteRecente demandes={demandes} navigate={navigate} />
+          <ActiviteRecente demandes={demandes || []} navigate={navigate} />
         </div>
-        <ConsommationMoyenne vehicules={vehicules} />
+        <ConsommationMoyenne pleins={pleins || []} />
       </div>
     </div>
   );
@@ -566,19 +828,30 @@ function ConsultationOverview({ kpiCards, directionData, fuelData, totalFuelVehi
 /* =====================================================================
    MANAGEMENT : Full dashboard
    ===================================================================== */
-function ManagementDashboard({ kpiCards, directionData, fuelData, totalFuelVehicles, demandes, demandStats, navigate, vehicules }) {
+function ManagementDashboard({ mainKpiCards, financialKpiCards, directionData, fuelData, totalFuelVehicles, demandes, demandStats, navigate, vehicules, alertes, interventions, pleins }) {
   return (
     <div className="space-y-6">
-      <KpiCards kpiCards={kpiCards} />
-      <FleetCharts directionData={directionData} fuelData={fuelData} totalFuelVehicles={totalFuelVehicles} />
-      <DemandPipeline demandStats={demandStats} />
+      {/* Primary Fleet KPIs */}
+      <KpiCardsGrid cards={mainKpiCards || []} />
+
+      {/* Financial & Operational KPIs */}
+      <KpiCardsGrid cards={financialKpiCards || []} />
+
+      {/* Charts Row */}
+      <FleetCharts directionData={directionData || []} fuelData={fuelData || []} totalFuelVehicles={totalFuelVehicles || 0} />
+
+      {/* Live Alert Center Table */}
+      <DashboardAlertCenter alertes={alertes || []} navigate={navigate} />
+
+      {/* Demand Status Pipeline */}
+      <DemandPipeline demandStats={demandStats || { enAttente: 0, validees: 0, affectees: 0, terminees: 0, rejetees: 0 }} />
 
       {/* Bottom Row: Activité Récente + Consommation Moyenne */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2">
-          <ActiviteRecente demandes={demandes} navigate={navigate} />
+          <ActiviteRecente demandes={demandes || []} navigate={navigate} />
         </div>
-        <ConsommationMoyenne vehicules={vehicules} />
+        <ConsommationMoyenne pleins={pleins || []} />
       </div>
     </div>
   );
