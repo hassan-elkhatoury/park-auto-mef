@@ -19,4 +19,5 @@ public class TcoDirectionDto {
     private BigDecimal totalMaintenance;
     private BigDecimal tcoTotal;
     private BigDecimal tcoMoyenParVehicule;
+    private Double coutMoyenKm;
 }

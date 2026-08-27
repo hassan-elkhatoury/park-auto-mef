@@ -1,0 +1,60 @@
+@startuml
+!include _theme.puml
+title Cas d'utilisation - Securite et utilisateurs
+left to right direction
+
+actor "Utilisateur MEF" as user
+actor "Administrateur\nsysteme" as admin
+actor "Responsable\nhierarchique" as manager
+actor "Service d'audit" as audit
+
+rectangle "Systeme Park Auto MEF" {
+  package "Session utilisateur" {
+    usecase "Se connecter" as login
+    usecase "Rafraichir\nla session" as refresh
+    usecase "Changer le\nmot de passe" as changePassword
+    usecase "Consulter / Modifier\nle profil" as profile
+    usecase "Se deconnecter" as logout
+    usecase "Verifier identifiants\net statut" as verify
+    usecase "Generer les\ntokens JWT" as tokens
+    usecase "Forcer changement\ndu mot de passe" as forcePassword
+  }
+
+  package "Administration des comptes" {
+    usecase "Creer / Modifier\nun compte" as manageUser
+    usecase "Activer / Desactiver /\nVerrouiller" as statusUser
+    usecase "Attribuer\nun role" as assignRole
+    usecase "Reinitialiser le\nmot de passe" as resetPassword
+    usecase "Generer un mot de\npasse temporaire" as tempPassword
+  }
+
+  package "Tracabilite" {
+    usecase "Consulter les\njournaux d'audit" as viewAudit
+    usecase "Tracer les actions\nsensibles" as trace
+  }
+}
+
+user --> login
+user --> refresh
+user --> changePassword
+user --> profile
+user --> logout
+
+admin --> manageUser
+admin --> statusUser
+admin --> assignRole
+admin --> resetPassword
+admin --> viewAudit
+manager --> viewAudit
+audit --> trace
+
+login .> verify : <<include>>
+login .> tokens : <<include>>
+forcePassword .> login : <<extend>>
+manageUser .> tempPassword : <<include>>
+resetPassword .> tempPassword : <<include>>
+login .> trace : <<include>>
+manageUser .> trace : <<include>>
+statusUser .> trace : <<include>>
+@enduml
+

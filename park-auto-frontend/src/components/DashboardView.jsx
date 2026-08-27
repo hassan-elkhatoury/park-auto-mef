@@ -4,7 +4,9 @@ import { motion } from 'framer-motion';
 import {
   Car, CheckCircle2, Calendar, Wrench, RotateCw, BarChart3, Fuel,
   Send, ClipboardCheck, XCircle, Clock, ArrowRight, FileText, User, Loader2,
-  TrendingDown, TrendingUp, Activity, Droplets, ShieldAlert, AlertTriangle, CreditCard, DollarSign
+  TrendingDown, TrendingUp, Activity, Droplets, ShieldAlert, AlertTriangle,
+  CreditCard, DollarSign, Percent, Leaf, Gauge, PieChart as PieChartIcon,
+  Users, Shield, Eye
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -16,7 +18,7 @@ import { carburantService } from '../services/carburantService';
 import { maintenanceService } from '../services/maintenanceService';
 import { DIRECTIONS_MEF, FUEL_LABELS, MoroccanPlate } from '../utils/vehicule';
 
-// Animated counter component
+// ═══ Animated Counter ═══
 function AnimatedCounter({ value, duration = 1.2 }) {
   const [display, setDisplay] = useState(0);
   useEffect(() => {
@@ -34,7 +36,7 @@ function AnimatedCounter({ value, duration = 1.2 }) {
   return <>{display.toLocaleString()}</>;
 }
 
-// 8-Pointed Star Moroccan Zellij Emblem SVG
+// ═══ Moroccan Star Emblem ═══
 function MoroccanStarEmblem() {
   return (
     <svg className="w-9 h-9 text-[#C59B27] flex-shrink-0" viewBox="0 0 100 100" fill="none">
@@ -46,6 +48,7 @@ function MoroccanStarEmblem() {
   );
 }
 
+// ═══ Constants ═══
 const FUEL_COLORS = { DIESEL: '#0A1E3F', ESSENCE: '#C59B27', HYBRIDE: '#0D7A5F', ELECTRIQUE: '#1565C0' };
 
 const TOOLTIP_STYLE = {
@@ -81,6 +84,18 @@ const ROLE_LABELS = {
   CONSULTATION: 'Auditeur / Consultation',
 };
 
+const ROLE_DESCRIPTIONS = {
+  ADMIN: 'Vue complète — Pilotage global de la flotte MEF',
+  GESTIONNAIRE_CENTRAL: 'Vue complète — Gestion centralisée du parc automobile',
+  GESTIONNAIRE_LOCAL: 'Vue régionale — Gestion locale du parc',
+  RESPONSABLE_FINANCIER: 'Vue financière — TCO, Budget & Prévisions',
+  RESPONSABLE_SERVICE: 'Vue service — Validations & Demandes',
+  CONDUCTEUR: 'Mes missions & demandes de déplacement',
+  CHAUFFEUR: 'Mes missions & demandes de déplacement',
+  CONSULTATION: 'Vue en lecture seule — Consultation & Audit',
+};
+
+// ═══ MAIN COMPONENT ═══
 export default function DashboardView({ user }) {
   const navigate = useNavigate();
   const [vehicules, setVehicules] = useState([]);
@@ -90,23 +105,65 @@ export default function DashboardView({ user }) {
   const [anomalies, setAnomalies] = useState([]);
   const [interventions, setInterventions] = useState([]);
   const [alertes, setAlertes] = useState([]);
+  const [executiveSummary, setExecutiveSummary] = useState(null);
+  const [budgetSynthese, setBudgetSynthese] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const roleName = user?.role?.nom || user?.role || 'CONSULTATION';
   const fullName = user ? `${user.prenom || ''} ${user.nom || ''}`.trim() : '';
+  const userId = user?.id;
+
+  // Determine which data to fetch based on role
+  const isFinancialRole = roleName === 'RESPONSABLE_FINANCIER';
+  const isDriverRole = ['CONDUCTEUR', 'CHAUFFEUR'].includes(roleName);
+  const isManagementRole = ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'CHEF_PARC_REGIONAL', 'RESPONSABLE_PARC'].includes(roleName);
+  const isServiceHead = roleName === 'RESPONSABLE_SERVICE';
+  const isConsultation = roleName === 'CONSULTATION';
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [vehRes, demRes, pleinsRes, cartesRes, anomRes, intervRes, alertesRes] = await Promise.allSettled([
+
+      // Core data — always fetched
+      const corePromises = [
         vehiculeService.getVehicules(),
         api.get('/demandes'),
-        carburantService.getPleins(),
-        carburantService.getCartes(),
-        carburantService.getAnomalies(),
-        maintenanceService.getInterventions(),
-        maintenanceService.getAlertes(),
+      ];
+
+      // Role-specific data
+      const rolePromises = [];
+
+      if (!isDriverRole) {
+        rolePromises.push(
+          carburantService.getPleins(),
+          carburantService.getCartes(),
+          carburantService.getAnomalies(),
+          maintenanceService.getInterventions(),
+          maintenanceService.getAlertes(),
+        );
+      }
+
+      // Executive summary for management & financial roles
+      if (isManagementRole || isFinancialRole || isConsultation) {
+        rolePromises.push(
+          api.get('/reporting/summary').catch(() => ({ data: null })),
+        );
+      }
+
+      // Budget data for financial role
+      if (isFinancialRole) {
+        rolePromises.push(
+          api.get('/budgets/synthese').catch(() => ({ data: null })),
+        );
+      }
+
+      const [coreResults, roleResults] = await Promise.all([
+        Promise.allSettled(corePromises),
+        Promise.allSettled(rolePromises),
       ]);
+
+      // Parse core results
+      const [vehRes, demRes] = coreResults;
 
       if (vehRes.status === 'fulfilled') {
         const list = vehRes.value?.content || vehRes.value?.data || (Array.isArray(vehRes.value) ? vehRes.value : []);
@@ -116,25 +173,48 @@ export default function DashboardView({ user }) {
         const d = demRes.value?.data || demRes.value;
         setDemandes(Array.isArray(d) ? d : (d?.content || []));
       }
-      if (pleinsRes.status === 'fulfilled') {
-        const p = pleinsRes.value?.data || pleinsRes.value;
-        setPleins(Array.isArray(p) ? p : []);
-      }
-      if (cartesRes.status === 'fulfilled') {
-        const c = cartesRes.value?.data || cartesRes.value;
-        setCartes(Array.isArray(c) ? c : []);
-      }
-      if (anomRes.status === 'fulfilled') {
-        const a = anomRes.value?.data || anomRes.value;
-        setAnomalies(Array.isArray(a) ? a : []);
-      }
-      if (intervRes.status === 'fulfilled') {
-        const i = intervRes.value?.data || intervRes.value;
-        setInterventions(Array.isArray(i) ? i : []);
-      }
-      if (alertesRes.status === 'fulfilled') {
-        const al = alertesRes.value?.data || alertesRes.value;
-        setAlertes(Array.isArray(al) ? al : []);
+
+      // Parse role-specific results
+      if (!isDriverRole) {
+        let idx = 0;
+        if (roleResults[idx]?.status === 'fulfilled') {
+          const p = roleResults[idx].value?.data || roleResults[idx].value;
+          setPleins(Array.isArray(p) ? p : []);
+        }
+        idx++;
+        if (roleResults[idx]?.status === 'fulfilled') {
+          const c = roleResults[idx].value?.data || roleResults[idx].value;
+          setCartes(Array.isArray(c) ? c : []);
+        }
+        idx++;
+        if (roleResults[idx]?.status === 'fulfilled') {
+          const a = roleResults[idx].value?.data || roleResults[idx].value;
+          setAnomalies(Array.isArray(a) ? a : []);
+        }
+        idx++;
+        if (roleResults[idx]?.status === 'fulfilled') {
+          const i = roleResults[idx].value?.data || roleResults[idx].value;
+          setInterventions(Array.isArray(i) ? i : []);
+        }
+        idx++;
+        if (roleResults[idx]?.status === 'fulfilled') {
+          const al = roleResults[idx].value?.data || roleResults[idx].value;
+          setAlertes(Array.isArray(al) ? al : []);
+        }
+        idx++;
+
+        // Executive summary
+        if ((isManagementRole || isFinancialRole || isConsultation) && roleResults[idx]?.status === 'fulfilled') {
+          const summary = roleResults[idx].value?.data || roleResults[idx].value;
+          setExecutiveSummary(summary);
+          idx++;
+        }
+
+        // Budget synthese
+        if (isFinancialRole && roleResults[idx]?.status === 'fulfilled') {
+          const budget = roleResults[idx].value?.data || roleResults[idx].value;
+          setBudgetSynthese(Array.isArray(budget) ? budget : (budget ? [budget] : []));
+        }
       }
     } catch (err) {
       console.error('Erreur de chargement du tableau de bord:', err);
@@ -150,9 +230,10 @@ export default function DashboardView({ user }) {
     return () => window.removeEventListener('parkauto:refresh', onGlobalRefresh);
   }, []);
 
+  // ═══ Computed Metrics ═══
   const userDirection = user?.direction;
   const filteredVehicules = useMemo(() => {
-    if (['CHEF_PARC_REGIONAL', 'CHEF_SERVICE', 'RESPONSABLE_SERVICE'].includes(roleName) && userDirection) {
+    if (['GESTIONNAIRE_LOCAL', 'CHEF_PARC_REGIONAL', 'CHEF_SERVICE', 'RESPONSABLE_SERVICE'].includes(roleName) && userDirection) {
       return vehicules.filter(v => v.direction === userDirection);
     }
     return vehicules;
@@ -169,7 +250,7 @@ export default function DashboardView({ user }) {
     const totalFuelSpent = pleins.reduce((sum, p) => sum + (parseFloat(p.montantTTC) || 0), 0);
     const totalMaintenanceSpent = interventions.reduce((sum, i) => sum + (parseFloat(i.montantTotal) || 0), 0);
     const activeCardsCount = cartes.filter(c => c.statut === 'ACTIVE').length;
-    
+
     return {
       totalFuelSpent,
       totalMaintenanceSpent,
@@ -185,6 +266,7 @@ export default function DashboardView({ user }) {
     affectees: demandes.filter((d) => ['APPROUVEE_AFFECTEE', 'EN_COURS'].includes(d.statut)).length,
     terminees: demandes.filter((d) => d.statut === 'TERMINEE').length,
     rejetees: demandes.filter((d) => d.statut === 'REJETEE').length,
+    total: demandes.length,
   }), [demandes]);
 
   const directionData = useMemo(() =>
@@ -207,6 +289,7 @@ export default function DashboardView({ user }) {
 
   const totalFuelVehicles = useMemo(() => fuelData.reduce((sum, f) => sum + f.value, 0), [fuelData]);
 
+  // ═══ KPI Cards ═══
   const mainKpiCards = [
     { label: 'Total Flotte', sub: 'Véhicules enregistrés', value: metrics.total, icon: Car, iconBg: 'bg-[#0A1E3F]', bar: 'bg-[#0A1E3F]', delay: 0 },
     { label: 'Disponibles', sub: 'Prêts à être affectés', value: metrics.disponibles, icon: CheckCircle2, iconBg: 'bg-[#0D7A5F]', bar: 'bg-[#0D7A5F]', delay: 0.08 },
@@ -221,51 +304,75 @@ export default function DashboardView({ user }) {
     { label: 'Cartes Carburant', sub: 'Cartes actives MEF', value: financialMetrics.activeCardsCount, icon: CreditCard, iconBg: 'bg-[#1565C0]', bar: 'bg-[#1565C0]' },
   ];
 
+  // ═══ Loading State ═══
   if (loading && vehicules.length === 0 && demandes.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 text-[#C59B27] animate-spin" />
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 text-[#C59B27] animate-spin mx-auto mb-3" />
+          <p className="text-xs font-semibold text-slate-500">Chargement du tableau de bord...</p>
+        </div>
       </div>
     );
   }
 
+  // ═══ Render ═══
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm moroccan-star-bg relative overflow-hidden">
-        <div className="flex items-center gap-4 relative z-10">
-          <MoroccanStarEmblem />
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-xl font-black text-[#0A1E3F] tracking-wide uppercase">
-                {fullName ? `Bienvenue, ${fullName}` : 'Tableau de Bord'}
-              </h2>
-              <span className="font-amiri text-sm text-[#C59B27] font-bold" dir="rtl">لوحة القيادة والمؤشرات</span>
-            </div>
-            <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
-              <span className="gold-gradient-text font-extrabold uppercase tracking-wider text-[10px]">{ROLE_LABELS[roleName] || roleName}</span>
-              · Vue d'ensemble de la flotte automobile du Ministère
-            </p>
-          </div>
-        </div>
+      {/* ═══ Welcome Header ═══ */}
+      <DashboardHeader
+        fullName={fullName}
+        roleName={roleName}
+        loading={loading}
+        onRefresh={fetchData}
+      />
 
-        <button
-          onClick={fetchData}
-          className="bg-[#0A1E3F] hover:bg-[#122B55] text-white font-bold text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer shrink-0 relative z-10"
-        >
-          <RotateCw className={`w-4 h-4 text-[#D7B14A] ${loading ? 'animate-spin' : ''}`} />
-          Actualiser les Données
-        </button>
-      </div>
-
-      {roleName === 'CONDUCTEUR' || roleName === 'CHAUFFEUR' ? (
+      {/* ═══ Role-Based Dashboard Content ═══ */}
+      {isDriverRole ? (
         <DriverDashboard
           user={user}
+          userId={userId}
+          demandes={demandes}
           vehicules={vehicules}
           pleins={pleins}
-          demandes={demandes}
-          interventions={interventions}
-          alertes={alertes}
           navigate={navigate}
+        />
+      ) : isFinancialRole ? (
+        <FinancialDashboard
+          mainKpiCards={mainKpiCards}
+          financialKpiCards={financialKpiCards}
+          executiveSummary={executiveSummary}
+          budgetSynthese={budgetSynthese}
+          anomalies={anomalies}
+          pleins={pleins}
+          interventions={interventions}
+          fuelData={fuelData}
+          totalFuelVehicles={totalFuelVehicles}
+          navigate={navigate}
+        />
+      ) : isServiceHead ? (
+        <ServiceHeadDashboard
+          mainKpiCards={mainKpiCards}
+          demandes={demandes}
+          demandStats={demandStats}
+          navigate={navigate}
+          vehicules={filteredVehicules}
+          userDirection={userDirection}
+          pleins={pleins}
+        />
+      ) : isConsultation ? (
+        <ConsultationOverview
+          mainKpiCards={mainKpiCards}
+          financialKpiCards={financialKpiCards}
+          directionData={directionData}
+          fuelData={fuelData}
+          totalFuelVehicles={totalFuelVehicles}
+          demandes={demandes}
+          demandStats={demandStats}
+          navigate={navigate}
+          vehicules={filteredVehicules}
+          pleins={pleins}
+          executiveSummary={executiveSummary}
         />
       ) : (
         <ManagementDashboard
@@ -281,12 +388,132 @@ export default function DashboardView({ user }) {
           alertes={alertes}
           interventions={interventions}
           pleins={pleins}
+          executiveSummary={executiveSummary}
         />
       )}
     </div>
   );
 }
 
+
+/* =====================================================================
+   SHARED: Dashboard Header with Role-aware Welcome
+   ===================================================================== */
+function DashboardHeader({ fullName, roleName, loading, onRefresh }) {
+  return (
+    <motion.div
+      className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden"
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+    >
+      {/* Decorative background pattern */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cpath fill='%23C59B27' d='M40 0l11.71 11.71H68.29V28.29L80 40l-11.71 11.71v16.57H51.71L40 80l-11.71-11.71H11.71V51.71L0 40l11.71-11.71V11.71h16.57z'/%3E%3C/svg%3E")`,
+        backgroundSize: '60px 60px',
+      }} />
+
+      <div className="flex items-center gap-4 relative z-10">
+        <MoroccanStarEmblem />
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-xl font-black text-[#0A1E3F] tracking-wide uppercase">
+              {fullName ? `Bienvenue, ${fullName}` : 'Tableau de Bord'}
+            </h2>
+            <span className="font-amiri text-sm text-[#C59B27] font-bold" dir="rtl">لوحة القيادة والمؤشرات</span>
+          </div>
+          <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
+            <span className="gold-gradient-text font-extrabold uppercase tracking-wider text-[10px]">{ROLE_LABELS[roleName] || roleName}</span>
+            · {ROLE_DESCRIPTIONS[roleName] || 'Vue d\'ensemble de la flotte automobile du Ministère'}
+          </p>
+        </div>
+      </div>
+
+      <button
+        onClick={onRefresh}
+        className="bg-[#0A1E3F] hover:bg-[#122B55] text-white font-bold text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer shrink-0 relative z-10"
+      >
+        <RotateCw className={`w-4 h-4 text-[#D7B14A] ${loading ? 'animate-spin' : ''}`} />
+        Actualiser les Données
+      </button>
+    </motion.div>
+  );
+}
+
+
+/* =====================================================================
+   SHARED: Executive Summary Strip (from /api/reporting/summary)
+   ===================================================================== */
+function ExecutiveSummaryStrip({ executiveSummary }) {
+  if (!executiveSummary) return null;
+
+  const items = [
+    {
+      label: 'Taux d\'utilisation',
+      value: executiveSummary.tauxUtilisation != null ? `${Math.round(executiveSummary.tauxUtilisation)}%` : '—',
+      icon: Percent,
+      color: 'text-[#0D7A5F]',
+      bg: 'bg-emerald-50',
+    },
+    {
+      label: 'TCO Global (MAD)',
+      value: executiveSummary.tcoGlobal != null ? Math.round(executiveSummary.tcoGlobal).toLocaleString() : '—',
+      icon: DollarSign,
+      color: 'text-[#C59B27]',
+      bg: 'bg-amber-50',
+    },
+    {
+      label: 'Taux Immobilisation',
+      value: executiveSummary.tauxImmobilisation != null ? `${Math.round(executiveSummary.tauxImmobilisation)}%` : '—',
+      icon: Wrench,
+      color: 'text-[#C47D2B]',
+      bg: 'bg-orange-50',
+    },
+    {
+      label: 'Émissions CO₂ (kg)',
+      value: executiveSummary.emissionsCO2 != null ? Math.round(executiveSummary.emissionsCO2).toLocaleString() : '—',
+      icon: Leaf,
+      color: 'text-[#1565C0]',
+      bg: 'bg-blue-50',
+    },
+  ];
+
+  return (
+    <motion.div
+      className="bg-gradient-to-r from-[#0A1E3F] to-[#122B55] rounded-2xl p-5 shadow-lg border border-[#1A3666]"
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: 0.05 }}
+    >
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-1 h-5 rounded-full bg-[#C59B27]" />
+        <h3 className="font-outfit font-extrabold text-sm text-white">Indicateurs Exécutifs</h3>
+        <span className="text-[10px] text-[#C59B27] font-bold uppercase tracking-wider ml-1">API Reporting</span>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {items.map((item) => {
+          const Icon = item.icon;
+          return (
+            <div key={item.label} className="bg-white/10 backdrop-blur-sm rounded-xl p-3.5 border border-white/5">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className={`w-7 h-7 rounded-lg ${item.bg} flex items-center justify-center`}>
+                  <Icon className={`w-3.5 h-3.5 ${item.color}`} />
+                </div>
+                <span className="text-[10px] font-semibold text-slate-300 uppercase tracking-wider">{item.label}</span>
+              </div>
+              <span className="text-xl font-black font-outfit text-white block">{item.value}</span>
+            </div>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
+}
+
+
+/* =====================================================================
+   SHARED: KPI Cards Grid
+   ===================================================================== */
 function KpiCardsGrid({ cards = [] }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -295,13 +522,13 @@ function KpiCardsGrid({ cards = [] }) {
         return (
           <motion.div
             key={card.label}
-            className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between relative overflow-hidden"
+            className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between relative overflow-hidden group"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
             <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-full ${card.iconBg} flex items-center justify-center text-white shadow-sm`}>
+              <div className={`w-12 h-12 rounded-full ${card.iconBg} flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform`}>
                 <Icon className="w-6 h-6" />
               </div>
               <div>
@@ -320,8 +547,10 @@ function KpiCardsGrid({ cards = [] }) {
   );
 }
 
-const KpiCards = ({ kpiCards }) => <KpiCardsGrid cards={kpiCards} />;
 
+/* =====================================================================
+   SHARED: Fleet Charts (Direction Bar + Fuel Pie)
+   ===================================================================== */
 function FleetCharts({ directionData, fuelData, totalFuelVehicles }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -423,11 +652,11 @@ function FleetCharts({ directionData, fuelData, totalFuelVehicles }) {
 
 
 /* =====================================================================
-   Recent Demandes List (real data from /demandes)
+   SHARED: Recent Demandes List
    ===================================================================== */
 function RecentDemandes({ demandes, navigate, limit = 6, emptyHint = 'Aucune demande enregistrée pour le moment.' }) {
   const recent = [...demandes]
-    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    .sort((a, b) => new Date(b.createdAt || b.dateCreation || 0) - new Date(a.createdAt || a.dateCreation || 0))
     .slice(0, limit);
 
   return (
@@ -484,68 +713,9 @@ function RecentDemandes({ demandes, navigate, limit = 6, emptyHint = 'Aucune dem
   );
 }
 
-/* =====================================================================
-   CONDUCTEUR : Mes missions & demandes
-   ===================================================================== */
-function DriverDashboard({ demandes, userId, navigate, onRefresh, loading }) {
-  const myDemandes = demandes.filter((d) => d.demandeurId === userId || d.demandeurId === String(userId));
-  const myStats = {
-    enAttente: myDemandes.filter((d) => d.statut === 'EN_ATTENTE_VALIDATION').length,
-    affectees: myDemandes.filter((d) => ['APPROUVEE_AFFECTEE', 'EN_COURS'].includes(d.statut)).length,
-    terminees: myDemandes.filter((d) => d.statut === 'TERMINEE').length,
-  };
-
-  const cards = [
-    { label: 'Mes Demandes', sub: 'Total enregistré', value: myDemandes.length, icon: Send, iconBg: 'bg-[#0A1E3F]', bar: 'bg-[#0A1E3F]' },
-    { label: 'En Attente / En Cours', sub: 'Demandes ouvertes', value: myStats.enAttente + myStats.affectees, icon: Clock, iconBg: 'bg-[#1565C0]', bar: 'bg-[#1565C0]' },
-    { label: 'Missions Terminées', sub: 'Clôturées', value: myStats.terminees, icon: CheckCircle2, iconBg: 'bg-[#0D7A5F]', bar: 'bg-[#0D7A5F]' },
-  ];
-
-  return (
-    <div className="space-y-6">
-      {/* Driver KPI cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {cards.map((card) => {
-          const Icon = card.icon;
-          return (
-            <motion.div
-              key={card.label}
-              className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm relative overflow-hidden"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-full ${card.iconBg} flex items-center justify-center text-white shadow-sm`}>
-                  <Icon className="w-6 h-6" />
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-slate-800 block">{card.label}</span>
-                  <span className="text-3xl font-black font-outfit text-[#0A1E3F]">
-                    <AnimatedCounter value={card.value} />
-                  </span>
-                  <span className="text-[10px] font-semibold text-slate-500 block">{card.sub}</span>
-                </div>
-              </div>
-              <div className={`absolute bottom-0 left-0 right-0 h-1 ${card.bar}`} />
-            </motion.div>
-          );
-        })}
-      </div>
-
-      {/* My demandes */}
-      <RecentDemandes
-        demandes={myDemandes}
-        navigate={navigate}
-        limit={8}
-        emptyHint="Aucune demande de déplacement à votre nom pour le moment."
-      />
-    </div>
-  );
-}
 
 /* =====================================================================
-   Demand Pipeline
+   SHARED: Demand Pipeline
    ===================================================================== */
 function DemandPipeline({ demandStats = {} }) {
   const items = [
@@ -560,7 +730,13 @@ function DemandPipeline({ demandStats = {} }) {
       {items.map((it) => {
         const Icon = it.icon;
         return (
-          <div key={it.label} className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-sm flex items-center gap-3">
+          <motion.div
+            key={it.label}
+            className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-sm flex items-center gap-3 hover:shadow-md transition-shadow"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.25 }}
+          >
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${it.color}`}>
               <Icon className="w-5 h-5 text-white" />
             </div>
@@ -568,15 +744,16 @@ function DemandPipeline({ demandStats = {} }) {
               <p className="text-xs text-slate-500 font-medium">{it.label}</p>
               <p className="text-2xl font-black text-[#0A1E3F]">{it.count}</p>
             </div>
-          </div>
+          </motion.div>
         );
       })}
     </div>
   );
 }
 
+
 /* =====================================================================
-   Activité Récente
+   SHARED: Activité Récente
    ===================================================================== */
 function ActiviteRecente({ demandes = [], navigate }) {
   const ACTIVITY_STATUS_MAP = {
@@ -589,7 +766,7 @@ function ActiviteRecente({ demandes = [], navigate }) {
   };
 
   const recent = [...demandes]
-    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    .sort((a, b) => new Date(b.createdAt || b.dateCreation || 0) - new Date(a.createdAt || a.dateCreation || 0))
     .slice(0, 5);
 
   return (
@@ -652,17 +829,16 @@ function ActiviteRecente({ demandes = [], navigate }) {
   );
 }
 
+
 /* =====================================================================
-   Consommation Moyenne — computed from real pleins (fuel records)
+   SHARED: Consommation Moyenne
    ===================================================================== */
 function ConsommationMoyenne({ pleins = [] }) {
-  // Use real consommationMoyenne from fuel records (set by backend per plein)
   const pleinsWithConso = pleins.filter((p) => p.consommationMoyenne && p.consommationMoyenne > 0);
   const avgConso = pleinsWithConso.length > 0
     ? (pleinsWithConso.reduce((sum, p) => sum + p.consommationMoyenne, 0) / pleinsWithConso.length).toFixed(1)
     : null;
 
-  // Chart: last 10 fuel records sorted by date ascending
   const consoData = [...pleinsWithConso]
     .sort((a, b) => new Date(a.datePlein || 0) - new Date(b.datePlein || 0))
     .slice(-10)
@@ -720,8 +896,9 @@ function ConsommationMoyenne({ pleins = [] }) {
   );
 }
 
+
 /* =====================================================================
-   Live Alert Center Table (Sprint 3 Integration)
+   SHARED: Live Alert Center Table
    ===================================================================== */
 function DashboardAlertCenter({ alertes = [], navigate }) {
   const topAlertes = alertes.slice(0, 5);
@@ -803,18 +980,408 @@ function DashboardAlertCenter({ alertes = [], navigate }) {
   );
 }
 
+
 /* =====================================================================
-   CONSULTATION : Read-only fleet overview
+   ROLE: CONDUCTEUR / CHAUFFEUR — Driver Dashboard
    ===================================================================== */
-function ConsultationOverview({ mainKpiCards, financialKpiCards, directionData, fuelData, totalFuelVehicles, demandes, demandStats, navigate, vehicules, pleins }) {
+function DriverDashboard({ user, userId, demandes, vehicules, pleins, navigate }) {
+  // Filter demandes for this driver (match by user ID or demandeur info)
+  const myDemandes = useMemo(() => {
+    return demandes.filter((d) => {
+      const demandeurId = d.demandeurId || d.demandeur?.id;
+      return demandeurId === userId || demandeurId === String(userId) ||
+             d.demandeur?.email === user?.email;
+    });
+  }, [demandes, userId, user?.email]);
+
+  // Find assigned vehicle
+  const assignedVehicle = useMemo(() => {
+    return vehicules.find(v =>
+      v.conducteurId === userId ||
+      v.conducteur?.id === userId ||
+      (v.statutAdministratif === 'AFFECTE' && v.conducteur?.email === user?.email)
+    );
+  }, [vehicules, userId, user?.email]);
+
+  const myStats = useMemo(() => ({
+    enAttente: myDemandes.filter((d) => d.statut === 'EN_ATTENTE_VALIDATION').length,
+    affectees: myDemandes.filter((d) => ['APPROUVEE_AFFECTEE', 'EN_COURS'].includes(d.statut)).length,
+    terminees: myDemandes.filter((d) => d.statut === 'TERMINEE').length,
+    total: myDemandes.length,
+  }), [myDemandes]);
+
+  const cards = [
+    { label: 'Mes Demandes', sub: 'Total enregistré', value: myStats.total, icon: Send, iconBg: 'bg-[#0A1E3F]', bar: 'bg-[#0A1E3F]' },
+    { label: 'En Attente / En Cours', sub: 'Demandes ouvertes', value: myStats.enAttente + myStats.affectees, icon: Clock, iconBg: 'bg-[#1565C0]', bar: 'bg-[#1565C0]' },
+    { label: 'Missions Terminées', sub: 'Clôturées', value: myStats.terminees, icon: CheckCircle2, iconBg: 'bg-[#0D7A5F]', bar: 'bg-[#0D7A5F]' },
+  ];
+
   return (
     <div className="space-y-6">
+      {/* Driver KPI cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {cards.map((card) => {
+          const Icon = card.icon;
+          return (
+            <motion.div
+              key={card.label}
+              className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm relative overflow-hidden hover:shadow-md transition-shadow"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-full ${card.iconBg} flex items-center justify-center text-white shadow-sm`}>
+                  <Icon className="w-6 h-6" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-slate-800 block">{card.label}</span>
+                  <span className="text-3xl font-black font-outfit text-[#0A1E3F]">
+                    <AnimatedCounter value={card.value} />
+                  </span>
+                  <span className="text-[10px] font-semibold text-slate-500 block">{card.sub}</span>
+                </div>
+              </div>
+              <div className={`absolute bottom-0 left-0 right-0 h-1 ${card.bar}`} />
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {/* Assigned Vehicle Card */}
+      {assignedVehicle && (
+        <motion.div
+          className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm"
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-1 h-7 rounded-full bg-[#C59B27]" />
+            <h3 className="font-outfit font-extrabold text-sm text-[#0A1E3F]">Mon Véhicule Affecté</h3>
+          </div>
+          <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+            <div className="w-14 h-14 rounded-xl bg-[#0A1E3F] flex items-center justify-center text-white">
+              <Car className="w-7 h-7" />
+            </div>
+            <div>
+              <p className="font-bold text-[#0A1E3F] text-sm">{assignedVehicle.marque} {assignedVehicle.modele}</p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                <MoroccanPlate immatriculation={assignedVehicle.immatriculation} />
+              </p>
+              <p className="text-[10px] text-slate-400 mt-1">
+                {assignedVehicle.typeCarburant && FUEL_LABELS[assignedVehicle.typeCarburant]} · {assignedVehicle.kilometrageActuel?.toLocaleString() || '—'} km
+              </p>
+            </div>
+            <button
+              onClick={() => navigate(`/vehicules/${assignedVehicle.id}`)}
+              className="ml-auto text-[11px] font-bold text-[#C59B27] hover:text-[#94700E] flex items-center gap-1 cursor-pointer"
+            >
+              Détails <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
+        </motion.div>
+      )}
+
+      {/* My demandes */}
+      <RecentDemandes
+        demandes={myDemandes}
+        navigate={navigate}
+        limit={8}
+        emptyHint="Aucune demande de déplacement à votre nom pour le moment."
+      />
+    </div>
+  );
+}
+
+
+/* =====================================================================
+   ROLE: RESPONSABLE_FINANCIER — Financial Dashboard
+   ===================================================================== */
+function FinancialDashboard({ mainKpiCards, financialKpiCards, executiveSummary, budgetSynthese, anomalies, pleins, interventions, fuelData, totalFuelVehicles, navigate }) {
+  // Budget execution data for chart
+  const budgetChartData = useMemo(() => {
+    if (!budgetSynthese || !Array.isArray(budgetSynthese)) return [];
+    return budgetSynthese.map(b => ({
+      name: b.typeDepense || b.direction || b.libelle || 'Budget',
+      alloue: b.montantAlloue || b.budgetAlloue || 0,
+      consomme: b.montantConsomme || b.budgetConsomme || 0,
+      taux: b.tauxExecution || (b.montantAlloue ? Math.round((b.montantConsomme / b.montantAlloue) * 100) : 0),
+    }));
+  }, [budgetSynthese]);
+
+  // Monthly fuel cost trend from pleins
+  const fuelCostTrend = useMemo(() => {
+    const monthMap = {};
+    pleins.forEach(p => {
+      if (!p.datePlein) return;
+      const d = new Date(p.datePlein);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
+      if (!monthMap[key]) monthMap[key] = { name: label, montant: 0 };
+      monthMap[key].montant += parseFloat(p.montantTTC) || 0;
+    });
+    return Object.values(monthMap).slice(-6);
+  }, [pleins]);
+
+  return (
+    <div className="space-y-6">
+      {/* Executive Summary */}
+      <ExecutiveSummaryStrip executiveSummary={executiveSummary} />
+
+      {/* Financial KPIs */}
+      <KpiCardsGrid cards={financialKpiCards} />
+
+      {/* Fleet KPIs (smaller) */}
+      <KpiCardsGrid cards={mainKpiCards} />
+
+      {/* Charts Row: Budget Execution + Fuel Cost Trend */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Budget Execution */}
+        <motion.div
+          className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 rounded-xl gold-gradient-bg flex items-center justify-center text-[#071530] shadow-sm">
+              <PieChartIcon className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2.5">
+                <div className="w-1 h-5 rounded-full bg-[#C59B27]" />
+                <h3 className="font-outfit font-extrabold text-sm text-[#0A1E3F]">Exécution Budgétaire</h3>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-0.5">Taux de consommation par type</p>
+            </div>
+          </div>
+
+          {budgetChartData.length > 0 ? (
+            <div className="space-y-3">
+              {budgetChartData.map((b, idx) => (
+                <div key={idx}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-bold text-[#0A1E3F]">{b.name}</span>
+                    <span className="text-[10px] font-extrabold text-[#C59B27]">{b.taux}%</span>
+                  </div>
+                  <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full rounded-full"
+                      style={{ backgroundColor: b.taux > 90 ? '#C1272D' : b.taux > 70 ? '#C47D2B' : '#0D7A5F' }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(b.taux, 100)}%` }}
+                      transition={{ duration: 0.8, delay: idx * 0.1 }}
+                    />
+                  </div>
+                  <div className="flex justify-between mt-0.5">
+                    <span className="text-[10px] text-slate-400">Consommé: {Math.round(b.consomme).toLocaleString()} MAD</span>
+                    <span className="text-[10px] text-slate-400">Alloué: {Math.round(b.alloue).toLocaleString()} MAD</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-8 text-center">
+              <DollarSign className="w-7 h-7 text-slate-300 mx-auto mb-2" />
+              <p className="text-xs text-slate-400 font-medium">Aucune donnée budgétaire disponible</p>
+            </div>
+          )}
+        </motion.div>
+
+        {/* Fuel Cost Trend */}
+        <motion.div
+          className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+        >
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 rounded-xl gold-gradient-bg flex items-center justify-center text-[#071530] shadow-sm">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2.5">
+                <div className="w-1 h-5 rounded-full bg-[#C59B27]" />
+                <h3 className="font-outfit font-extrabold text-sm text-[#0A1E3F]">Tendance Coût Carburant</h3>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-0.5">Évolution mensuelle des dépenses</p>
+            </div>
+          </div>
+
+          {fuelCostTrend.length >= 2 ? (
+            <ResponsiveContainer width="100%" height={200}>
+              <AreaChart data={fuelCostTrend} margin={{ top: 10, right: 10, left: -18, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="fuelCostGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#C59B27" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#C59B27" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#475569', fontWeight: 600 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(val) => [`${Math.round(val).toLocaleString()} MAD`, 'Dépense']} />
+                <Area type="monotone" dataKey="montant" stroke="#C59B27" strokeWidth={2.5} fill="url(#fuelCostGradient)" dot={{ fill: '#C59B27', r: 3 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[200px] flex items-center justify-center">
+              <p className="text-[11px] text-slate-400 font-medium">Données insuffisantes pour le graphique</p>
+            </div>
+          )}
+        </motion.div>
+      </div>
+
+      {/* Anomalies Alert */}
+      {anomalies.length > 0 && (
+        <motion.div
+          className="bg-white rounded-2xl border border-red-200 p-6 shadow-sm"
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-1 h-7 rounded-full bg-red-500" />
+            <h3 className="font-outfit font-extrabold text-sm text-[#0A1E3F] flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-red-500" />
+              Anomalies de Surconsommation ({anomalies.length})
+            </h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="enterprise-table w-full">
+              <thead>
+                <tr>
+                  <th>Véhicule</th>
+                  <th>Date</th>
+                  <th>Consommation</th>
+                  <th>Station</th>
+                  <th>Montant</th>
+                </tr>
+              </thead>
+              <tbody>
+                {anomalies.slice(0, 5).map((a, idx) => (
+                  <tr key={a.id || idx}>
+                    <td className="font-mono font-bold text-[#0A1E3F] text-xs">{a.vehicule?.immatriculation || a.immatriculation || '—'}</td>
+                    <td className="text-xs">{a.datePlein ? new Date(a.datePlein).toLocaleDateString('fr-FR') : '—'}</td>
+                    <td>
+                      <span className="text-xs font-bold text-red-600">{a.consommationMoyenne?.toFixed(1) || '—'} L/100km</span>
+                    </td>
+                    <td className="text-xs">{a.stationService || '—'}</td>
+                    <td className="text-xs font-bold">{a.montantTTC ? `${parseFloat(a.montantTTC).toLocaleString()} MAD` : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Consommation Moyenne */}
+      <ConsommationMoyenne pleins={pleins} />
+    </div>
+  );
+}
+
+
+/* =====================================================================
+   ROLE: RESPONSABLE_SERVICE — Service Head Dashboard
+   ===================================================================== */
+function ServiceHeadDashboard({ mainKpiCards, demandes, demandStats, navigate, vehicules, userDirection, pleins }) {
+  // Pending N1 validations (highlight for this role)
+  const pendingN1 = demandes.filter(d => d.statut === 'EN_ATTENTE_VALIDATION');
+
+  return (
+    <div className="space-y-6">
+      {/* Urgent Action Card — Pending Validations */}
+      {pendingN1.length > 0 && (
+        <motion.div
+          className="bg-gradient-to-r from-amber-50 to-amber-100/50 rounded-2xl border border-amber-200 p-5 shadow-sm"
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-amber-500 flex items-center justify-center text-white shadow-sm">
+                <ClipboardCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-outfit font-extrabold text-base text-[#0A1E3F]">
+                  {pendingN1.length} Demande{pendingN1.length > 1 ? 's' : ''} en Attente de Validation N1
+                </h3>
+                <p className="text-xs text-amber-700 mt-0.5">Ces demandes nécessitent votre validation en tant que Responsable de Service</p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/demandes')}
+              className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md cursor-pointer transition-all"
+            >
+              Valider Maintenant <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Fleet KPIs (filtered by direction) */}
+      <KpiCardsGrid cards={mainKpiCards} />
+
+      {/* Direction Context */}
+      {userDirection && (
+        <motion.div
+          className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm"
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#0A1E3F] flex items-center justify-center text-[#D7B14A] shadow-sm">
+              <Shield className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">Périmètre de gestion</p>
+              <p className="font-outfit font-extrabold text-sm text-[#0A1E3F]">{userDirection}</p>
+            </div>
+            <div className="ml-auto flex items-center gap-6">
+              <div className="text-center">
+                <p className="text-2xl font-black font-outfit text-[#0A1E3F]">{vehicules.length}</p>
+                <p className="text-[10px] text-slate-500 font-semibold">Véhicules</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-black font-outfit text-[#C59B27]">{demandStats.total}</p>
+                <p className="text-[10px] text-slate-500 font-semibold">Demandes</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Demand Pipeline */}
+      <DemandPipeline demandStats={demandStats} />
+
+      {/* Bottom Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="lg:col-span-2">
+          <RecentDemandes demandes={demandes} navigate={navigate} limit={8} />
+        </div>
+        <ConsommationMoyenne pleins={pleins} />
+      </div>
+    </div>
+  );
+}
+
+
+/* =====================================================================
+   ROLE: CONSULTATION — Read-only Overview
+   ===================================================================== */
+function ConsultationOverview({ mainKpiCards, financialKpiCards, directionData, fuelData, totalFuelVehicles, demandes, demandStats, navigate, vehicules, pleins, executiveSummary }) {
+  return (
+    <div className="space-y-6">
+      {/* Executive Summary (if available) */}
+      <ExecutiveSummaryStrip executiveSummary={executiveSummary} />
+
       <KpiCardsGrid cards={mainKpiCards || []} />
       <KpiCardsGrid cards={financialKpiCards || []} />
       <FleetCharts directionData={directionData || []} fuelData={fuelData || []} totalFuelVehicles={totalFuelVehicles || 0} />
       <DemandPipeline demandStats={demandStats || { enAttente: 0, validees: 0, affectees: 0, terminees: 0, rejetees: 0 }} />
 
-      {/* Bottom Row: Activité Récente + Consommation Moyenne */}
+      {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2">
           <ActiviteRecente demandes={demandes || []} navigate={navigate} />
@@ -825,12 +1392,16 @@ function ConsultationOverview({ mainKpiCards, financialKpiCards, directionData, 
   );
 }
 
+
 /* =====================================================================
-   MANAGEMENT : Full dashboard
+   ROLE: ADMIN / GESTIONNAIRE — Full Management Dashboard
    ===================================================================== */
-function ManagementDashboard({ mainKpiCards, financialKpiCards, directionData, fuelData, totalFuelVehicles, demandes, demandStats, navigate, vehicules, alertes, interventions, pleins }) {
+function ManagementDashboard({ mainKpiCards, financialKpiCards, directionData, fuelData, totalFuelVehicles, demandes, demandStats, navigate, vehicules, alertes, interventions, pleins, executiveSummary }) {
   return (
     <div className="space-y-6">
+      {/* Executive Summary (if available) */}
+      <ExecutiveSummaryStrip executiveSummary={executiveSummary} />
+
       {/* Primary Fleet KPIs */}
       <KpiCardsGrid cards={mainKpiCards || []} />
 

@@ -1,0 +1,106 @@
+@startuml
+!include _theme.puml
+title Diagramme de classes - Assurances, sinistres et budget
+hide circle
+skinparam classAttributeIconSize 0
+
+class Vehicule <<Entity>> {
+  - immatriculation: String
+}
+
+class Assurance <<Entity>> {
+  - numeroPolice: String
+  - compagnie: CompagnieAssurance
+  - typeGarantie: TypeGarantie
+  - dateDebut: LocalDate
+  - dateFin: LocalDate
+  - montantPrime: BigDecimal
+  - franchise: BigDecimal
+  - statut: StatutAssurance
+}
+
+class Sinistre <<Entity>> {
+  - dateAccident: LocalDate
+  - lieuAccident: String
+  - natureAccident: NatureAccident
+  - montantDommages: BigDecimal
+  - statut: StatutSinistre
+}
+
+class Infraction <<Entity>> {
+  - dateInfraction: LocalDate
+  - typeInfraction: String
+  - montantAmende: BigDecimal
+  - statut: StatutInfraction
+}
+
+class VisiteTechnique <<Entity>> {
+  - dateVisite: LocalDate
+  - centre: String
+  - resultat: ResultatVisite
+  - dateProchaine: LocalDate
+}
+
+class TaxeAutomobile <<Entity>> {
+  - annee: int
+  - type: TypeTaxe
+  - montant: BigDecimal
+  - statut: StatutTaxe
+}
+
+class ReformeVehicule <<Entity>> {
+  - motifReforme: String
+  - dateDecision: LocalDate
+  - pvCommission: String
+  - statut: StatutReforme
+}
+
+class BudgetDirection <<Entity>> {
+  - annee: int
+  - direction: String
+  - natureDepense: NatureDepense
+  - montantAlloue: BigDecimal
+  - montantEngage: BigDecimal
+  - montantRealise: BigDecimal
+}
+
+enum CompagnieAssurance {
+  AXA
+  RMA
+  WAFA
+  SAHAM
+  ATLANTA
+  AUTRE
+}
+
+enum StatutSinistre {
+  DECLARE
+  EN_EXPERTISE
+  INDEMNISE
+  CLOS
+}
+
+enum NatureDepense {
+  CARBURANT
+  ASSURANCE
+  ENTRETIEN
+  REPARATION
+  TAXES
+  VISITES
+}
+
+Vehicule "1" *-- "0..*" Assurance
+Vehicule "1" *-- "0..*" Sinistre
+Vehicule "1" *-- "0..*" Infraction
+Vehicule "1" *-- "0..*" VisiteTechnique
+Vehicule "1" *-- "0..*" TaxeAutomobile
+Vehicule "1" o-- "0..1" ReformeVehicule
+Sinistre "0..*" --> "1" Assurance
+Assurance --> CompagnieAssurance
+Sinistre --> StatutSinistre
+BudgetDirection --> NatureDepense
+
+note bottom of Assurance
+  L'entite s'appelle Assurance (pas PoliceAssurance).
+end note
+@enduml

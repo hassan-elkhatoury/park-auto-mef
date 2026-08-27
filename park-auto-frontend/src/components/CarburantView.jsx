@@ -36,11 +36,11 @@ export default function CarburantView() {
     vehiculeId: '',
     carteCarburantId: '',
     quantiteLitres: '',
-    prixUnitaire: '12.80',
+    prixUnitaire: '',
     montantTTC: '',
     kilometrage: '',
     typeCarburant: 'DIESEL',
-    stationService: 'TotalEnergies Agdal Rabat',
+    stationService: '',
     referenceTicket: '',
     referenceFacture: '',
     observation: ''
@@ -49,11 +49,11 @@ export default function CarburantView() {
   // Form State - Card
   const [carteForm, setCarteForm] = useState({
     numeroCarte: '',
-    fournisseur: 'TotalEnergies',
+    fournisseur: '',
     vehiculeId: '',
     serviceAttribue: '',
-    plafondMensuel: '3500',
-    solde: '3500',
+    plafondMensuel: '',
+    solde: '',
     dateExpiration: '',
     observation: ''
   });
@@ -642,147 +642,165 @@ export default function CarburantView() {
       {/* Modal - Saisir un Plein */}
       <AnimatePresence>
         {showPleinModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0A1E3F]/60 backdrop-blur-sm p-4">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
             <motion.div
-              className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 w-full max-w-[580px] max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 w-full max-w-xl max-h-[90vh] overflow-hidden flex flex-col"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
             >
-              <div className="flex items-center justify-between border-b border-slate-100 p-5">
-                <h3 className="text-lg font-black font-outfit text-[#0A1E3F] flex items-center gap-2">
-                   <div className="w-8 h-8 rounded-xl bg-[#C59B27]/10 flex items-center justify-center text-[#C59B27]">
-                    <Fuel className="w-4 h-4" />
+              {/* Header Banner */}
+              <div className="bg-[#0A1E3F] text-white p-5 flex items-center justify-between border-b border-[#C59B27]/30 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-[#C59B27]/20 border border-[#C59B27]/40 flex items-center justify-center text-[#C59B27]">
+                    <Fuel className="w-5 h-5" />
                   </div>
-                  Saisir un Plein de Carburant
-                </h3>
-                <button onClick={() => setShowPleinModal(false)} className="p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"><X className="w-5 h-5 text-slate-400 hover:text-slate-600" /></button>
+                  <div>
+                    <h3 className="font-black text-sm uppercase tracking-wider text-white">
+                      Saisir un Plein de Carburant
+                    </h3>
+                    <p className="text-[11px] text-slate-300 font-normal">Enregistrement et contrôle de consommation</p>
+                  </div>
+                </div>
+                <button 
+                  type="button" 
+                  onClick={() => setShowPleinModal(false)} 
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
-              <form onSubmit={handlePleinSubmit} className="p-5 flex flex-col gap-4 text-xs">
-                <div>
-                  <label className="font-bold text-[#0A1E3F] block mb-1.5">Véhicule *</label>
-                  <select
-                    required
-                    value={pleinForm.vehiculeId}
-                    onChange={(e) => {
-                      const vId = e.target.value;
-                      const selVeh = vehicules.find(v => String(v.id) === String(vId));
-                      const autoFuel = selVeh?.typeCarburant || 'DIESEL';
-                      const assignedCard = cartes.find(c => c.statut === 'ACTIVE' && String(c.vehiculeId) === String(vId));
-                      setPleinForm(prev => ({
-                        ...prev,
-                        vehiculeId: vId,
-                        carteCarburantId: assignedCard ? String(assignedCard.id) : '',
-                        typeCarburant: autoFuel,
-                        kilometrage: selVeh?.kilometrageActuel ? String(selVeh.kilometrageActuel) : prev.kilometrage
-                      }));
-                    }}
-                    className="w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]"
-                  >
-                    <option value="">Sélectionner un véhicule...</option>
-                    {vehicules.map(v => (
-                      <option key={v.id} value={v.id}>
-                        {v.immatriculation} - {v.marque} {v.modele} ({v.typeCarburant ? (FUEL_LABELS[v.typeCarburant] || v.typeCarburant) : 'Diesel'})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
+              <form onSubmit={handlePleinSubmit} className="flex flex-col flex-1 overflow-hidden">
+                <div className="p-6 overflow-y-auto space-y-4">
                   <div>
-                    <label className="font-bold text-[#0A1E3F] block mb-1.5">Quantité (Litres) *</label>
-                    <input
-                      type="number"
-                      step="0.1"
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Véhicule *</label>
+                    <select
                       required
-                      placeholder="ex: 55.0"
-                      value={pleinForm.quantiteLitres}
-                      onChange={(e) => setPleinForm({ ...pleinForm, quantiteLitres: e.target.value })}
-                      className="w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="font-bold text-[#0A1E3F] block mb-1.5">Prix Unitaire (MAD/L)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={pleinForm.prixUnitaire}
-                      onChange={(e) => setPleinForm({ ...pleinForm, prixUnitaire: e.target.value })}
-                      className="w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="font-bold text-[#0A1E3F] block mb-1.5">Kilométrage du Plein *</label>
-                    <input
-                      type="number"
-                      required
-                      placeholder="Km au moment du plein"
-                      value={pleinForm.kilometrage}
-                      onChange={(e) => setPleinForm({ ...pleinForm, kilometrage: e.target.value })}
-                      className="w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="font-bold text-[#0A1E3F] block mb-1.5">Montant TTC (MAD)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      placeholder="Calculé automatiquement"
-                      value={pleinForm.montantTTC}
-                      onChange={(e) => setPleinForm({ ...pleinForm, montantTTC: e.target.value })}
-                      className="w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="font-bold text-[#0A1E3F] block mb-1.5">Carte Carburant</label>
-                  <select
-                    value={pleinForm.carteCarburantId}
-                    onChange={(e) => setPleinForm({ ...pleinForm, carteCarburantId: e.target.value })}
-                    className="w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]"
-                  >
-                    <option value="">Espèces / Bon papier</option>
-                    {cartes
-                      .filter(c => c.statut === 'ACTIVE')
-                      .filter(c => !c.vehiculeId || String(c.vehiculeId) === String(pleinForm.vehiculeId))
-                      .map(c => (
-                        <option key={c.id} value={c.id}>
-                          {c.numeroCarte} - {c.fournisseur} ({c.solde || 0} MAD) {c.vehiculeId ? '📌 Carte Attribuée' : '(Réserve)'}
+                      value={pleinForm.vehiculeId}
+                      onChange={(e) => {
+                        const vId = e.target.value;
+                        const selVeh = vehicules.find(v => String(v.id) === String(vId));
+                        const autoFuel = selVeh?.typeCarburant || 'DIESEL';
+                        const assignedCard = cartes.find(c => c.statut === 'ACTIVE' && String(c.vehiculeId) === String(vId));
+                        setPleinForm(prev => ({
+                          ...prev,
+                          vehiculeId: vId,
+                          carteCarburantId: assignedCard ? String(assignedCard.id) : '',
+                          typeCarburant: autoFuel,
+                          kilometrage: selVeh?.kilometrageActuel ? String(selVeh.kilometrageActuel) : prev.kilometrage
+                        }));
+                      }}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all cursor-pointer font-medium"
+                    >
+                      <option value="">Sélectionner un véhicule...</option>
+                      {vehicules.map(v => (
+                        <option key={v.id} value={v.id}>
+                          {v.immatriculation} - {v.marque} {v.modele} ({v.typeCarburant ? (FUEL_LABELS[v.typeCarburant] || v.typeCarburant) : 'Diesel'})
                         </option>
                       ))}
-                  </select>
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Quantité (Litres) *</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        required
+                        placeholder="ex: 55.0"
+                        value={pleinForm.quantiteLitres}
+                        onChange={(e) => setPleinForm({ ...pleinForm, quantiteLitres: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all font-mono font-bold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Prix Unitaire (MAD/L)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={pleinForm.prixUnitaire}
+                        onChange={(e) => setPleinForm({ ...pleinForm, prixUnitaire: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all font-mono"
+                        placeholder="14.50"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Kilométrage du Plein *</label>
+                      <input
+                        type="number"
+                        required
+                        placeholder="Km au moment du plein"
+                        value={pleinForm.kilometrage}
+                        onChange={(e) => setPleinForm({ ...pleinForm, kilometrage: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all font-mono font-bold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Montant TTC (MAD)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        placeholder="Calculé automatiquement"
+                        value={pleinForm.montantTTC}
+                        onChange={(e) => setPleinForm({ ...pleinForm, montantTTC: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all font-mono font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Carte Carburant</label>
+                    <select
+                      value={pleinForm.carteCarburantId}
+                      onChange={(e) => setPleinForm({ ...pleinForm, carteCarburantId: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all cursor-pointer"
+                    >
+                      <option value="">Espèces / Bon papier</option>
+                      {cartes
+                        .filter(c => c.statut === 'ACTIVE')
+                        .filter(c => !c.vehiculeId || String(c.vehiculeId) === String(pleinForm.vehiculeId))
+                        .map(c => (
+                          <option key={c.id} value={c.id}>
+                            {c.numeroCarte} - {c.fournisseur} ({c.solde || 0} MAD) {c.vehiculeId ? '📌 Carte Attribuée' : '(Réserve)'}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Station Service</label>
+                    <input
+                      type="text"
+                      value={pleinForm.stationService}
+                      onChange={(e) => setPleinForm({ ...pleinForm, stationService: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all"
+                      placeholder="ex: TotalEnergies Agdal Rabat"
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="font-bold text-[#0A1E3F] block mb-1.5">Station Service</label>
-                  <input
-                    type="text"
-                    value={pleinForm.stationService}
-                    onChange={(e) => setPleinForm({ ...pleinForm, stationService: e.target.value })}
-                    className="w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4 border-t border-[#E2E8F0]">
+                {/* Footer */}
+                <div className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center justify-end gap-3 shrink-0">
                   <button
                     type="button"
                     onClick={() => setShowPleinModal(false)}
-                    className="border border-[#E2E8F0] text-[#0A1E3F] font-bold text-xs px-4 py-2.5 rounded-xl hover:bg-[#F4F6FB] transition-all cursor-pointer"
+                    className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 text-xs font-bold transition-all cursor-pointer"
                   >
                     Annuler
                   </button>
                   <button
                     type="submit"
-                    className="gold-gradient-bg text-[#071530] font-extrabold text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md hover:brightness-105 transition-all cursor-pointer"
+                    className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-gold hover:brightness-105 transition-all flex items-center gap-2 cursor-pointer"
                   >
-                    Enregistrer le Plein
+                    <Fuel className="w-3.5 h-3.5" />
+                    <span>Enregistrer le Plein</span>
                   </button>
                 </div>
               </form>
@@ -794,106 +812,134 @@ export default function CarburantView() {
       {/* Modal - Carte Carburant */}
       <AnimatePresence>
         {showCarteModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0A1E3F]/60 backdrop-blur-sm p-4">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
             <motion.div
-              className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 w-full max-w-[500px] overflow-hidden"
+              className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
             >
-              <div className="flex items-center justify-between border-b border-slate-100 p-5">
-                <h3 className="text-lg font-black font-outfit text-[#0A1E3F] flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-[#C59B27]/10 flex items-center justify-center text-[#C59B27]">
-                    <CreditCard className="w-4 h-4" />
+              {/* Header Banner */}
+              <div className="bg-[#0A1E3F] text-white p-5 flex items-center justify-between border-b border-[#C59B27]/30 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-[#C59B27]/20 border border-[#C59B27]/40 flex items-center justify-center text-[#C59B27]">
+                    <CreditCard className="w-5 h-5" />
                   </div>
-                  Nouvelle Carte Carburant
-                </h3>
-                <button onClick={() => setShowCarteModal(false)} className="p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"><X className="w-5 h-5 text-slate-400" /></button>
+                  <div>
+                    <h3 className="font-black text-sm uppercase tracking-wider text-white">
+                      Nouvelle Carte Carburant
+                    </h3>
+                    <p className="text-[11px] text-slate-300 font-normal">Attribution et gestion des plafonds MEF</p>
+                  </div>
+                </div>
+                <button 
+                  type="button" 
+                  onClick={() => setShowCarteModal(false)} 
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
-              <form onSubmit={handleCarteSubmit} className="p-5 flex flex-col gap-4 text-xs">
-                <div>
-                  <label className="font-bold text-[#0A1E3F] block mb-1.5">Numéro de Carte *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="ex: 7001-9988-5555-0001"
-                    value={carteForm.numeroCarte}
-                    onChange={(e) => setCarteForm({ ...carteForm, numeroCarte: e.target.value })}
-                    className="w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
+              <form onSubmit={handleCarteSubmit} className="flex flex-col flex-1 overflow-hidden">
+                <div className="p-6 overflow-y-auto space-y-4">
                   <div>
-                    <label className="font-bold text-[#0A1E3F] block mb-1.5">Fournisseur *</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Numéro de Carte *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="ex: 7001-9988-5555-0001"
+                      value={carteForm.numeroCarte}
+                      onChange={(e) => setCarteForm({ ...carteForm, numeroCarte: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all font-mono font-bold"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Fournisseur *</label>
+                      <select
+                        value={carteForm.fournisseur}
+                        onChange={(e) => setCarteForm({ ...carteForm, fournisseur: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all cursor-pointer font-medium"
+                      >
+                        <option value="TotalEnergies">TotalEnergies</option>
+                        <option value="Afriquia">Afriquia</option>
+                        <option value="Shell">Shell</option>
+                        <option value="Ola Energy">Ola Energy</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Plafond Mensuel (MAD)</label>
+                      <input
+                        type="number"
+                        value={carteForm.plafondMensuel}
+                        onChange={(e) => setCarteForm({ ...carteForm, plafondMensuel: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all font-mono"
+                        placeholder="5000"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Affectation Véhicule</label>
                     <select
-                      value={carteForm.fournisseur}
-                      onChange={(e) => setCarteForm({ ...carteForm, fournisseur: e.target.value })}
-                      className="w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]"
+                      value={carteForm.vehiculeId}
+                      onChange={(e) => {
+                        const vId = e.target.value;
+                        const selVeh = vehicules.find(v => String(v.id) === String(vId));
+                        setCarteForm(prev => ({
+                          ...prev,
+                          vehiculeId: vId,
+                          serviceAttribue: selVeh?.direction || prev.serviceAttribue || 'Service Logistique'
+                        }));
+                      }}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all cursor-pointer font-medium"
                     >
-                      <option value="TotalEnergies">TotalEnergies</option>
-                      <option value="Afriquia">Afriquia</option>
-                      <option value="Shell">Shell</option>
-                      <option value="Ola Energy">Ola Energy</option>
+                      <option value="">Non attribuée (Carte de Réserve Service)</option>
+                      {vehicules.map(v => (
+                        <option key={v.id} value={v.id}>{v.immatriculation} - {v.marque} {v.modele}</option>
+                      ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="font-bold text-[#0A1E3F] block mb-1.5">Plafond Mensuel (MAD)</label>
-                    <input
-                      type="number"
-                      value={carteForm.plafondMensuel}
-                      onChange={(e) => setCarteForm({ ...carteForm, plafondMensuel: e.target.value })}
-                      className="w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]"
-                    />
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Service MEF / Direction Attribuée *</label>
+                    <select
+                      value={carteForm.serviceAttribue || 'Service Logistique'}
+                      onChange={(e) => setCarteForm({ ...carteForm, serviceAttribue: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all cursor-pointer font-medium"
+                    >
+                      <option value="Service Logistique">Service Logistique</option>
+                      <option value="Service du Parc Automobile">Service du Parc Automobile</option>
+                      <option value="Service du Matériel & Approvisionnement">Service du Matériel & Approvisionnement</option>
+                      <option value="Service Informatique & Télécoms">Service Informatique & Télécoms</option>
+                      <option value="Service de la Comptabilité & Regie">Service de la Comptabilité & Régie</option>
+                      <option value="Direction du Budget">Direction du Budget (DB)</option>
+                      <option value="Direction Générale des Impôts">Direction Générale des Impôts (DGI)</option>
+                      <option value="Administration des Douanes">Administration des Douanes (ADII)</option>
+                      <option value="Trésorerie Générale du Royaume">Trésorerie Générale du Royaume (TGR)</option>
+                    </select>
                   </div>
                 </div>
 
-                <div>
-                  <label className="font-bold text-[#0A1E3F] block mb-1.5">Affectation Véhicule</label>
-                  <select
-                    value={carteForm.vehiculeId}
-                    onChange={(e) => {
-                      const vId = e.target.value;
-                      const selVeh = vehicules.find(v => String(v.id) === String(vId));
-                      setCarteForm(prev => ({
-                        ...prev,
-                        vehiculeId: vId,
-                        serviceAttribue: selVeh?.direction || prev.serviceAttribue || 'Service Logistique'
-                      }));
-                    }}
-                    className="w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]"
+                {/* Footer */}
+                <div className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center justify-end gap-3 shrink-0">
+                  <button 
+                    type="button" 
+                    onClick={() => setShowCarteModal(false)} 
+                    className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 text-xs font-bold transition-all cursor-pointer"
                   >
-                    <option value="">Non attribuée (Carte de Réserve Service)</option>
-                    {vehicules.map(v => (
-                      <option key={v.id} value={v.id}>{v.immatriculation} - {v.marque} {v.modele}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="font-bold text-[#0A1E3F] block mb-1.5">Service MEF / Direction Attribuée *</label>
-                  <select
-                    value={carteForm.serviceAttribue || 'Service Logistique'}
-                    onChange={(e) => setCarteForm({ ...carteForm, serviceAttribue: e.target.value })}
-                    className="w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]"
+                    Annuler
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-gold hover:brightness-105 transition-all flex items-center gap-2 cursor-pointer"
                   >
-                    <option value="Service Logistique">Service Logistique</option>
-                    <option value="Service du Parc Automobile">Service du Parc Automobile</option>
-                    <option value="Service du Matériel & Approvisionnement">Service du Matériel & Approvisionnement</option>
-                    <option value="Service Informatique & Télécoms">Service Informatique & Télécoms</option>
-                    <option value="Service de la Comptabilité & Regie">Service de la Comptabilité & Régie</option>
-                    <option value="Direction du Budget">Direction du Budget (DB)</option>
-                    <option value="Direction Générale des Impôts">Direction Générale des Impôts (DGI)</option>
-                    <option value="Administration des Douanes">Administration des Douanes (ADII)</option>
-                    <option value="Trésorerie Générale du Royaume">Trésorerie Générale du Royaume (TGR)</option>
-                  </select>
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4 border-t border-[#E2E8F0]">
-                  <button type="button" onClick={() => setShowCarteModal(false)} className="border border-[#E2E8F0] text-[#0A1E3F] font-bold text-xs px-4 py-2.5 rounded-xl hover:bg-[#F4F6FB] transition-all cursor-pointer">Annuler</button>
-                  <button type="submit" className="gold-gradient-bg text-[#071530] font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-md hover:brightness-105 transition-all cursor-pointer">Enregistrer la Carte</button>
+                    <CreditCard className="w-3.5 h-3.5" />
+                    <span>Enregistrer la Carte</span>
+                  </button>
                 </div>
               </form>
             </motion.div>

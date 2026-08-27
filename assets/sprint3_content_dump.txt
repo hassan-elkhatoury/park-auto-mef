@@ -1,0 +1,109 @@
+=== DUMP FOR Rapport_Sprint_3_Gestion_Affectations_Conducteurs.docx ===
+
+=== DOCUMENT BODY ELEMENTS (IN ORDER) ===
+[P0] [Normal] Sprint 3 – Gestion des Affectations et des Conducteurs
+[P1] [Normal] Rapport Technique de Réalisation et Spécifications — Ministère de l'Économie et des Finances
+
+--- [TABLE 0] (1 rows x 1 cols) ---
+  Row 0: 📌 Informations Générales du Sprint 3 Période de réalisation : 27/07/2026 au 31/07/2026 Organisme bénéficiaire : Ministère de l'Économie et des Finances (MEF — Royaume du Maroc) Statut des livrables : Modèles JPA, REST Services, Générateur PDF Ordre de Mission et Interface React achevés à 100%.
+----------------------------------------
+
+[P2] [Normal] 
+[P3] [Normal] 1. Introduction et Objectifs du Sprint 3
+[P4] [Normal] Le présent document détaille les spécifications, la conception technique et la réalisation complète du troisième sprint du projet de gestion centralisée du parc automobile du Ministère de l'Économie et des Finances (MEF). Intitulé « Gestion des Affectations et des Conducteurs », ce sprint concrétise les mécanismes d'attribution opérationnelle des véhicules aux agents et directions ministérielles.
+[P5] [Normal] Les objectifs clés réalisés au cours de ce sprint incluent :
+[P6] [List Bullet] 1. Référentiel Conducteurs : Le référentiel complet des conducteurs et chauffeurs habilités du ministère (numéro de permis, catégories B/C/D, date d'expiration, habilitations spéciales).
+[P7] [List Bullet] 2. Lien Optionnel Utilisateur : Gestion de la relation souple conducteur-utilisateur (lien optionnel pour intégrer les chauffeurs ministériels dédiés sans compte applicatif).
+[P8] [List Bullet] 3. Demande de Déplacement : Le formulaire de demande de réservation & déplacement de mission pour les agents du Ministère.
+[P9] [List Bullet] 4. Workflow à 2 Niveaux : Le workflow de validation hiérarchique à 2 niveaux (Niveau 1 : Responsable de Service avec motif obligatoire en cas de rejet ; Niveau 2 : Approval et Affectation par le Gestionnaire du Parc).
+[P10] [List Bullet] 5. Ordre de Mission PDF : La génération automatique et l'impression in-browser de l'Ordre de Mission Officiel au format PDF (entête Royaume du Maroc - MEF, référence, véhicule, conducteur/passagers).
+[P11] [List Bullet] 6. Restitution & Kilométrage : Le suivi rigoureux de la restitution du véhicule (contrôle du kilométrage retour >= kilométrage départ, niveau de carburant, réinitialisation automatique du véhicule au statut DISPONIBLE).
+[P12] [Normal] 2. Analyse Fonctionnelle du Sprint 3
+[P13] [Normal] 2.1. Besoins Fonctionnels Spécifiés
+[P14] [List Bullet] Gestion des Conducteurs (Module 4 CdC) : Saisie et tenue à jour des attributs des chauffeurs (Matricule, CIN, Nom, Prénom, Direction/Service, Téléphone, N° Permis, Catégories, Date Expiration, Habilitations). Alerte automatique en cas d'expiration.
+[P15] [List Bullet] Demandes de Déplacement (Module 3 CdC) : Permettre à tout agent de saisir une demande de mission (Motif, Destination, Date/Heure départ, Date/Heure retour estimée, Passagers). Initialisation au statut EN_ATTENTE_VALIDATION.
+[P16] [List Bullet] Validation Hiérarchique Niveau 1 : Le Responsable de Service valide (VALIDEE_SERVICE) ou rejette la demande (REJETEE avec motif obligatoire).
+[P17] [List Bullet] Affectation Niveau 2 : Le Gestionnaire du Parc sélectionne un véhicule DISPONIBLE de la direction et un conducteur habilité avec permis valide (APPROUVEE_AFFECTEE). Le véhicule passe au statut AFFECTE.
+[P18] [List Bullet] Restitution & Clôture : Enregistrement de la date de restitution, du kilométrage retour (calcul auto du delta), du niveau de carburant et des remarques. Le véhicule repasse automatiquement au statut DISPONIBLE.
+[P19] [Normal] 2.2. Règles de Gestion Métier Strictes
+[P20] [Normal] Conformément aux exigences du Cahier des Charges du MEF (Section 24) et aux recommandations de cadrage :
+[P21] [List Bullet] RG01 – Compatibilité et Validité du Permis : Le conducteur affecté doit obligatoirement posséder un permis de conduire valide et dont la catégorie (B, C, D) est compatible avec le type du véhicule assigné.
+[P22] [List Bullet] RG02 – Motif Obligatoire de Rejet N1 : Le Responsable de Service doit obligatoirement saisir un motif explicite en cas de rejet N1 d'une demande de déplacement.
+[P23] [List Bullet] RG03 – Exclusivité du Véhicule Disponible : Une demande ne peut être attribuée qu'à un véhicule au statut DISPONIBLE et rattaché à la Direction MEF de l'agent demandeur.
+[P24] [List Bullet] RG04 – Règle de Non-Rétrogradation Kilométrique : Le kilométrage saisi lors de la restitution du véhicule ne peut en aucun cas être inférieur au kilométrage de départ (kilometrageRetour >= kilometrageDepart).
+[P25] [List Bullet] RG05 – Flexibilité du Lien Conducteur-Utilisateur : La relation entre Conducteur et Utilisateur système est optionnelle (nullable = true). Les chauffeurs dédiés du Ministère ne possédant pas de compte applicatif sont gérés sans restriction.
+[P26] [Normal] 2.3. Diagramme de Cas d'Utilisation UML (Sprint 3)
+[P27] [Normal] Le diagramme ci-dessous illustre l'ensemble des cas d'utilisation et le rôle des 4 acteurs du système :
+[P28] [Normal] 
+[P29] [Normal] Figure 16 : Diagramme de cas d'utilisation UML (Sprint 3 – Affectations & Conducteurs)
+[P30] [Normal] 3. Conception et Modélisation Technique
+[P31] [Normal] 3.1. Modélisation Statique (Diagramme de Classes UML)
+[P32] [Normal] Le modèle du domaine a été enrichi avec 3 nouvelles entités principales et 3 énumérations de statut :
+[P33] [Normal] 
+[P34] [Normal] Figure 17 : Diagramme de classes UML (Sprint 3 – DemandeDeplacement, Affectation & Conducteur)
+[P35] [Normal] 3.2. Modélisation Dynamique (Diagramme de Séquence UML)
+[P36] [Normal] Le diagramme de séquence ci-après retrace le cycle de vie complet d'une demande de mission, depuis sa soumission jusqu'à la restitution du véhicule :
+[P37] [Normal] 
+[P38] [Normal] Figure 18 : Diagramme de séquence UML – Workflow complet de Validation, Affectation et Restitution
+[P39] [Normal] 3.3. Schéma de la Base de Données Relationnelle (MPD)
+[P40] [Normal] Les nouvelles tables créées sous PostgreSQL / H2 sont :
+[P41] [List Bullet] Table conducteurs : conducteurs (id, matricule, nom, prenom, cin, direction, service, telephone, email, numero_permis, categorie_permis, date_delivrance_permis, date_expiration_permis, statut, habilitations_speciales, utilisateur_id FK nullable).
+[P42] [List Bullet] Table demandes_deplacement : demandes_deplacement (id, reference, demandeur_id FK, motif, destination, date_heure_depart, date_heure_retour_estimee, nombre_passagers, liste_passagers, statut, motif_rejet, date_validation_service, valideur_service_id FK, date_approbation_parc, approbateur_parc_id FK).
+[P43] [List Bullet] Table affectations : affectations (id, reference, demande_id FK, vehicule_id FK, conducteur_id FK, date_debut, date_fin_previsionnelle, date_fin_reelle, kilometrage_depart, kilometrage_retour, niveau_carburant_retour, remarques_restitution, anomalies_constatees, statut, createur_id FK).
+[P44] [Normal] 4. Réalisation, Architecture et Validation
+[P45] [Normal] 4.1. Structure du Code Source Backend
+[P46] [List Bullet] Package entity : Classes Conducteur, DemandeDeplacement, Affectation et énumérations StatutDemande, StatutAffectation, StatutConducteur.
+[P47] [List Bullet] Package repository : Interfaces ConducteurRepository, DemandeDeplacementRepository, AffectationRepository.
+[P48] [List Bullet] Package service : ConducteurService, DemandeDeplacementService, AffectationService, OrdreMissionService.
+[P49] [List Bullet] Package controller : ConducteurController (/api/conducteurs), DemandeDeplacementController (/api/demandes), AffectationController (/api/affectations), OrdreMissionController (/api/ordres-de-mission).
+[P50] [Normal] 4.2. Moteur de Génération PDF des Ordres de Mission
+[P51] [Normal] L'émission de l'Ordre de Mission Officiel est assurée par le service OrdreMissionService s'appuyant sur la bibliothèque OpenPDF. Le document PDF généré comprend l'entête institutionnel du Royaume du Maroc et du MEF, la référence unique, les caractéristiques du véhicule et du chauffeur assigné, la liste des passagers ainsi que les zones officielles pour signatures et cachets. L'endpoint /api/ordres-de-mission/{id}/pdf renvoie le flux binaire avec le header Content-Disposition: inline permettant un aperçu et une impression in-browser en un clic.
+[P52] [Normal] 5. Démonstration Visuelle de l'Interface Web (Captures à Insérer)
+[P53] [Normal] Cette section réserve les 7 emplacements cadrés pour les captures d'écran de démonstration de l'application React :
+
+--- [TABLE 1] (1 rows x 1 cols) ---
+  Row 0: ▶ Figure 5.1 : Référentiel des Conducteurs & Suivi des Permis 🌐 URL / Contexte : URL /conducteurs  ┌────────────────────────────────────────────────────────────────────┐ │                [ INSÉRER LA CAPTURE D'ÉCRAN ICI ]                 │ └────────────────────────────────────────────────────────────────────┘  Description : Capture de la vue de gestion des chauffeurs affichant le tableau des conducteurs, les catégories de permis (B, C, D), les badges de statut et l'alerte visuelle en cas de permis expiré.
+----------------------------------------
+
+[P54] [Normal] 
+
+--- [TABLE 2] (1 rows x 1 cols) ---
+  Row 0: ▶ Figure 5.2 : Tableau des Demandes de Déplacement & Formulaire Agent 🌐 URL / Contexte : URL /demandes  ┌────────────────────────────────────────────────────────────────────┐ │                [ INSÉRER LA CAPTURE D'ÉCRAN ICI ]                 │ └────────────────────────────────────────────────────────────────────┘  Description : Capture de l'interface des demandes de réservation affichant les onglets de filtrage par statut (En Attente, Validées, Affectées) et la modale de création d'une nouvelle demande de mission.
+----------------------------------------
+
+[P55] [Normal] 
+
+--- [TABLE 3] (1 rows x 1 cols) ---
+  Row 0: ▶ Figure 5.3 : Modale de Validation Hiérarchique Niveau 1 (Service) 🌐 URL / Contexte : URL /demandes -> Modale Avis N1  ┌────────────────────────────────────────────────────────────────────┐ │                [ INSÉRER LA CAPTURE D'ÉCRAN ICI ]                 │ └────────────────────────────────────────────────────────────────────┘  Description : Capture de la modale d'examen N1 par le Responsable de Service avec options Approuver / Rejeter et champ de saisie obligatoire du motif de refus.
+----------------------------------------
+
+[P56] [Normal] 
+
+--- [TABLE 4] (1 rows x 1 cols) ---
+  Row 0: ▶ Figure 5.4 : Module d'Affectation Niveau 2 des Véhicules & Chauffeurs 🌐 URL / Contexte : URL /affectations -> Modale Affectation N2  ┌────────────────────────────────────────────────────────────────────┐ │                [ INSÉRER LA CAPTURE D'ÉCRAN ICI ]                 │ └────────────────────────────────────────────────────────────────────┘  Description : Capture de la modale d'attribution Niveau 2 par le Gestionnaire du Parc permettant de sélectionner un véhicule DISPONIBLE et un conducteur habilité disponible.
+----------------------------------------
+
+[P57] [Normal] 
+
+--- [TABLE 5] (1 rows x 1 cols) ---
+  Row 0: ▶ Figure 5.5 : Aperçu In-Browser & Impression de l'Ordre de Mission Officiel MEF (PDF) 🌐 URL / Contexte : URL /api/ordres-de-mission/:id/pdf  ┌────────────────────────────────────────────────────────────────────┐ │                [ INSÉRER LA CAPTURE D'ÉCRAN ICI ]                 │ └────────────────────────────────────────────────────────────────────┘  Description : Capture de l'aperçu PDF directement intégré dans le navigateur affichant l'Ordre de Mission officiel du MEF avec entête du Royaume du Maroc.
+----------------------------------------
+
+[P58] [Normal] 
+
+--- [TABLE 6] (1 rows x 1 cols) ---
+  Row 0: ▶ Figure 5.6 : Modale de Restitution du Véhicule & Contrôle Kilométrique 🌐 URL / Contexte : URL /affectations -> Modale Restitution  ┌────────────────────────────────────────────────────────────────────┐ │                [ INSÉRER LA CAPTURE D'ÉCRAN ICI ]                 │ └────────────────────────────────────────────────────────────────────┘  Description : Capture de la modale de fin de mission enregistrant le kilométrage de retour (avec contrôle Km retour >= Km départ), le niveau de carburant et la réinitialisation automatique du véhicule au statut DISPONIBLE.
+----------------------------------------
+
+[P59] [Normal] 
+
+--- [TABLE 7] (1 rows x 1 cols) ---
+  Row 0: ▶ Figure 5.7 : Documentation Interactive Swagger UI des Endpoints REST Sprint 3 🌐 URL / Contexte : URL /swagger-ui/index.html  ┌────────────────────────────────────────────────────────────────────┐ │                [ INSÉRER LA CAPTURE D'ÉCRAN ICI ]                 │ └────────────────────────────────────────────────────────────────────┘  Description : Capture de la documentation Swagger UI exposant les nouveaux contrôleurs REST /api/conducteurs, /api/demandes, /api/affectations et /api/ordres-de-mission.
+----------------------------------------
+
+[P60] [Normal] 
+[P61] [Normal] 6. Conclusion du Sprint 3
+[P62] [Normal] Le troisième sprint a permis de délivrer l'intégralité du module d'affectation des véhicules et de gestion des conducteurs. Toutes les exigences du Cahier des Charges du MEF (workflow de validation à 2 niveaux, règles de compatibilité des permis, non-rétrogradation kilométrique, flexibilité du lien conducteur-utilisateur et émission des Ordres de Mission officiels en PDF) ont été rigoureusement développées, testées et validées.
+[P63] [Normal] La prochaine étape du projet concerne le Sprint 4 : Gestion des Consommations de Carburant, Cartes Carburant et Assurances.
+
+Summary: Extracted 64 paragraphs and 8 tables.

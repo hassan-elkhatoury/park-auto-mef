@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Key, Car, UserCheck, CheckCircle, RotateCcw, Printer, Eye } from 'lucide-react';
+import { Key, Car, UserCheck, CheckCircle, RotateCcw, Printer, Eye, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../services/api';
 
@@ -323,100 +323,121 @@ export default function AffectationsView({ selectedDemandeForAffectation, onClos
 
       {/* Modal Level 2 Affectation (Gestionnaire du Parc) */}
       {isAffectationModalOpen && (
-        <div className="fixed inset-0 bg-[#0A1E3F]/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-            <h2 className="text-base font-extrabold text-[#0A1E3F] uppercase flex items-center gap-2">
-              <Key className="w-5 h-5 text-[#C59B27]" />
-              Approbation & Affectation Niveau 2 (Gestionnaire du Parc)
-            </h2>
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-xl rounded-2xl shadow-2xl shadow-slate-900/20 border border-slate-200/80 max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header Banner */}
+            <div className="bg-[#0A1E3F] text-white p-5 flex items-center justify-between border-b border-[#C59B27]/30 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#C59B27]/20 border border-[#C59B27]/40 flex items-center justify-center text-[#C59B27]">
+                  <Key className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm uppercase tracking-wider text-white">
+                    Affectation de Véhicule
+                  </h3>
+                  <p className="text-[11px] text-slate-300 font-normal">Approbation & attribution de mission (Gestionnaire de Parc)</p>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setIsAffectationModalOpen(false)} 
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-            <form onSubmit={handleAffectationSubmit} className="space-y-4 text-xs">
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Demande de Déplacement Validée *</label>
-                {demandesValidees.length === 0 && !affectationForm.demandeDeplacementId ? (
-                  <p className="text-red-500 font-bold p-2 bg-red-50 rounded">
-                    Aucune demande en attente d'affectation (Validée par le service).
-                  </p>
-                ) : (
-                  <select
-                    value={affectationForm.demandeDeplacementId}
-                    onChange={(e) => {
-                      const dId = e.target.value;
-                      const selDem = demandesValidees.find((d) => d.id === parseInt(dId));
-                      setAffectationForm({
-                        ...affectationForm,
-                        demandeDeplacementId: dId,
-                        dateDebut: selDem?.dateHeureDepart || affectationForm.dateDebut,
-                        dateFinPrevisionnelle: selDem?.dateHeureRetourEstimee || affectationForm.dateFinPrevisionnelle,
-                      });
-                    }}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-bold"
-                  >
-                    {demandesValidees.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.reference} — {d.motif} ({d.destination})
-                      </option>
-                    ))}
-                  </select>
-                )}
+            <form onSubmit={handleAffectationSubmit} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-6 overflow-y-auto space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Demande de Déplacement Validée *</label>
+                  {demandesValidees.length === 0 && !affectationForm.demandeDeplacementId ? (
+                    <p className="text-red-600 font-bold p-3 bg-red-50 border border-red-200 rounded-xl text-xs">
+                      Aucune demande en attente d'affectation (Validée par le service).
+                    </p>
+                  ) : (
+                    <select
+                      value={affectationForm.demandeDeplacementId}
+                      onChange={(e) => {
+                        const dId = e.target.value;
+                        const selDem = demandesValidees.find((d) => d.id === parseInt(dId));
+                        setAffectationForm({
+                          ...affectationForm,
+                          demandeDeplacementId: dId,
+                          dateDebut: selDem?.dateHeureDepart || affectationForm.dateDebut,
+                          dateFinPrevisionnelle: selDem?.dateHeureRetourEstimee || affectationForm.dateFinPrevisionnelle,
+                        });
+                      }}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all font-bold cursor-pointer"
+                    >
+                      {demandesValidees.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.reference} — {d.motif} ({d.destination})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Véhicule au statut DISPONIBLE *</label>
+                  {vehiculesDisponibles.length === 0 ? (
+                    <p className="text-red-600 font-bold p-3 bg-red-50 border border-red-200 rounded-xl text-xs">
+                      Aucun véhicule au statut DISPONIBLE actuellement.
+                    </p>
+                  ) : (
+                    <select
+                      value={affectationForm.vehiculeId}
+                      onChange={(e) => setAffectationForm({ ...affectationForm, vehiculeId: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all font-bold cursor-pointer"
+                    >
+                      {vehiculesDisponibles.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.immatriculation} — {v.marque} {v.modele} ({v.typeCarburant}) [Km: {v.kilometrageActuel} km]
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Conducteur / Chauffeur Habilité (Permis Valide) *</label>
+                  {conducteursDisponibles.length === 0 ? (
+                    <p className="text-red-600 font-bold p-3 bg-red-50 border border-red-200 rounded-xl text-xs">
+                      Aucun conducteur disponible avec permis valide.
+                    </p>
+                  ) : (
+                    <select
+                      value={affectationForm.conducteurId}
+                      onChange={(e) => setAffectationForm({ ...affectationForm, conducteurId: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all font-bold cursor-pointer"
+                    >
+                      {conducteursDisponibles.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.nom} {c.prenom} (Permis: {c.numeroPermis} - Cat. {c.categoriePermis})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Véhicule au statut DISPONIBLE *</label>
-                {vehiculesDisponibles.length === 0 ? (
-                  <p className="text-red-500 font-bold p-2 bg-red-50 rounded">
-                    Aucun véhicule au statut DISPONIBLE actuellement.
-                  </p>
-                ) : (
-                  <select
-                    value={affectationForm.vehiculeId}
-                    onChange={(e) => setAffectationForm({ ...affectationForm, vehiculeId: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-bold"
-                  >
-                    {vehiculesDisponibles.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.immatriculation} — {v.marque} {v.modele} ({v.typeCarburant}) [Km: {v.kilometrageActuel} km]
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Conducteur / Chauffeur Habilité (Permis Valide) *</label>
-                {conducteursDisponibles.length === 0 ? (
-                  <p className="text-red-500 font-bold p-2 bg-red-50 rounded">
-                    Aucun conducteur disponible avec permis valide.
-                  </p>
-                ) : (
-                  <select
-                    value={affectationForm.conducteurId}
-                    onChange={(e) => setAffectationForm({ ...affectationForm, conducteurId: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-bold"
-                  >
-                    {conducteursDisponibles.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.nom} {c.prenom} (Permis: {c.numeroPermis} - Cat. {c.categoriePermis})
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+              {/* Footer */}
+              <div className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center justify-end gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsAffectationModalOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 font-bold text-slate-700"
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 text-xs font-bold transition-all cursor-pointer"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
                   disabled={vehiculesDisponibles.length === 0 || conducteursDisponibles.length === 0}
-                  className="px-4 py-2 rounded-lg gold-gradient-bg text-[#0A1E3F] font-extrabold shadow-md hover:brightness-105 disabled:opacity-50"
+                  className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-gold hover:brightness-105 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
                 >
-                  Confirmer l'affectation
+                  <Key className="w-3.5 h-3.5" />
+                  <span>Confirmer l'affectation</span>
                 </button>
               </div>
             </form>
@@ -426,82 +447,103 @@ export default function AffectationsView({ selectedDemandeForAffectation, onClos
 
       {/* Modal Restitution */}
       {isRestitutionModalOpen && selectedAffectation && (
-        <div className="fixed inset-0 bg-[#0A1E3F]/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-            <h2 className="text-base font-extrabold text-[#0A1E3F] uppercase flex items-center gap-2">
-              <RotateCcw className="w-5 h-5 text-[#C59B27]" />
-              Restitution du Véhicule & Clôture de Mission
-            </h2>
-
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1">
-              <p><span className="font-bold">Affectation :</span> {selectedAffectation.reference}</p>
-              <p><span className="font-bold">Véhicule :</span> {selectedAffectation.vehiculeImmatriculation}</p>
-              <p><span className="font-bold font-mono text-[#C59B27]">Kilométrage Départ :</span> {selectedAffectation.kilometrageDepart} km</p>
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200/80 max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header Banner */}
+            <div className="bg-[#0A1E3F] text-white p-5 flex items-center justify-between border-b border-[#C59B27]/30 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#C59B27]/20 border border-[#C59B27]/40 flex items-center justify-center text-[#C59B27]">
+                  <RotateCcw className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm uppercase tracking-wider text-white">
+                    Restitution de Véhicule
+                  </h3>
+                  <p className="text-[11px] text-slate-300 font-normal">Clôture de mission et retour au parc</p>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setIsRestitutionModalOpen(false)} 
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            <form onSubmit={handleRestitutionSubmit} className="space-y-4 text-xs">
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Kilométrage Retour (Km) *</label>
-                <input
-                  type="number"
-                  required
-                  min={selectedAffectation.kilometrageDepart}
-                  value={restitutionForm.kilometrageRetour}
-                  onChange={(e) => setRestitutionForm({ ...restitutionForm, kilometrageRetour: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-bold text-sm"
-                />
+            <form onSubmit={handleRestitutionSubmit} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-6 overflow-y-auto space-y-4">
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-1.5">
+                  <p><span className="font-bold text-slate-700">Affectation :</span> <span className="font-mono">{selectedAffectation.reference}</span></p>
+                  <p><span className="font-bold text-slate-700">Véhicule :</span> <span className="font-semibold">{selectedAffectation.vehiculeImmatriculation}</span></p>
+                  <p><span className="font-bold text-slate-700">Kilométrage Départ :</span> <span className="font-mono font-bold text-amber-700">{selectedAffectation.kilometrageDepart} km</span></p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Kilométrage Retour (Km) *</label>
+                  <input
+                    type="number"
+                    required
+                    min={selectedAffectation.kilometrageDepart}
+                    value={restitutionForm.kilometrageRetour}
+                    onChange={(e) => setRestitutionForm({ ...restitutionForm, kilometrageRetour: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all font-mono font-bold text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Niveau Carburant au Retour</label>
+                  <select
+                    value={restitutionForm.niveauCarburantRetour}
+                    onChange={(e) => setRestitutionForm({ ...restitutionForm, niveauCarburantRetour: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all font-bold cursor-pointer"
+                  >
+                    <option value="Plein">Plein (100%)</option>
+                    <option value="3/4">3/4 Réservoir</option>
+                    <option value="1/2">1/2 Réservoir</option>
+                    <option value="1/4">1/4 Réservoir</option>
+                    <option value="Réserve">Réserve</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Remarques / Observations</label>
+                  <textarea
+                    rows={2}
+                    placeholder="État du véhicule, propreté, etc."
+                    value={restitutionForm.remarquesRestitution}
+                    onChange={(e) => setRestitutionForm({ ...restitutionForm, remarquesRestitution: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Anomalies constatées (le cas échéant)</label>
+                  <textarea
+                    rows={2}
+                    placeholder="Rayures, bruits anormaux, voyants..."
+                    value={restitutionForm.anomaliesConstatees}
+                    onChange={(e) => setRestitutionForm({ ...restitutionForm, anomaliesConstatees: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Niveau Carburant au Retour</label>
-                <select
-                  value={restitutionForm.niveauCarburantRetour}
-                  onChange={(e) => setRestitutionForm({ ...restitutionForm, niveauCarburantRetour: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-bold"
-                >
-                  <option value="Plein">Plein (100%)</option>
-                  <option value="3/4">3/4 Réservoir</option>
-                  <option value="1/2">1/2 Réservoir</option>
-                  <option value="1/4">1/4 Réservoir</option>
-                  <option value="Réserve">Réserve</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Remarques / Observation</label>
-                <textarea
-                  rows={2}
-                  placeholder="État du véhicule, propreté, etc."
-                  value={restitutionForm.remarquesRestitution}
-                  onChange={(e) => setRestitutionForm({ ...restitutionForm, remarquesRestitution: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Anomalies constatées (le cas échéant)</label>
-                <textarea
-                  rows={2}
-                  placeholder="Rayures, bruits anormaux, voyants..."
-                  value={restitutionForm.anomaliesConstatees}
-                  onChange={(e) => setRestitutionForm({ ...restitutionForm, anomaliesConstatees: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+              {/* Footer */}
+              <div className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center justify-end gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsRestitutionModalOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 font-bold text-slate-700"
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 text-xs font-bold transition-all cursor-pointer"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg gold-gradient-bg text-[#0A1E3F] font-extrabold shadow-md hover:brightness-105"
+                  className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-gold hover:brightness-105 transition-all flex items-center gap-2 cursor-pointer"
                 >
-                  Valider la restitution
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  <span>Valider la restitution</span>
                 </button>
               </div>
             </form>

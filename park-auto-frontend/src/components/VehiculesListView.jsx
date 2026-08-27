@@ -10,6 +10,9 @@ import ConfirmModal from './ConfirmModal';
 
 export default function VehiculesListView() {
   const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const roleName = user?.role?.nom || user?.role || 'CONSULTATION';
+  const canManage = ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL'].includes(roleName);
   const [vehicules, setVehicules] = useState([]);
   const [search, setSearch] = useState('');
   const [directionFilter, setDirectionFilter] = useState('');
@@ -160,15 +163,17 @@ export default function VehiculesListView() {
             </select>
           </div>
 
-          <motion.button
-            onClick={() => { setEditingVehicule(null); setIsModalOpen(true); }}
-            className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-gold flex items-center gap-2 cursor-pointer ml-auto"
-            whileHover={{ scale: 1.03, boxShadow: '0 8px 32px rgba(197,160,89,0.5)' }}
-            whileTap={{ scale: 0.97 }}
-          >
-            <Plus className="w-4 h-4" />
-            <span>Nouveau Véhicule</span>
-          </motion.button>
+          {canManage && (
+            <motion.button
+              onClick={() => { setEditingVehicule(null); setIsModalOpen(true); }}
+              className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-gold flex items-center gap-2 cursor-pointer ml-auto"
+              whileHover={{ scale: 1.03, boxShadow: '0 8px 32px rgba(197,160,89,0.5)' }}
+              whileTap={{ scale: 0.97 }}
+            >
+              <Plus className="w-4 h-4" />
+              <span>Nouveau Véhicule</span>
+            </motion.button>
+          )}
         </motion.div>
 
         {/* Fleet Data Table */}
@@ -289,20 +294,24 @@ export default function VehiculesListView() {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => { setEditingVehicule(v); setIsModalOpen(true); }}
-                            className="w-8 h-8 rounded-lg bg-[#C59B27]/10 border border-[#C59B27]/40 text-[#94700E] hover:bg-[#C59B27] hover:text-[#0A1E3F] flex items-center justify-center transition-all cursor-pointer"
-                            title="Modifier le véhicule"
-                          >
-                            <PenTool className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => requestArchive(v)}
-                            className="w-8 h-8 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-500 hover:text-white hover:border-red-500 flex items-center justify-center transition-all cursor-pointer"
-                            title="Archiver (Soft delete)"
-                          >
-                            <Archive className="w-4 h-4" />
-                          </button>
+                          {canManage && (
+                            <>
+                              <button
+                                onClick={() => { setEditingVehicule(v); setIsModalOpen(true); }}
+                                className="w-8 h-8 rounded-lg bg-[#C59B27]/10 border border-[#C59B27]/40 text-[#94700E] hover:bg-[#C59B27] hover:text-[#0A1E3F] flex items-center justify-center transition-all cursor-pointer"
+                                title="Modifier le véhicule"
+                              >
+                                <PenTool className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => requestArchive(v)}
+                                className="w-8 h-8 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-500 hover:text-white hover:border-red-500 flex items-center justify-center transition-all cursor-pointer"
+                                title="Archiver (Soft delete)"
+                              >
+                                <Archive className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>

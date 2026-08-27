@@ -28,6 +28,10 @@ public class InterventionMaintenance extends BaseEntity {
     @JoinColumn(name = "vehicule_id", nullable = false)
     private Vehicule vehicule;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "garage_agree_id")
+    private GarageAgree garageAgree;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private TypeMaintenance typeMaintenance = TypeMaintenance.PREVENTIVE;

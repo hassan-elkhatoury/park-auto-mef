@@ -1,16 +1,26 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Car, Send, Key, UserCheck, Shield, ChevronRight, Fuel, Wrench, BarChart3, Settings, Users } from 'lucide-react';
+import { 
+  LayoutDashboard, Car, Send, Key, UserCheck, Shield, ChevronRight, Fuel, 
+  Wrench, BarChart3, Settings, Users, ShieldCheck, ClipboardCheck, TrendingUp,
+  AlertTriangle, ShieldAlert, Building2
+} from 'lucide-react';
 
 const menuItems = [
   { id: 'dashboard', path: '/dashboard', label: 'Tableau de Bord', sub: 'Pilotage', icon: LayoutDashboard, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONDUCTEUR', 'CONSULTATION'] },
   { id: 'vehicules', path: '/vehicules', label: 'Flotte Automobile', sub: 'Gestion du Parc', icon: Car, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONDUCTEUR', 'CONSULTATION'] },
   { id: 'demandes', path: '/demandes', label: 'Demandes & Missions', sub: 'Réservations', icon: Send, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONDUCTEUR', 'CONSULTATION'] },
-  { id: 'affectations', path: '/affectations', label: 'Affectations & Restitutions', sub: 'Missions', icon: Key, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_SERVICE'] },
-  { id: 'conducteurs', path: '/conducteurs', label: 'Conducteurs & Chauffeurs', sub: 'Gestion du Personnel', icon: UserCheck, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_SERVICE'] },
-  { id: 'carburant', path: '/carburant', label: 'Carburant & Cartes', sub: 'Consommation L/100km', icon: Fuel, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONSULTATION'] },
-  { id: 'maintenance', path: '/maintenance', label: 'Entretien & Alertes', sub: 'Pannes & Échéances', icon: Wrench, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONSULTATION'] },
+  { id: 'affectations', path: '/affectations', label: 'Affectations & Restitutions', sub: 'Missions', icon: Key, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_SERVICE', 'CONSULTATION'] },
+  { id: 'conducteurs', path: '/conducteurs', label: 'Conducteurs & Chauffeurs', sub: 'Gestion du Personnel', icon: UserCheck, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_SERVICE', 'CONSULTATION'] },
+  { id: 'carburant', path: '/carburant', label: 'Carburant & Cartes', sub: 'Consommation L/100km', icon: Fuel, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONDUCTEUR', 'CONSULTATION'] },
+  { id: 'maintenance', path: '/maintenance', label: 'Entretien & Alertes 90%', sub: 'Révisions Périodiques', icon: Wrench, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONSULTATION'] },
+  { id: 'pannes', path: '/pannes', label: 'Pannes & Dépannage', sub: 'Remorquage & Ateliers', icon: AlertTriangle, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_SERVICE', 'CONDUCTEUR', 'CONSULTATION'] },
+  { id: 'sinistres', path: '/sinistres', label: 'Sinistres & Accidents', sub: 'Workflow Assurances', icon: ShieldAlert, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONDUCTEUR', 'CONSULTATION'] },
+  { id: 'garages', path: '/garages', label: 'Garages & Pièces MEF', sub: 'Prestataires Conventionnés', icon: Building2, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONSULTATION'] },
   { id: 'rapports', path: '/rapports', label: 'Reporting Exécutif (TCO)', sub: 'Analyses & Exports', icon: BarChart3, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONSULTATION'] },
+  { id: 'assurances', path: '/assurances', label: 'Polices d’Assurance', sub: 'Contrats & Garanties', icon: ShieldCheck, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONSULTATION'] },
+  { id: 'visites-reforme', path: '/visites-reforme', label: 'Visites & Réforme', sub: 'VT & Taxes & Réforme', icon: ClipboardCheck, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONSULTATION'] },
+  { id: 'budget', path: '/budget', label: 'Budget & Prévisions', sub: 'Suivi Budgétaire', icon: TrendingUp, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE'] },
   { id: 'utilisateurs', path: '/utilisateurs', label: 'Gestion des Utilisateurs', sub: 'Comptes & Accès', icon: Users, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL'] },
   { id: 'audit', path: '/audit', label: "Journal d'Audit", sub: 'Sécurité & Traçabilité', icon: Shield, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL'] },
 ];
@@ -32,7 +42,7 @@ export default function Sidebar({ user, collapsed }) {
   const navigate = useNavigate();
   const [logoError, setLogoError] = useState(false);
 
-  const roleName = user?.role?.nom || user?.role || 'CONSULTATION';
+  const roleName = typeof user?.role === 'string' ? user.role : (user?.role?.nom || user?.role?.name || 'CONSULTATION');
   const visibleMenuItems = menuItems.filter((item) => item.roles.includes(roleName));
 
   return (

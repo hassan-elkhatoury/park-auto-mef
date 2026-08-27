@@ -1,0 +1,464 @@
+{
+  "Sprint 2": {
+    "title": "Gestion des Véhicules",
+    "paragraphs": [
+      "Sprint 2 — Gestion des Véhicules",
+      "Rapport Technique de Réalisation et Spécifications — Ministère de l'Économie et des Finances",
+      "1. Introduction et Objectifs du Sprint 2",
+      "Ce chapitre présente les travaux réalisés lors du deuxième sprint du projet, intitulé « Gestion des Véhicules » (période du 20/07/2026 au 24/07/2026). L'objectif majeur de ce sprint est de concevoir et d'implémenter le module complet de gestion du parc matériel automobile du Ministère de l'Économie et des Finances (MEF).",
+      "Les fonctionnalités et règles clés développées au cours de ce sprint incluent :",
+      "La création et la gestion détaillée de la fiche véhicule (identification, caractéristiques techniques, acquisition et rattachement administratif).",
+      "La recherche paginée et le filtrage multicritères des véhicules du parc (par immatriculation, marque, modèle, direction ou statut).",
+      "La gestion dynamique du cycle de vie des véhicules (12 statuts administratifs et 8 états techniques).",
+      "L'historisation automatique de chaque changement de statut dans une table dédiée (historique_statuts_vehicule).",
+      "Le contrôle strict des règles de gestion d'unicité (immatriculation, numéro de châssis, numéro d'inventaire) et de la cohérence kilométrique.",
+      "2. Analyse Fonctionnelle du Sprint 2",
+      "2.1. Besoins Fonctionnels Spécifiés",
+      "Création d'une fiche véhicule (CRUD) : Permettre aux gestionnaires et administrateurs de saisir les 40+ attributs caractérisant un véhicule (immatriculation, numéro d'inventaire, marque, modèle, puissance fiscale, type de carburant, date de mise en circulation, centre de coût, etc.).",
+      "Consultation et Recherche Paginée : Consulter la liste des véhicules du ministère avec recherche par mot-clé (immatriculation, marque, modèle, inventaire) et filtrage par direction ou statut administratif.",
+      "Modification et Archivage (Soft Delete) : Mettre à jour les informations d'un véhicule tout en conservant son historique. L'archivage passe le statut administratif à ARCHIVE sans suppression physique en base de données afin de préserver l'intégrité référentielle.",
+      "Gestion des Statuts et États : Permettre l'évolution du véhicule à travers 12 statuts administratifs (DISPONIBLE, AFFECTE, RESERVE, IMMOBILISE, EN_ENTRETIEN, EN_REPARATION, etc.) et 8 états techniques (NEUF, BON_ETAT, ENTRETIEN_NECESSAIRE, ACCIDENTE, etc.), avec saisie du motif et de la pièce justificative.",
+      "2.2. Règles de Gestion Métier Strictes",
+      "Conformément aux exigences du cahier des charges du MEF, le système applique les règles suivantes :",
+      "RG01 - Unicité de l'immatriculation : Impossible d'enregistrer deux véhicules avec la même plaque d'immatriculation en base de données.",
+      "RG02 - Unicité du numéro de châssis : Le numéro de série / châssis doit être unique dans l'ensemble de la base du ministère.",
+      "RG03 - Unicité du numéro d'inventaire : Le numéro d'inventaire attribué par le Ministère doit être unique.",
+      "RG04 - Cohérence kilométrique : Le nouveau kilométrage actuel saisi ne peut jamais être inférieur au dernier kilométrage enregistré.",
+      "2.3. Diagramme de Cas d'Utilisation UML (Sprint 2)",
+      "Le diagramme ci-dessous illustre les interactions des utilisateurs avec le module de gestion des véhicules :",
+      "Figure 13 : Diagramme de cas d'utilisation UML (Sprint 2 — Gestion des Véhicules)",
+      "3. Conception et Modélisation Technique",
+      "3.1. Modélisation Statique (Diagramme de Classes UML)",
+      "Le diagramme de classes ci-dessous présente l'enrichissement du modèle de données avec les entités du Sprint 2 :",
+      "• Vehicule : Hérite de BaseEntity et contient les attributs d'identification, de technique et de rattachement. Elle utilise les énumérations TypeCarburant, StatutAdministratif et EtatTechnique.\n• HistoriqueStatutVehicule : Hérite de BaseEntity. Elle est reliée à Vehicule par une relation Many-to-One et enregistre les états d'origine et de destination, la date du changement, le motif et l'auteur.",
+      "Figure 14 : Diagramme de classes UML (Sprint 2 — Vehicule & HistoriqueStatutVehicule)",
+      "3.2. Modélisation Dynamique (Diagramme de Séquence UML)",
+      "Le diagramme ci-dessous décrit le processus de changement de statut d'un véhicule avec l'enregistrement automatique de la ligne d'historique et la journalisation d'audit :",
+      "Figure 15 : Diagramme de séquence UML — Changement de statut d'un véhicule",
+      "3.3. Schéma de la Base de Données Relationnelle (MPD)",
+      "Le schéma physique mis à jour comprend désormais les tables suivantes :",
+      "vehicules : Contient l'ensemble des 40+ attributs caractérisant les véhicules du parc.",
+      "historique_statuts_vehicule : Table d'historisation stockant chaque transition de statut administratif ou état technique avec la date et l'auteur.",
+      "journal_actions : Table d'audit globale stockant la trace de toutes les actions d'écriture (exclusif en base de données).",
+      "4. Réalisation, Architecture et Validation",
+      "4.1. Structure et Architecture du Code Source",
+      "Le module véhicule respecte l'architecture modulaire établie :",
+      "com.mef.parkauto.entity : Classes Vehicule, HistoriqueStatutVehicule et énumérations TypeCarburant, StatutAdministratif, EtatTechnique.",
+      "com.mef.parkauto.repository : VehiculeRepository (avec requête JPQL personnalisée multicritères) et HistoriqueStatutRepository.",
+      "com.mef.parkauto.dto.vehicule : Records Java VehiculeRequest, VehiculeResponse, StatutChangeRequest, HistoriqueStatutResponse.",
+      "com.mef.parkauto.mapper : Interfaces MapStruct VehiculeMapper et HistoriqueStatutMapper.",
+      "com.mef.parkauto.service : VehiculeService et son implémentation VehiculeServiceImpl centralisant la logique métier.",
+      "com.mef.parkauto.controller : VehiculeController protégé par @PreAuthorize pour la gestion des droits d'accès.",
+      "5. Démonstration Visuelle de l'Interface Web (Captures à Insérer)",
+      "Cette section contient les 5 emplacements pour les captures d'écran de démonstration de la flotte automobile :",
+      "▶ Figure 4.1 : Vue d'ensemble du Tableau de Bord & Indicateurs KPI Flotte (URL /dashboard)",
+      "Capture de l'écran principal affichant les compteurs KPI (Total Flotte, Disponibles, En Mission, Maintenance) et les graphiques Recharts.",
+      "▶ Figure 4.2 : Liste de la Flotte Automobile & Plaques Marocaines (URL /vehicules)",
+      "Capture du tableau dédié des véhicules avec photos réelles, filtres par Direction MEF, format d'immatriculation marocaine (| أ | 1) et bouton Consulter Fiche.",
+      "▶ Figure 4.3 : Fiche Technique Détaillée du Véhicule (URL /vehicules/:id)",
+      "Capture de la vue détaillée d'un véhicule affichant la photo grand format, le numéro d'inventaire, le numéro de châssis (VIN), le kilométrage et les caractéristiques.",
+      "▶ Figure 4.4 : Formulaire de Saisie & Rattachement aux Directions MEF",
+      "Capture de la modale de création/édition d'un véhicule avec sélection de la Direction du MEF (Direction du Budget, DGI, ADII, TGR, etc.) et modèle.",
+      "▶ Figure 4.5 : Documentation Interactive Swagger UI des Endpoints REST Véhicules",
+      "Capture de l'interface Swagger UI exposant les endpoints REST sécurisés (/api/vehicules).",
+      "6. Conclusion du Sprint 2",
+      "Le deuxième sprint a permis de livrer un module complet et sécurisé de gestion du parc de véhicules. Toutes les exigences du cahier des charges (40+ attributs métiers, 12 statuts administratifs, 8 états techniques, règles d'unicité et de kilométrage) ont été développées, testées et documentées sous Swagger.\n\nLa prochaine étape de notre planning est le Sprint 3 : Gestion des Affectations et des Conducteurs, qui permettra d'affecter les véhicules disponibles aux différentes directions et conducteurs du Ministère."
+    ],
+    "tables": [
+      [
+        [
+          ""
+        ]
+      ],
+      [
+        [
+          ""
+        ]
+      ],
+      [
+        [
+          ""
+        ]
+      ],
+      [
+        [
+          ""
+        ]
+      ],
+      [
+        [
+          ""
+        ]
+      ]
+    ]
+  },
+  "Sprint 3": {
+    "title": "Gestion des Affectations et Conducteurs",
+    "text": "Sprint 3 – Gestion des Affectations et des \nConducteurs \nRapport Technique de Réalisation et Spécifications — Ministère de \nl'Économie et des Finances \n📌 Informations Générales du Sprint 3 \nPériode de réalisation : 27/07/2026 au 31/07/2026 \nOrganisme bénéficiaire : Ministère de l'Économie et des Finances (MEF — Royaume du Maroc) \nStatut des livrables : Modèles JPA, REST Services, Générateur PDF Ordre de Mission et Interface React achevés \nà 100%. \n \n1. Introduction et Objectifs du Sprint 3 \nLe présent document détaille les spécifications, la conception technique et la réalisation complète du \ntroisième sprint du projet de gestion centralisée du parc automobile du Ministère de l'Économie et des \nFinances (MEF). Intitulé « Gestion des Affectations et des Conducteurs », ce sprint concrétise les \nmécanismes d'attribution opérationnelle des véhicules aux agents et directions ministérielles. \nLes objectifs clés réalisés au cours de ce sprint incluent : \n• \n1. Référentiel Conducteurs : Le référentiel complet des conducteurs et chauffeurs habilités du \nministère (numéro de permis, catégories B/C/D, date d'expiration, habilitations spéciales). \n• \n2. Lien Optionnel Utilisateur : Gestion de la relation souple conducteur-utilisateur (lien optionnel \npour intégrer les chauffeurs ministériels dédiés sans compte applicatif). \n• \n3. Demande de Déplacement : Le formulaire de demande de réservation & déplacement de mission \npour les agents du Ministère. \n• \n4. Workflow à 2 Niveaux : Le workflow de validation hiérarchique à 2 niveaux (Niveau 1 : \nResponsable de Service avec motif obligatoire en cas de rejet ; Niveau 2 : Approval et Affectation par \nle Gestionnaire du Parc). \n• \n5. Ordre de Mission PDF : La génération automatique et l'impression in-browser de l'Ordre de \nMission Officiel au format PDF (entête Royaume du Maroc - MEF, référence, véhicule, \nconducteur/passagers). \n• \n6. Restitution & Kilométrage : Le suivi rigoureux de la restitution du véhicule (contrôle du \nkilométrage retour >= kilométrage départ, niveau de carburant, réinitialisation automatique du \nvéhicule au statut DISPONIBLE). \n\n2. Analyse Fonctionnelle du Sprint 3 \n2.1. Besoins Fonctionnels Spécifiés \n• \nGestion des Conducteurs (Module 4 CdC) : Saisie et tenue à jour des attributs des chauffeurs \n(Matricule, CIN, Nom, Prénom, Direction/Service, Téléphone, N° Permis, Catégories, Date Expiration, \nHabilitations). Alerte automatique en cas d'expiration. \n• \nDemandes de Déplacement (Module 3 CdC) : Permettre à tout agent de saisir une demande de \nmission (Motif, Destination, Date/Heure départ, Date/Heure retour estimée, Passagers). \nInitialisation au statut EN_ATTENTE_VALIDATION. \n• \nValidation Hiérarchique Niveau 1 : Le Responsable de Service valide (VALIDEE_SERVICE) ou rejette \nla demande (REJETEE avec motif obligatoire). \n• \nAffectation Niveau 2 : Le Gestionnaire du Parc sélectionne un véhicule DISPONIBLE de la direction et \nun conducteur habilité avec permis valide (APPROUVEE_AFFECTEE). Le véhicule passe au statut \nAFFECTE. \n• \nRestitution & Clôture : Enregistrement de la date de restitution, du kilométrage retour (calcul auto \ndu delta), du niveau de carburant et des remarques. Le véhicule repasse automatiquement au statut \nDISPONIBLE. \n2.2. Règles de Gestion Métier Strictes \nConformément aux exigences du Cahier des Charges du MEF (Section 24) et aux recommandations de \ncadrage : \n• \nRG01 – Compatibilité et Validité du Permis : Le conducteur affecté doit obligatoirement posséder \nun permis de conduire valide et dont la catégorie (B, C, D) est compatible avec le type du véhicule \nassigné. \n• \nRG02 – Motif Obligatoire de Rejet N1 : Le Responsable de Service doit obligatoirement saisir un \nmotif explicite en cas de rejet N1 d'une demande de déplacement. \n• \nRG03 – Exclusivité du Véhicule Disponible : Une demande ne peut être attribuée qu'à un véhicule \nau statut DISPONIBLE et rattaché à la Direction MEF de l'agent demandeur. \n• \nRG04 – Règle de Non-Rétrogradation Kilométrique : Le kilométrage saisi lors de la restitution du \nvéhicule ne peut en aucun cas être inférieur au kilométrage de départ (kilometrageRetour >= \nkilometrageDepart). \n• \nRG05 – Flexibilité du Lien Conducteur-Utilisateur : La relation entre Conducteur et Utilisateur \nsystème est optionnelle (nullable = true). Les chauffeurs dédiés du Ministère ne possédant pas de \ncompte applicatif sont gérés sans restriction. \n2.3. Diagramme de Cas d'Utilisation UML (Sprint 3) \nLe diagramme ci-dessous illustre l'ensemble des cas d'utilisation et le rôle des 4 acteurs du système : \n\n \nFigure 16 : Diagramme de cas d'utilisation UML (Sprint 3 – Affectations & Conducteurs) \n3. Conception et Modélisation Technique \n3.1. Modélisation Statique (Diagramme de Classes UML) \nLe modèle du domaine a été enrichi avec 3 nouvelles entités principales et 3 énumérations de statut : \n \nFigure 17 : Diagramme de classes UML (Sprint 3 – DemandeDeplacement, Affectation & Conducteur) \n\n3.2. Modélisation Dynamique (Diagramme de Séquence UML) \nLe diagramme de séquence ci-après retrace le cycle de vie complet d'une demande de mission, depuis \nsa soumission jusqu'à la restitution du véhicule : \n \nFigure 18 : Diagramme de séquence UML – Workflow complet de Validation, Affectation et Restitution \n3.3. Schéma de la Base de Données Relationnelle (MPD) \nLes nouvelles tables créées sous PostgreSQL / H2 sont : \n• \nTable conducteurs : conducteurs (id, matricule, nom, prenom, cin, direction, service, telephone, \nemail, numero_permis, categorie_permis, date_delivrance_permis, date_expiration_permis, statut, \nhabilitations_speciales, utilisateur_id FK nullable). \n• \nTable demandes_deplacement : demandes_deplacement (id, reference, demandeur_id FK, motif, \ndestination, date_heure_depart, date_heure_retour_estimee, nombre_passagers, liste_passagers, \nstatut, motif_rejet, date_validation_service, valideur_service_id FK, date_approbation_parc, \napprobateur_parc_id FK). \n• \nTable affectations : affectations (id, reference, demande_id FK, vehicule_id FK, conducteur_id FK, \ndate_debut, date_fin_previsionnelle, date_fin_reelle, kilometrage_depart, kilometrage_retour, \nniveau_carburant_retour, remarques_restitution, anomalies_constatees, statut, createur_id FK). \n4. Réalisation, Architecture et Validation \n4.1. Structure du Code Source Backend \n• \nPackage entity : Classes Conducteur, DemandeDeplacement, Affectation et énumérations StatutDemande, \nStatutAffectation, StatutConducteur. \n• \nPackage repository : Interfaces ConducteurRepository, DemandeDeplacementRepository, \nAffectationRepository. \n• \nPackage service : ConducteurService, DemandeDeplacementService, AffectationService, OrdreMissionService. \n\n• \nPackage controller : ConducteurController (/api/conducteurs), DemandeDeplacementController \n(/api/demandes), AffectationController (/api/affectations), OrdreMissionController (/api/ordres-de-mission). \n4.2. Moteur de Génération PDF des Ordres de Mission \nL'émission de l'Ordre de Mission Officiel est assurée par le service OrdreMissionService s'appuyant sur la \nbibliothèque OpenPDF. Le document PDF généré comprend l'entête institutionnel du Royaume du \nMaroc et du MEF, la référence unique, les caractéristiques du véhicule et du chauffeur assigné, la liste \ndes passagers ainsi que les zones officielles pour signatures et cachets. L'endpoint /api/ordres-de-\nmission/{id}/pdf renvoie le flux binaire avec le header Content-Disposition: inline permettant un aperçu \net une impression in-browser en un clic. \n5. Démonstration Visuelle de l'Interface Web (Captures à \nInsérer) \nCette section réserve les 7 emplacements cadrés pour les captures d'écran de démonstration de \nl'application React : \n \nFigure 5.1 : Référentiel des Conducteurs & Suivi des Permis \n \n \nFigure 5.2 : Tableau des Demandes de Déplacement & Formulaire Agent \n \n \n\n \nFigure 5.3 : Modale de Validation Hiérarchique Niveau 1 (Service) \n \n \nFigure 5.4 : Module d'Affectation Niveau 2 des Véhicules & Chauffeurs \n \n \n \nFigure 5.5 : Aperçu In-Browser & Impression de l'Ordre de Mission Officiel MEF \n \n\n \n \nFigure 5.6 : Modale de Restitution du Véhicule & Contrôle Kilométrique \n \n \n \n \n Figure 5.7 : Documentation Interactive Swagger UI des Endpoints REST Sprint 3 \n\n6. Conclusion du Sprint 3 \nLe troisième sprint a permis de délivrer l'intégralité du module d'affectation des véhicules et de gestion \ndes conducteurs. Toutes les exigences du Cahier des Charges du MEF (workflow de validation à 2 \nniveaux, règles de compatibilité des permis, non-rétrogradation kilométrique, flexibilité du lien \nconducteur-utilisateur et émission des Ordres de Mission officiels en PDF) ont été rigoureusement \ndéveloppées, testées et validées. \nLa prochaine étape du projet concerne le Sprint 4 : Gestion des Consommations de Carburant, Cartes \nCarburant et Assurances. \n"
+  },
+  "Sprint 4": {
+    "title": "Gestion Carburant, Maintenance & TCO",
+    "text": "Royaume du Maroc -- MEF | Park Auto MEF (Sprint 4) \nRapport Technique Sprint 4 -- Gestion Carburant, Maintenance & Reporting TCO \nSprint 4 - Gestion du Carburant, Maintenance & \nReporting TCO \nRapport Technique de Realisation et Specifications \n \n1. Introduction et Objectifs du Sprint 4 \nLe present document detaille les specifications, la conception technique et la realisation \ncomplete du quatrieme et dernier sprint du projet Park Auto MEF (periode du 03/08/2026 au \n07/08/2026), dedie a la Gestion du Carburant, de la Maintenance, des Alertes et du Reporting \nExecutif TCO pour le Ministere de l'Economie et des Finances (MEF). \nLes objectifs cles realises au cours de ce sprint incluent : \n• \n1. Cartes Carburant Dotation : Gestion du repertoire des cartes (TotalEnergies, Afriquia, \nWinxo, Shell) avec suivi des plafonds mensuels, soldes et dates d'expiration. \n• \n2. Saisie des Pleins & Controle Kilometrique : Formulaire de saisie des pleins avec controle \nstrict kilometrage >= kilometrageActuel et mise a jour automatique du kilométrage. \n• \n3. Detection des Anomalies de Surconsommation : Calcul automatique L/100km et \nsignalement par badge orange (+20% ou >12 L/100km). \n• \n4. Maintenance Preventive & Curative : Registre des entretiens avec bascule automatique \nEN_MAINTENANCE lors d'une immobilisation. \n• \n5. Panneau d'Alertes Intelligentes : Alerte preventive a 90% du seuil kilometrique et suivi \ndes echeances legales (Assurance, VT, Vignette). \n• \n6. Reporting Executif & Exportations : TCO = Acquisition + Carburant + Maintenance, \nexports Excel (.xlsx) via Apache POI et PDF officiel via OpenPDF. \n \n2. Analyse Fonctionnelle du Sprint 4 \n2.1. Besoins Fonctionnels Specifies \n• \nGestion du Carburant & Cartes (Module 5 CdC) : Suivi des cartes carburant par \nvehicule/service, enregistrement des tickets/factures et calcul automatique L/100km. \n• \nGestion de la Maintenance (Module 6 CdC) : Suivi des operations d'entretien preventif et \nreparations curatives, suivi du cout pieces et main d'oeuvre. \n• \nAlertes & Echeances Legales (Module 7 CdC) : Panneau reunissant le seuil kilometrique \npreventif (90%) et les alertes d'expiration Assurance, VT et Vignette. \n• \nReporting Executif TCO (Module 8 CdC) : Tableau de bord financier par Direction MEF et \npar vehicule. \n2.2. Regles de Gestion Metier Strictes \n\nRoyaume du Maroc -- MEF | Park Auto MEF (Sprint 4) \nRapport Technique Sprint 4 -- Gestion Carburant, Maintenance & Reporting TCO \nConformement aux exigences du Cahier des Charges du MEF (Sections 10 a 15 et 23, 25) : \n• \nRG01 - Controle Non-Retrograde du Kilometrage : Tout nouveau plein verifie \nimpetrativement kilometrage >= kilometrageActuel, puis met a jour le compteur. \n• \nRG02 - Detection Automatique de Surconsommation : Anomalie signalement automatique \n(badge orange) si conso > seuil constructeur * 1.20 ou conso > 12 L/100km. \n• \nRG03 - Immobilisation Automatique EN_MAINTENANCE : immobilisation=true bascule le \nvehicule a EN_MAINTENANCE ; a la cloture (TERMINEE) il repasse a DISPONIBLE. \n• \nRG04 - Seuil d'Alerte Preventive (90%) : Alerte automatique declenchee quand \nkilometrageActuel >= 0.90 * prochainSeuilEntretienKm. \n• \nRG05 - Formule Officielle du TCO : TCO = Acquisition + Carburant + Maintenance par \nvehicule et par Direction MEF. \n• \nRG06 - Exportations Multi-Formats : Rapport Excel (.xlsx) via Apache POI et PDF officiel \n(entete Royaume du Maroc + MEF) via OpenPDF. \n2.3. Diagramme de Cas d'Utilisation UML (Sprint 4) \nLe diagramme ci-dessous illustre l'ensemble des cas d'utilisation et le role des 4 acteurs du \nsysteme pour le Sprint 4 : \n \nFigure 21 : Diagramme de cas d'utilisation UML (Sprint 4 - Carburant, Maintenance & TCO) \n \n3. Conception et Modelisation Technique \n\nRoyaume du Maroc -- MEF | Park Auto MEF (Sprint 4) \nRapport Technique Sprint 4 -- Gestion Carburant, Maintenance & Reporting TCO \n3.1. Modelisation Statique (Diagramme de Classes UML) \nLe modele du domaine a ete enrichi avec 3 entites principales (CarteCarburant, PleinCarburant, \nInterventionMaintenance) et leurs enumerations associees : \n \nFigure 22 : Diagramme de classes UML (Sprint 4 - Domaine Carburant, Maintenance & Alertes) \n3.2. Modelisation Dynamique (Diagramme de Sequence UML) \nLe diagramme de sequence ci-apres retrace la saisie d'un plein, le controle du kilometrage, le \ncalcul L/100km et la detection d'anomalies : \n\nRoyaume du Maroc -- MEF | Park Auto MEF (Sprint 4) \nRapport Technique Sprint 4 -- Gestion Carburant, Maintenance & Reporting TCO \n \nFigure 23 : Diagramme de sequence UML - Saisie Plein, Calcul L/100km & Detection Surconsommation \n3.3. Schema de la Base de Donnees Relationnelle (MPD) \nLes nouvelles tables creees sous PostgreSQL / H2 sont : \n• \nTable cartes_carburant : (id, numero_carte, fournisseur, vehicule_id FK, service_attribue, \nplafond_mensuel, solde, date_activation, date_expiration, statut, observation). \n• \nTable pleins_carburant : (id, vehicule_id FK, conducteur_id FK, carte_carburant_id FK, \ndate_plein, station_service, type_carburant, quantite_litres, prix_unitaire, montant_ttc, \nkilometrage, consommation_moyenne, anomalie_surconsommation, reference_ticket). \n• \nTable interventions_maintenance : (id, vehicule_id FK, type_maintenance, \nnature_operation, date_previsionnelle, date_realisation, kilometrage_realise, prestataire, \ncout_main_oeuvre, cout_pieces, montant_total, statut, immobilisation, description). \n \n4. Realisation, Architecture et Validation \n4.1. Structure du Code Source Backend \n• \nPackage entity : CarteCarburant, PleinCarburant, InterventionMaintenance et enumerations \nCarteCarburantStatut, TypeMaintenance, NatureMaintenance, StatutMaintenance. \n• \nPackage repository : CarteCarburantRepository, PleinCarburantRepository, \nInterventionMaintenanceRepository. \n• \nPackage service : CarburantService, MaintenanceService, ReportingService. \n\nRoyaume du Maroc -- MEF | Park Auto MEF (Sprint 4) \nRapport Technique Sprint 4 -- Gestion Carburant, Maintenance & Reporting TCO \n• \nPackage controller : CarburantController (/api/carburant), MaintenanceController \n(/api/maintenance), ReportingController (/api/reporting). \n4.2. Moteur d'Exportation Executive (Excel Apache POI & PDF OpenPDF) \nL'exportation Excel s'appuie sur Apache POI (poi-ooxml 5.2.5) avec en-tetes bleus marine, \nzebrures et formules SUM/AVERAGE. L'exportation PDF s'appuie sur OpenPDF avec en-tete \nofficiel Royaume du Maroc + MEF, banniere titre doree, cartes KPI et zone de signature DAG. \n \n5. Demonstration Visuelle de l'Interface Web (Captures a Inserer) \nCette section reserve les emplacements cadres pour les captures d'ecran de demonstration \nReact : \nFigure 5.1 : Interface de Gestion des Cartes Dotation & Historique des Pleins (/carburant) \n \n[INSERER CAPTURE D'ECRAN ICI] \n \nModule Carburant - 3 onglets (Historique, Cartes Dotation, Analyse Consommation) avec filtres \nvehicule/direction. \n \nFigure 5.2 : Modal de Saisie d'un Plein, Validation Kilometrage & Badge Surconsommation \n \n[INSERER CAPTURE D'ECRAN ICI] \n \nFormulaire modal avec calcul automatique L/100km, controle km >= kmActuel et badge anomalie orange. \n \nFigure 5.3 : Registre des Interventions de Maintenance Preventive & Curative (/maintenance) \n \n[INSERER CAPTURE D'ECRAN ICI] \n \nTableau des entretiens (Vidange, Freins), statut des interventions et indicateur immobilisation. \n \nFigure 5.4 : Panneau d'Alertes Intelligentes (90% km & Echeances Legales) \n \n[INSERER CAPTURE D'ECRAN ICI] \n \nAlertes maintenance a 90% du seuil km et alertes Assurance / Controle Technique / Vignette. \n\nRoyaume du Maroc -- MEF | Park Auto MEF (Sprint 4) \nRapport Technique Sprint 4 -- Gestion Carburant, Maintenance & Reporting TCO \n \nFigure 5.5 : Tableau de Bord Executif TCO & Performance Flotte (/rapports) \n \n[INSERER CAPTURE D'ECRAN ICI] \n \nKPI Cards (Cout Total, Carburant, Maintenance, TCO Moyen), synthese par Direction et graphiques \nRecharts. \n \nFigure 5.6 : Export Excel (.xlsx) Rapport TCO ouvert sous Microsoft Excel \n \n[INSERER CAPTURE D'ECRAN ICI] \n \nFichier Excel genere via Apache POI avec en-tetes MEF, formules et style visuel professionnel. \n \nFigure 5.7 : Documentation Swagger UI des Endpoints REST Sprint 4 \n \n[INSERER CAPTURE D'ECRAN ICI] \n \nSwagger UI affichant CarburantController, MaintenanceController et ReportingController. \n \n6. Conclusion du Sprint 4 et Bilan Global du Projet \nLe quatrieme sprint acheve le developpement de l'application Park Auto MEF en livrant les \nmodules de carburant, de maintenance, d'alertes preventives et de reporting executif TCO. \nL'ensemble des exigences fonctionnelles et techniques du Cahier des Charges du MEF est \nrigoureusement satisfait. \n"
+  },
+  "Sprint 5": {
+    "title": "Assurances, Sinistres, Budget & Sécurité",
+    "text": "Royaume du Maroc — MEF | Park Auto MEF (Sprint 5) \nRapport Technique Sprint 5 — Assurances, Sinistres, Budget, Réforme & Sécurité (100% CdC MEF) \nSprint 5 — Assurances, Sinistres, Budget & Sécurité \n(100% CdC MEF) \nRapport Technique de Réalisation et Spécifications — Ministère de l'Économie et \ndes Finances \n \n1. Introduction et Objectifs du Sprint 5 \nLe présent document constitue le rapport de réalisation complet du cinquième et dernier sprint \ndu projet Park Auto MEF (période du 10/08/2026 au 14/08/2026). Ce sprint achève la totalité du \npérimètre fonctionnel du Cahier des Charges du Ministère de l'Économie et des Finances (MEF) \navec une couverture de 100%. \nLes objectifs majeurs achevés au cours du Sprint 5 comprennent : \n• \n1. Gestion des Assurances & Polices Flotte : Répertoire des contrats (AXA, RMA, Wafa), \ngaranties, primes, franchises et alertes automatiques J-30 avant expiration. \n• \n2. Déclaration et Suivi des Sinistres : Workflow d'enregistrement des accidents, constats, \nexpertises, indemnisations et bascule automatique du véhicule au statut ACCIDENTE. \n• \n3. Gestion des Infractions et Contraventions : Enregistrement des PV radar/amendes \nattribués aux véhicules et aux conducteurs lors de leurs ordres de mission. \n• \n4. Visites Techniques & Taxes Automobiles : Contrôles réglementaires, gestion des contre-\nvisites sous 15 jours, suivi des vignettes et taxes de circulation. \n• \n5. Procédure de Réforme & Sortie d'Inventaire : Workflow de déclassement des véhicules \nvétustes (EN_COURS_DE_REFORME, REFORME, VENDU) avec attachement du PV de \nCommission de Réforme. \n• \n6. Suivi Budgétaire Analytique & Prévisions Carburant : Allocation par Direction MEF (Prévu \nvs Engagé vs Réalisé) et calcul automatique des besoins futurs en carburant. \n• \n7. Administration RBAC, Notifications Email & GED Sécurisée : Moteur SMTP \nJavaMailSender, audit logs immutables et stockage sécurisé des documents justificatifs. \n \n2. Analyse Fonctionnelle du Sprint 5 \n2.1. Besoins Fonctionnels Spécifiés \n• \nAssurances & Sinistres (Module 9 CdC) : Gestion des polices d'assurance, déclaration des \nsinistres et gestion des indemnisations. \n• \nInfractions Routières (Module 4 & 9 CdC) : Registre des contraventions routières rattachées \nau conducteur et au véhicule. \n• \nVisites & Taxes (Module 7 & 8 CdC) : Suivi des contrôles techniques et des vignettes avec \ndéclenchement des ordres de révision. \n\nRoyaume du Maroc — MEF | Park Auto MEF (Sprint 5) \nRapport Technique Sprint 5 — Assurances, Sinistres, Budget, Réforme & Sécurité (100% CdC MEF) \n• \nRéforme des Véhicules (Module 6.4 CdC) : Processus administratif de réforme et sortie \nformelle de l'inventaire du MEF. \n• \nBudget Analytique & Prévisions (Module 10 CdC) : Tableau de suivi des crédits par \nDirection et projection du besoin carburant. \n• \nSécurité, Audit & Email (Module 2 & 21 CdC) : Traçabilité immutable des actions et alertes \npar courriel SMTP. \n2.2. Règles de Gestion Métier Strictes \n• \nRG01 — Bascule Automatique lors d'un Sinistre : Une déclaration de sinistre ou l'initiation \nd'une réforme bascule immédiatement le véhicule aux statuts ACCIDENTE, \nEN_REPARATION ou EN_COURS_DE_REFORME. \n• \nRG02 — Contrôle d'Assurance à l'Affectation : Tout véhicule sans contrat d'assurance actif \nou avec une police expirante sous J-30 fait l'objet d'un blocage à l'affectation et d'une alerte \nemail SMTP. \n• \nRG03 — Ordre de Réparation sur Contre-Visite : Un résultat de visite technique \nCONTRE_VISITE_OBLIGATOIRE génère automatiquement un ordre d'intervention sous 15 \njours. \n• \nRG04 — PV de Commission Obligatoire pour la Réforme : La validation finale de la réforme \nexige impérativement le téléversement du Procès-Verbal de la Commission de Réforme. \n• \nRG05 — Journalisation Immutable (AuditLog) : Toute modification administrative ou \nbudgétaire fait l'objet d'un enregistrement non modifiable (AuditLog) traçant l'auteur, \nl'adresse IP et l'horodatage. \n2.3. Diagramme de Cas d'Utilisation UML (Sprint 5) \n \n\nRoyaume du Maroc — MEF | Park Auto MEF (Sprint 5) \nRapport Technique Sprint 5 — Assurances, Sinistres, Budget, Réforme & Sécurité (100% CdC MEF) \nFigure 27 : Diagramme de cas d'utilisation UML (Sprint 5 — Assurances, Budget, Réforme & Sécurité) \n \n3. Conception et Modélisation Technique \n3.1. Modélisation Statique (Diagramme de Classes UML) \n \nFigure 28 : Diagramme de classes UML (Sprint 5 — Assurances, Sinistres, Budget & GED) \n3.2. Modélisation Dynamique (Diagramme de Séquence UML) \n\nRoyaume du Maroc — MEF | Park Auto MEF (Sprint 5) \nRapport Technique Sprint 5 — Assurances, Sinistres, Budget, Réforme & Sécurité (100% CdC MEF) \n \nFigure 29 : Diagramme de séquence UML — Déclaration Sinistre, Bascule Statut & Notification Email \n \n4. Démonstration Visuelle de l'Interface Web (Captures à Insérer) \nFigure 5.1 : Module de Gestion des Assurances, Sinistres & Infractions (/assurances) \n \n📸 [INSERER CAPTURE D'ECRAN ICI : Figure 5.1 : Module de Gestion des Assurances, Sinistres & \nInfractions (/assurances)] \n \nVue principale du module avec les 3 onglets (Polices d'Assurance, Déclarations de Sinistre, Contraventions \n& PV). \n \nFigure 5.2 : Formulaire de Déclaration de Sinistre & Bascule Automatique au Statut \nACCIDENTE \n \n📸 [INSERER CAPTURE D'ECRAN ICI : Figure 5.2 : Formulaire de Déclaration de Sinistre & Bascule \nAutomatique au Statut ACCIDENTE] \n \nModale de saisie d'un accident avec upload des pièces jointes et mise à jour immédiate du statut du \nvéhicule. \n \n\nRoyaume du Maroc — MEF | Park Auto MEF (Sprint 5) \nRapport Technique Sprint 5 — Assurances, Sinistres, Budget, Réforme & Sécurité (100% CdC MEF) \nFigure 5.3 : Module des Visites Techniques, Taxes Automobiles & Réforme (/visites-\ntechniques) \n \n📸 [INSERER CAPTURE D'ECRAN ICI : Figure 5.3 : Module des Visites Techniques, Taxes Automobiles & \nRéforme (/visites-techniques)] \n \nInterface de suivi des contrôles réglementaires, des vignettes et du workflow de réforme des véhicules \nvétustes. \n \nFigure 5.4 : Workflow de Validation de la Réforme & Téléversement du PV de Commission \n \n📸 [INSERER CAPTURE D'ECRAN ICI : Figure 5.4 : Workflow de Validation de la Réforme & \nTéléversement du PV de Commission] \n \nÉcran de déclassement d'un véhicule exigeant l'upload du Procès-Verbal de la Commission de Réforme. \n \nFigure 5.5 : Tableau de Bord Budgétaire Analytique & Prévisions Carburant (/budget) \n \n📸 [INSERER CAPTURE D'ECRAN ICI : Figure 5.5 : Tableau de Bord Budgétaire Analytique & Prévisions \nCarburant (/budget)] \n \nTableau d'allocation budgétaire par Direction (Prévu vs Engagé vs Réalisé) et prévisions mensuelles de \ncarburant. \n \nFigure 5.6 : Console d'Administration, Audit Logs & Visualiseur GED (/administration) \n \n📸 [INSERER CAPTURE D'ECRAN ICI : Figure 5.6 : Console d'Administration, Audit Logs & Visualiseur \nGED (/administration)] \n \nConsole de traçabilité des actions immutables (AuditLog), suivi des envois d'emails et gestionnaire GED. \n \nFigure 5.7 : Documentation Interactive Swagger UI des Endpoints REST Sprint 5 \n \n📸 [INSERER CAPTURE D'ECRAN ICI : Figure 5.7 : Documentation Interactive Swagger UI des Endpoints \nREST Sprint 5] \n \nInterface Swagger UI (/swagger-ui.html) affichant les nouveaux contrôleurs REST d'Assurances, Sinistres, \n\nRoyaume du Maroc — MEF | Park Auto MEF (Sprint 5) \nRapport Technique Sprint 5 — Assurances, Sinistres, Budget, Réforme & Sécurité (100% CdC MEF) \nBudget, Réforme et Audit. \n \n5. Conclusion du Sprint 5 et Bilan Global du Projet PFA \nLe cinquième et dernier sprint clôture avec succès l'ensemble du projet Park Auto MEF. Toutes \nles exigences fonctionnelles et techniques énoncées dans le Cahier des Charges du Ministère \nde l'Économie et des Finances du Maroc ont été développées, testées et validées avec une \ncouverture fonctionnelle de 100%. \n"
+  },
+  "Sprint 6": {
+    "title": "Maintenance, Pannes & Sinistres Approfondis",
+    "text": "Royaume du Maroc — MEF | Park Auto MEF (Sprint 6) \nRapport Technique Sprint 6 — Gestion de la Maintenance, Pannes & Sinistres (100% CdC MEF) \nSprint 6 — Gestion de la Maintenance, des Pannes & \nTraitement des Sinistres \nRapport Technique de Réalisation et Spécifications — Ministère de l'Économie et \ndes Finances \n \n1. Introduction et Objectifs du Sprint 6 \nLe présent document constitue le rapport technique de réalisation et de spécifications pour le \nSprint 6 (période du 17/08/2026 au 21/08/2026), entièrement dédié à la « Gestion de la \nMaintenance Préventive, des Pannes et du Traitement des Sinistres » pour le parc automobile \ndu Ministère de l'Économie et des Finances (MEF). \nLes objectifs majeurs achevés et validés au cours du Sprint 6 comprennent : \n• \n1. Maintenance Préventive & Planification des Entretiens : Programmation des révisions par \nseuil kilométrique, déclenchement d'alerte automatique à 90% du seuil et suivi des coûts \n(MO + pièces). \n• \n2. Gestion des Pannes & Réparations Curatives : Déclaration de panne par le \nconducteur/gestionnaire, diagnostic atelier, ordre de réparation et bascule automatique des \nstatuts (EN_MAINTENANCE / EN_REPARATION -> DISPONIBLE). \n• \n3. Traitement Intégral des Sinistres Automobile : Workflow complet de suivi d'accident \n(DECLARE, TRANSMIS, EN_COURS_D_EXPERTISE, INDEMNISE, CLOTURE), \nfranchise, remboursement et bascule au statut ACCIDENTE. \n• \n4. Intégration Budgétaire & Alertes Multi-canaux : Impact budgétaire automatique par \nDirection MEF, alertes in-app & email SMTP JavaMailSender pour dépassement de délai \nd'immobilisation ou coût anormal. \n• \n5. Répertoire des Garages Agréés MEF & Pièces Détachées : Référentiel des prestataires \nagréés, catalogue des pièces détachées remplacées et téléversement des factures dans la \nGED. \n \n2. Analyse Fonctionnelle du Sprint 6 \n2.1. Besoins Fonctionnels Spécifiés \n• \nMaintenance Préventive (CdC Section 15) : Programmation des entretiens périodiques \n(vidange, filtres, freins, pneumatiques, batterie, climatisation) et alerte à 90% du seuil \nkilométrique. \n• \nPannes Curatives (CdC Section 16) : Déclaration de panne, suivi du diagnostic devis atelier, \nbon de sortie et clôture de réparation. \n\nRoyaume du Maroc — MEF | Park Auto MEF (Sprint 6) \nRapport Technique Sprint 6 — Gestion de la Maintenance, Pannes & Sinistres (100% CdC MEF) \n• \nSinistres Automobile (CdC Section 14) : Dépôt de constat amiable/PV de police, suivi \nd'expertise assurance, franchise et remboursement. \n• \nGarages Agréés & Catalogue Pièces (CdC Section 17) : Référentiel des prestataires \nqualifiés MEF et suivi des pièces de rechange. \n• \nImpact Budgétaire & GED (CdC Section 19 & 22) : Imputation automatique des coûts sur le \nbudget alloué à la Direction et attachement des factures. \n2.2. Règles de Gestion Métier Strictes \n• \nRG01 — Seuil d'Alerte Préventive 90% : Un déclenchement d'entretien préventif s'active \nautomatiquement dès que le kilométrage actuel atteint 90% du seuil fixé (ex: alerte à 9 000 \nkm pour un seuil à 10 000 km). \n• \nRG02 — Immobilisation Automatique lors de Panne ou Maintenance : La création d'une \nintervention lourde ou la déclaration d'une panne immobilisante passe immédiatement le \nvéhicule au statut EN_MAINTENANCE ou EN_REPARATION et interdit toute nouvelle \naffectation. \n• \nRG03 — Verrouillage pour Sinistre Grave : Une déclaration de sinistre passe le véhicule au \nstatut ACCIDENTE. Sa remise en circulation exige impérativement la clôture du dossier \nd'assurance et un PV de ré-homologation. \n• \nRG04 — Contrôle Strict du Kilométrage Croissant : Le kilométrage réel saisi lors de la \nclôture d'une réparation ne peut en aucun cas être inférieur au kilométrage actuel du \nvéhicule (if (kmReel < kilometrageActuel) throw Exception). \n• \nRG05 — Contrôle de Dépassement Budgétaire : Tout coût de réparation dépassant le \nbudget disponible alloué à la Direction du MEF déclenche une alerte automatique et exige \nune validation hiérarchique. \n2.3. Diagramme de Cas d'Utilisation UML (Sprint 6) \n\nRoyaume du Maroc — MEF | Park Auto MEF (Sprint 6) \nRapport Technique Sprint 6 — Gestion de la Maintenance, Pannes & Sinistres (100% CdC MEF) \n \nFigure 30 : Diagramme de cas d'utilisation UML (Sprint 6 — Maintenance, Pannes & Sinistres) \n \n3. Conception et Modélisation Technique \n3.1. Modélisation Statique (Diagramme de Classes UML) \n \n\nRoyaume du Maroc — MEF | Park Auto MEF (Sprint 6) \nRapport Technique Sprint 6 — Gestion de la Maintenance, Pannes & Sinistres (100% CdC MEF) \nFigure 31 : Diagramme de classes UML (Sprint 6 — Maintenance, Pannes, Sinistres & Garages Agréés) \n3.2. Modélisation Dynamique (Diagramme de Séquence UML) \n \nFigure 32 : Diagramme de séquence UML — Clôture de Réparation & Contrôle Kilométrage Croissant (RG04) \n \n4. Démonstration Visuelle de l'Interface Web (Captures à Insérer) \nFigure 5.1 : Interface de Planification de la Maintenance Préventive & Alertes 90% km \n(/maintenance) \n \n📸 [INSERER CAPTURE D'ECRAN ICI : Figure 5.1 : Interface de Planification de la Maintenance \nPréventive & Alertes 90% km (/maintenance)] \n \nVue du tableau de bord de maintenance préventive affichant les jauges de seuil kilométrique (alertes 90%), \nle calendrier d'entretien et les types de révision. \n \nFigure 5.2 : Formulaire de Déclaration de Panne & Demande de Remorquage Urgent (/pannes) \n \n📸 [INSERER CAPTURE D'ECRAN ICI : Figure 5.2 : Formulaire de Déclaration de Panne & Demande de \nRemorquage Urgent (/pannes)] \n \nInterface de saisie d'une panne par le conducteur ou le gestionnaire avec degré d'urgence, localisation, \npossibilité de dplacement et affectation atelier. \n \n\nRoyaume du Maroc — MEF | Park Auto MEF (Sprint 6) \nRapport Technique Sprint 6 — Gestion de la Maintenance, Pannes & Sinistres (100% CdC MEF) \nFigure 5.3 : Modale de Clôture d'une Réparation Curative & Contrôle du Kilométrage \nCroissant (RG04) \n \n📸 [INSERER CAPTURE D'ECRAN ICI : Figure 5.3 : Modale de Clôture d'une Réparation Curative & \nContrôle du Kilométrage Croissant (RG04)] \n \nFormulaire de clôture de réparation exigeant la saisie du kilométrage réel (bloqué si kmReel < kmActuel), le \ndétail des pièces remplacées et la facture. \n \nFigure 5.4 : Registre des Dossiers de Sinistre & Workflow de Suivi Assurance (/sinistres) \n \n📸 [INSERER CAPTURE D'ECRAN ICI : Figure 5.4 : Registre des Dossiers de Sinistre & Workflow de Suivi \nAssurance (/sinistres)] \n \nTableau de suivi des accidents avec gestion des statuts d'assurance (DECLARE, \nEN_COURS_D_EXPERTISE, INDEMNISE), montant de franchise et pièces justificatives. \n \nFigure 5.5 : Répertoire des Garages Agréés MEF & Catalogue des Pièces Détachées \n \n📸 [INSERER CAPTURE D'ECRAN ICI : Figure 5.5 : Répertoire des Garages Agréés MEF & Catalogue des \nPièces Détachées] \n \nVue du référentiel des garages partenaires du Ministère, tarifs négociés et catalogue des pièces de \nrechange utilisées lors des réparations. \n \nFigure 5.6 : Suivi de l'Impact Budgétaire des Réparations & Alertes de Dépassement \n \n📸 [INSERER CAPTURE D'ECRAN ICI : Figure 5.6 : Suivi de l'Impact Budgétaire des Réparations & Alertes \nde Dépassement] \n \nTableau de bord financier montrant l'imputation automatique des coûts de maintenance/sinistre sur le budget \nalloué à la Direction MEF concernée. \n \nFigure 5.7 : Documentation Interactive Swagger UI des Endpoints REST Maintenance, Pannes \n& Sinistres \n \n📸 [INSERER CAPTURE D'ECRAN ICI : Figure 5.7 : Documentation Interactive Swagger UI des Endpoints \nREST Maintenance, Pannes & Sinistres] \n\nRoyaume du Maroc — MEF | Park Auto MEF (Sprint 6) \nRapport Technique Sprint 6 — Gestion de la Maintenance, Pannes & Sinistres (100% CdC MEF) \n \nInterface Swagger UI (/swagger-ui.html) affichant les contrôleurs REST /api/maintenance, /api/pannes, \n/api/sinistres et /api/garages. \n \n5. Conclusion du Sprint 6 et Bilan Global du Projet \nLe sixième sprint parachève l'implémentation complète de la gestion de la maintenance \npréventive, des pannes curatives et du traitement intégral des sinistres pour le Ministère de \nl'Économie et des Finances. Toutes les règles de gestion (contrôle du kilométrage croissant \nRG04, alerte 90% km RG01, bascule automatique des statuts RG02/RG03) ont été \nrigoureusement développées et validées, assurant une parfaite maîtrise opérationnelle et \nfinancière du parc automobile. \n"
+  },
+  "Sprint 7": {
+    "title": "Suivi Budgétaire & Tableaux de Bord Décisionnels",
+    "paragraphs": [
+      "RAPPORT TECHNIQUE DE RÉALISATION ET DE SPÉCIFICATIONS\nSPRINT 7 : SUIVI BUDGÉTAIRE ANALYTIQUE, TABLEAUX DE BORD EXÉCUTIFS & CONSOLIDATION TCO",
+      "Objectifs majeurs atteints et livrés au cours du Sprint 7",
+      "Contrôle Budgétaire Analytique (CdC Sec 19) : Allocation annuelle des enveloppes par Direction MEF, Service, Centre de coût et 11 Natures de dépenses.",
+      "Chaîne Complète des Engagements (RG01) : Gestion intégrale du cycle (Budget Alloué ➔ Engagé ➔ Réalisé/Liquidé ➔ Disponible) avec verrouillage automatique en temps réel si solde insuffisant.",
+      "Détection Automatique & Alertes de Seuils (RG03) : Surveillance active avec émission d'alertes In-App et notifications Email SMTP aux seuils de 80% (Vigilance) et 95% (Critique).",
+      "Clôture d'Exercice & Non-Rétroactivité (RG04) : Procédure formelle de clôture annuelle de l'exercice fiscal (OUVERT / CLOTURE) verrouillant l'ensemble des données financières en lecture seule.",
+      "Moteur de Calcul TCO & Rentabilité MAD/km (RG02) : Consolidation de tous les postes de coûts d'un véhicule (Acquisition, Carburant, Maintenance, Assurances, Taxes, Sinistres) et calcul du coût au kilomètre.",
+      "Tableaux de Bord Exécutifs Multi-Niveaux (CdC Sec 23) : Vues sur mesure pour la Direction Générale, le Responsable Financier et le Chef de Parc.",
+      "Moteur d'Exportation Décisionnel (CdC Sec 24) : Générateur de rapports Excel (.xlsx multi-onglets avec Apache POI et formules SUM) et PDF exécutifs (OpenPDF scellés avec en-tête institutionnel MEF).",
+      "2. Analyse Fonctionnelle et Règles de Gestion Métier",
+      "2.1. Besoins Fonctionnels Spécifiés (Cahier des Charges MEF)",
+      "Suivi Budgétaire Analytique & Engagements (CdC Section 19)",
+      "Allocation annuelle des crédits budgétaires avec ventilation par Direction MEF, Service et Centre de coût.",
+      "Ventilation par nature analytique selon 11 natures : Carburant, Lubrifiants, Assurance, Entretien, Réparation, Pièces de Rechange, Pneus, Visite Technique, Taxes, Location, Autres.",
+      "Traçabilité de la chaîne des engagements : numéro d'engagement unique, bon de commande, fournisseur/prestataire agréé, motif et date de liquidation avec référence de facture.",
+      " États Financiers, TCO & Rentabilité MAD / km (CdC Section 20)",
+      "Calcul dynamique du TCO global = Coût d'Acquisition + Carburant + Maintenance + Assurance + Taxes + Réparations & Sinistres.",
+      "Calcul du ratio de rentabilité : Coût Kilométrique (MAD/km) = TCO Total / Kilométrage réel du véhicule.",
+      "Consolidation multi-axes : par Véhicule, par Direction MEF et par Type de Motorisation (Diesel, Essence, Hybride, Électrique) avec empreinte carbone CO2 associée.",
+      "Tableaux de Bord Exécutifs & Alertes de Pilotage (CdC Section 21 & 23)",
+      "Dashboard Direction Générale : TCO consolidé, Taux de disponibilité flotte, Taux d'immobilisation, Top 10 des véhicules les plus coûteux.",
+      "Dashboard Responsable Financier : Variance budgétaire (Alloué vs Réalisé), suivi des dépassements, consommation carburant vs dotations.",
+      "Dashboard Chef de Parc : Alertes actives de seuil (80%/95%), prévisions de maintenance et d'entretiens préventifs sous 30 jours.",
+      "Moteur d'Exportation Décisionnel Multi-Formats (CdC Section 24)\n",
+      "Export Excel (.xlsx) via Apache POI : classeur multi-onglets (Synthèse, Véhicules, Directions, Motorisations) avec formules SUM et mise en page comptable.",
+      "Export PDF Exécutif via OpenPDF : document officiel scellé aux normes graphiques du Ministère de l'Économie et des Finances.",
+      "2.2. Règles de Gestion Métier Strictes (RG01 à RG05)",
+      "3. Modélisation Fonctionnelle - Diagramme de Cas d'Utilisation UML (Sprint 7)",
+      "Le diagramme ci-dessous synthétise les cas d'utilisation du Sprint 7:",
+      "Figure 1 : Diagramme de Cas d'Utilisation UML - Sprint 7 (Suivi Budgétaire & Pilotage TCO MEF)",
+      "4. Conception et Modélisation Technique",
+      "4.1. Modélisation Statique - Diagramme de Classes UML (Sprint 7)",
+      "Le modèle de données du Sprint 7 intègre la gestion des exercices budgétaires (ExerciceBudgetaire), des dotations sectorielles par direction (BudgetDirection), de la chaîne des engagements (EngagementBudgetaire), des 11 natures analytiques de dépenses (NatureDepense) et des structures de données décisionnelles TCO.",
+      "Figure 2 : Diagramme de Classes UML - Architecture du Modèle Budgétaire & Analytique",
+      "4.2. Modélisation Dynamique 1 - Séquence Engagement & Contrôle Solde (RG01, RG03, RG04)",
+      "Figure 3 : Diagramme de Séquence UML - Workflow d'Engagement, Contrôle du Solde (RG01) & Alertes (RG03)",
+      "4.3. Modélisation Dynamique 2 - Séquence Moteur TCO (MAD/km) & Exports Décisionnels (RG02, RG05)",
+      "Figure 4 : Diagramme de Séquence UML - Moteur de Calcul TCO (MAD/km) & Génération Décisionnelle (POI / OpenPDF)",
+      "4.4. Diagramme d'Activité - Cycle de Vie Budgétaire et Pilotage Financier MEF",
+      "Figure 5 : Diagramme d'Activité UML - Cycle Budgétaire Annuel et Chaîne des Dépenses MEF",
+      "5. Architecture des Données et Spécifications des Endpoints REST",
+      "6. Démonstration Visuelle de l'Interface Web (Emplacements Captures d'Écran)",
+      "Les cadres ci-après définissent les emplacements réservés pour l'insertion des captures d'écran de l'application web. Chaque emplacement spécifie l'URL de l'interface, les fonctionnalités interactives et les indicateurs clés à visualiser.",
+      "Emplacement Capture N° 1 : Tableau de Bord Exécutif & Indicateurs TCO (/rapports)",
+      "Emplacement Capture N° 2 : Consolidation Budgétaire & Suivi des Enveloppes par Direction (/budget)",
+      "Emplacement Capture N° 3 : Chaîne des Engagements Financiers & Contrôle Live du Solde RG01 (/budget)",
+      "Emplacement Capture N° 4 : Centre des Alertes Budgétaires Actives (Seuils 80% & 95% RG03) (/budget)",
+      "Emplacement Capture N° 5 : Clôture de l'Exercice Fiscal & Verrouillage en Lecture Seule RG04 (/budget)",
+      "Emplacement Capture N° 6 : Rapports Financiers Consolidés par Direction & Motorisation avec Coût MAD/km (/rapports)",
+      "Emplacement Capture N° 7 : Visualisation des Livrables Officiels Exportés (Excel POI & PDF Exécutif)",
+      "7. Validation par les Tests Unitaires et d'Intégration",
+      "L'ensemble des règles de gestion et fonctionnalités développées au cours du Sprint 7 a été soumis à une suite rigoureuse de tests automatisés sous JUnit 5 et Spring Boot Test. Les 11 tests de la suite ont été exécutés avec succès.",
+      "8. Conclusion du Sprint 7 et Bilan Global du Projet",
+      "Le septième sprint parachève avec succès l'ensemble du volet budgétaire, analytique et décisionnel du système Park Auto MEF. Grâce à l'implémentation de la chaîne des engagements (RG01), de la détection automatique des seuils de consommation (RG03), du calcul en temps réel du TCO et du coût kilométrique (RG02) et des procédures de clôture annuelle (RG04), le Ministère de l'Économie et des Finances dispose désormais d'un outil de gouvernance et de pilotage financier de haute précision.",
+      "Le système complet Park Auto MEF répond désormais à 100% des exigences fonctionnelles et techniques fixées dans le Cahier des Charges officiel. L'architecture logicielle modulaire, hautement sécurisée par JWT/RBAC et adossée à une chaîne de tests automatisés exhaustive, garantit une robustesse opérationnelle totale pour le déploiement institutionnel."
+    ],
+    "tables": [
+      [
+        [
+          "Règle",
+          "Intitulé Métier",
+          "Description & Comportement Système"
+        ],
+        [
+          "RG01",
+          "Verrouillage d'Engagement si Solde Insuffisant",
+          "Contrôle en temps réel du disponible : . Tout engagement excédant le solde disponible est immédiatement bloqué avec émission d'une exception SoldeBudgetaireInsuffisantException (HTTP 400)."
+        ],
+        [
+          "RG02",
+          "Calcul Automatique du TCO & Ratio MAD / km",
+          "Le TCO d'un véhicule est recalculé dynamiquement lors de chaque imputation de dépense. Le Coût Kilométrique (MAD/km) est calculé par la division exacte du TCO global par le kilométrage actuel du véhicule."
+        ],
+        [
+          "RG03",
+          "Seuils d'Alerte Budgétaire Automatiques (80% & 95%)",
+          "Dès que le taux de consommation d'une enveloppe budgétaire franchit 80% (Seuil de Vigilance), une alerte In-App et un email SMTP sont transmis au Gestionnaire. À 95% (Seuil Critique), un drapeau rouge d'urgence budgétaire est verrouillé."
+        ],
+        [
+          "RG04",
+          "Clôture d'Exercice & Verrouillage en Lecture Seule",
+          "La clôture formelle d'un exercice budgétaire (passage de OUVERT à CLOTURE) verrouille rétroactivement l'exercice et interdit toute création ou modification d'engagement pour cette année fiscale."
+        ],
+        [
+          "RG05",
+          "Consolidation Multi-Directions & Moteur d'Export",
+          "Agrégation transversale des dépenses de l'ensemble des Directions Centrales et Régionales du MEF avec moteur de génération de classeurs Excel POI et documents PDF officiels."
+        ]
+      ],
+      [
+        [
+          "Méthode",
+          "URI Endpoint",
+          "Description & Rôle de Gestion",
+          "Statut HTTP"
+        ],
+        [
+          "GET",
+          "/api/budgets/exercices",
+          "Liste complète des exercices budgétaires (historique & statut)",
+          "200 OK"
+        ],
+        [
+          "POST",
+          "/api/budgets/exercices",
+          "Création et ouverture d'un nouvel exercice fiscal",
+          "201 CREATED"
+        ],
+        [
+          "POST",
+          "/api/budgets/exercices/{annee}/cloturer",
+          "Clôture annuelle et verrouillage en lecture seule (RG04)",
+          "200 OK"
+        ],
+        [
+          "GET",
+          "/api/budgets/synthese",
+          "Synthèse globale des dotations et consommation annuelle",
+          "200 OK"
+        ],
+        [
+          "POST",
+          "/api/budgets",
+          "Allocation / mise à jour d'une enveloppe de Direction",
+          "200 / 201"
+        ],
+        [
+          "GET",
+          "/api/budgets/engagements",
+          "Registre chronologique des engagements budgétaires",
+          "200 OK"
+        ],
+        [
+          "POST",
+          "/api/budgets/engagements",
+          "Création d'un engagement avec contrôle du solde (RG01)",
+          "201 CREATED / 400"
+        ],
+        [
+          "POST",
+          "/api/budgets/engagements/{id}/liquider",
+          "Liquidation d'un engagement suite à service fait et facture",
+          "200 OK"
+        ],
+        [
+          "POST",
+          "/api/budgets/engagements/{id}/annuler",
+          "Annulation d'engagement et libération des crédits",
+          "200 OK"
+        ],
+        [
+          "GET",
+          "/api/budgets/alertes",
+          "Liste des alertes de dépassement actives (80% et 95% RG03)",
+          "200 OK"
+        ],
+        [
+          "GET",
+          "/api/reporting/tco/vehicules",
+          "Tableau TCO et Coût Kilométrique (MAD/km) par véhicule (RG02)",
+          "200 OK"
+        ],
+        [
+          "GET",
+          "/api/reporting/tco/consolidation",
+          "Consolidation analytique multi-angles (Directions MEF, Flotte)",
+          "200 OK"
+        ],
+        [
+          "GET",
+          "/api/reporting/tco/motorisations",
+          "Consolidation par type de carburant et empreinte CO2",
+          "200 OK"
+        ],
+        [
+          "GET",
+          "/api/reporting/export/excel",
+          "Téléchargement du rapport décisionnel Excel POI (.xlsx)",
+          "200 OK (Binary)"
+        ],
+        [
+          "GET",
+          "/api/reporting/export/pdf",
+          "Téléchargement du rapport exécutif officiel PDF OpenPDF",
+          "200 OK (Binary)"
+        ]
+      ],
+      [
+        [
+          "📷 [ EMPLACEMENT RÉSERVÉ POUR LA CAPTURE D'ÉCRAN ]\nPage Web : http://localhost:3000/rapports\n\nÉléments visuels à afficher :\n• Cartes KPIs exécutives : TCO Total du Parc (MAD), Coût Kilométrique Moyen (MAD/km), Budget Flotte Consommé et Véhicules Actifs.\n• Graphiques décisionnels Recharts : Répartition du TCO par poste de coût (Carburant, Maintenance, Assurance, Taxes, Sinistres).\n• Boutons d'export direct en 1 clic (Export Excel POI et Export PDF Institutionnel).\n\n(Veuillez coller ou insérer l'image de capture d'écran directement dans ce cadre)"
+        ]
+      ],
+      [
+        [
+          "📷 [ EMPLACEMENT RÉSERVÉ POUR LA CAPTURE D'ÉCRAN ]\nPage Web : http://localhost:3000/budget\n\nÉléments visuels à afficher :\n• Tableau de synthèse des dotations annuelles ventilées par Direction MEF, Service et Nature de dépense.\n• Barres de progression visuelles indiquant le taux de consommation (Alloué, Engagé, Réalisé, Disponible restant).\n• Modal de saisie et d'ajustement des enveloppes de crédit budgétaire.\n\n(Veuillez coller ou insérer l'image de capture d'écran directement dans ce cadre)"
+        ]
+      ],
+      [
+        [
+          "📷 [ EMPLACEMENT RÉSERVÉ POUR LA CAPTURE D'ÉCRAN ]\nPage Web : http://localhost:3000/budget\n\nÉléments visuels à afficher :\n• Registre des engagements budgétaires avec statuts interactifs (ENGAGÉ, LIQUIDÉ, ANNULÉ).\n• Formulaire modal de création d'engagement avec calculateur live du solde disponible (RG01).\n• Bouton d'action pour la liquidation formelle sur présentation du numéro de facture.\n\n(Veuillez coller ou insérer l'image de capture d'écran directement dans ce cadre)"
+        ]
+      ],
+      [
+        [
+          "📷 [ EMPLACEMENT RÉSERVÉ POUR LA CAPTURE D'ÉCRAN ]\nPage Web : http://localhost:3000/budget\n\nÉléments visuels à afficher :\n• Onglet dédié Alertes & Seuils affichant les cartes d'alerte colorées (Jaune pour Seuil 80% Vigilance, Rouge pour Seuil 95% Critique).\n• Historique des notifications d'alerte transmises par email SMTP aux gestionnaires financiers.\n• Indicateur de dépassement budgétaire et recommandation d'arbitrage.\n\n(Veuillez coller ou insérer l'image de capture d'écran directement dans ce cadre)"
+        ]
+      ],
+      [
+        [
+          "📷 [ EMPLACEMENT RÉSERVÉ POUR LA CAPTURE D'ÉCRAN ]\nPage Web : http://localhost:3000/budget\n\nÉléments visuels à afficher :\n• Interface de gestion des exercices budgétaires avec badge de statut (OUVERT / CLÔTURÉ).\n• Modal de clôture d'exercice annuel exigeant la saisie des observations de fin d'année et de l'utilisateur responsable.\n• Verrouillage visuel en mode lecture seule pour l'exercice précédent 2025.\n\n(Veuillez coller ou insérer l'image de capture d'écran directement dans ce cadre)"
+        ]
+      ],
+      [
+        [
+          "📷 [ EMPLACEMENT RÉSERVÉ POUR LA CAPTURE D'ÉCRAN ]\nPage Web : http://localhost:3000/rapports\n\nÉléments visuels à afficher :\n• Tableau comparatif des coûts d'exploitation par Direction MEF avec ratio moyen MAD/km.\n• Synthèse par type de motorisation (Diesel vs Essence vs Hybride) avec estimation de l'empreinte carbone CO2.\n• Fiche détaillée TCO par véhicule avec plaques marocaines stylisées (MoroccanPlate).\n\n(Veuillez coller ou insérer l'image de capture d'écran directement dans ce cadre)"
+        ]
+      ],
+      [
+        [
+          "📷 [ EMPLACEMENT RÉSERVÉ POUR LA CAPTURE D'ÉCRAN ]\nPage Web : Téléchargements (.xlsx et .pdf)\n\nÉléments visuels à afficher :\n• Aperçu du classeur Excel multi-onglets généré par Apache POI (feuilles Synthèse, Véhicules, Directions).\n• Aperçu du document PDF exécutif généré par OpenPDF avec blason du Royaume du Maroc et en-têtes MEF.\n\n(Veuillez coller ou insérer l'image de capture d'écran directement dans ce cadre)"
+        ]
+      ],
+      [
+        [
+          "Test Automatisé",
+          "Règle / Scénario Validé",
+          "Résultat & Métriques"
+        ],
+        [
+          "testRG01_VerrouillageEngagement_SoldeInsuffisant",
+          "Tentative d'engagement de 600k MAD sur enveloppe de 500k MAD ➔ Rejet immédiat avec SoldeBudgetaireInsuffisantException",
+          "PASSED (0.24s)"
+        ],
+        [
+          "testRG02_CalculTCO_Et_CoutKilometriqueMadKm",
+          "Calcul exact du TCO = 250k Acq + 50k Maint + 5k Assur = 305k MAD | Coût = 6.10 MAD/km pour 50 000 km",
+          "PASSED (0.31s)"
+        ],
+        [
+          "testRG03_DetectionAlertesDepassement80Et95",
+          "Consommation progressive d'enveloppe ➔ Déclenchement automatique des alertes 80% (Vigilance) et 95% (Critique)",
+          "PASSED (0.28s)"
+        ],
+        [
+          "testRG04_ClotureExerciceBudgetaire_Verrouillage",
+          "Clôture d'exercice fiscal ➔ Statut CLOTURE, enregistrement dateCloture et rejet de tout nouvel engagement rétroactif",
+          "PASSED (0.19s)"
+        ],
+        [
+          "testRG05_ConsolidationMultiDirections_Et_Exports",
+          "Agrégation des dépenses multi-directions et validation de la génération des binaires Excel POI et PDF OpenPDF",
+          "PASSED (0.85s)"
+        ]
+      ]
+    ]
+  },
+  "Sprint 8": {
+    "title": "Finalisation, Recette Globale UAT, Moteur Exports & Clôture",
+    "paragraphs": [
+      "PLANNING DU SPRINT 8 (LIVRAISON FINALE & CLÔTURE)\nFinalisation, Recette Globale UAT, Moteur d'Exports de Données & Corrections de Bugs\nPériode prévisionnelle : 28/08/2026 au 04/09/2026",
+      "1. Informations Générales du Sprint 8",
+      "2. Contenu Détaillé et Backlog du Sprint 8",
+      "2.1. Backlog Fonctionnel & Technique (Exigences CdC MEF)",
+      "1. Recette Fonctionnelle Globale de Bout en Bout (UAT MEF)",
+      "Validation intégrale des scénarios transversaux : Création Véhicule ➔ Affectation / Mission ➔ Consommation Carburant ➔ Maintenance Préventive / Panne ➔ Sinistre & Assurance ➔ Imputation Budgétaire (RG01) ➔ Calcul TCO (RG02) ➔ Clôture d'Exercice (RG04).",
+      "Vérification de la non-régression sur l'ensemble des 8 modules du système.",
+      "Contrôle d'étanchéité des rôles utilisateurs et de la matrice des habilitations RBAC (ADMIN, GESTIONNAIRE_PARC, GESTIONNAIRE_FINANCIER, CONDUCTEUR, DIRECTION_GENERALE).",
+      "2. Moteur d'Exportation Massive de Données Multi-Formats (CdC Section 24)",
+      "Finalisation des exports Excel (.xlsx) avec Apache POI : classeurs multi-onglets (Parc, Missions, Carburant, Maintenance, Sinistres, Budget, TCO) avec formules de synthèse comptable.",
+      "Consolidation des exports PDF exécutifs via OpenPDF : mise en page officielle, en-tête institutionnel du MEF, tableaux dynamiques et scellement d'authenticité.",
+      "Génération d'extractions au format CSV standardisé pour l'interopérabilité avec les systèmes d'information décisionnels (SID) du Ministère.",
+      "3. Corrections d'Anomalies, Polissage UX/UI & Optimisation des Performances",
+      "Traitement systématique des retours utilisateurs et corrections de bugs mineurs identifiés lors des démonstrations des sprints 6 et 7.",
+      "Polissage ergonomique du Frontend React/Vite : uniformisation visuelle (palette MEF), responsive design sur tablettes et écrans de contrôle, gestion fluide du scrolling horizontal sur tables volumineuses.",
+      "Optimisation des temps de réponse (< 200 ms) via l'indexation SQL PostgreSQL et la mise en cache des calculs de KPIs volumineux.",
+      "4. Sécurité, Audit Trail & Conformité Réglementaire (CdC Section 25)",
+      "Vérification de la traçabilité complète : journalisation immuable de chaque opération sensible dans l'AuditLog (action, utilisateur, entité impactée, adresse IP, horodatage).",
+      "Contrôle de conformité avec les directives de la DGSSI (sécurisation des endpoints REST, hachage BCrypt, tokens JWT avec expiration maîtrisée).",
+      "Purge et sécurisation des documents GED confidentiels (contrats d'assurance, PV de constat, factures).",
+      "5. Packaging de Déploiement & Préparation à la Mise en Production (CdC Section 26)",
+      "Finalisation de la configuration Docker et Docker-Compose pour l'orchestration multi-conteneurs (Spring Boot Backend, React Frontend, PostgreSQL Database, Nginx Reverse Proxy).",
+      "Validation des scripts d'initialisation et de migration de base de données avec jeu de données démo MEF complet.",
+      "Rédaction du Manuel d'Exploitation Technique et du Guide Utilisateur Final.",
+      "2.2. Priorisation MoSCoW et Règles de Gestion Métier du Sprint 8",
+      "MoSCoW - Must Have (Priorité 1 -Impératif) : Recette UAT de bout en bout validée à 100%, Exports Excel POI et PDF OpenPDF fonctionnels sur l'ensemble des modules, Zéro bug bloquant ou majeur, Sécurisation complète RBAC/JWT et Journalisation d'Audit.",
+      "MoSCoW - Should Have (Priorité 2 -Essentiel) : Exports de données au format CSV standardisé, Optimisation des requêtes SQL et indexation de la base PostgreSQL, Documentation complète d'exploitation.",
+      "MoSCoW - Could Have (Priorité 3 -Optionnel) : Génération automatique d'un rapport synthétique d'audit de recette téléchargeable en 1 clic.",
+      "4. Livrables Attendus du Sprint 8 et Clôture du Projet",
+      "Code Source Final Consolidé & Testé : Backend Java 17 / Spring Boot sécurisé (100% tests JUnit 5 validés) et Frontend React / Tailwind / Vite sans aucune erreur de build.",
+      "Moteur d'Exportation Décisionnel Validé : Services d'exportation Excel POI (.xlsx), PDF exécutifs scellés OpenPDF (.pdf) et extractions structurées (.csv).",
+      "Cahier de Recette UAT & Rapport de Tests : Document officiel consignant les résultats de recette fonctionnelle de bout en bout avec zéro anomalie bloquante.",
+      "Séance de Démonstration & Recette Finale : Vendredi 4 septembre 2026 à 11h00"
+    ],
+    "tables": [
+      [
+        [
+          "Projet & Application",
+          "Park Auto MEF - Système Intégré de Gestion du Parc Automobile"
+        ],
+        [
+          "Sprint & Périmètre",
+          "Sprint 8 - Finalisation, Recette Globale (UAT), Exports de Données & Livraison"
+        ],
+        [
+          "Période d'Exécution",
+          "31/08/2026 au 04/09/2026 (5 jours ouvrés)"
+        ],
+        [
+          "Statut d'Avancement Global",
+          "Sprints 1 à 7 réalisés avec succès (100% des règles de gestion métier implémentées)"
+        ],
+        [
+          "Objectif Principal",
+          "Conduire la recette fonctionnelle et technique globale de bout en bout, stabiliser le moteur d'exports de données massives (Excel, PDF, CSV), corriger les anomalies résiduelles, optimiser les performances et préparer le package de déploiement en production."
+        ]
+      ],
+      [
+        [
+          "Règle",
+          "Intitulé Métier",
+          "Description & Comportement Système"
+        ],
+        [
+          "RG01",
+          "Intégrité des Données & Non-Répudiation",
+          "Toute création, modification ou suppression d'entité métier (Véhicule, Mission, Intervention, Sinistre, Engagement) génère un AuditLog horodaté et inaltérable contenant l'identité de l'opérateur et l'adresse IP."
+        ],
+        [
+          "RG02",
+          "Conformité des Formats d'Exportation",
+          "Les fichiers Excel (.xlsx) et PDF (.pdf) générés doivent être scellés, lisibles sans avertissement de corruption sur tous les environnements bureautiques MEF et intégrer la charte graphique institutionnelle."
+        ],
+        [
+          "RG03",
+          "Critère Zéro Défaut Bloquant (Recette UAT)",
+          "Aucun bogue de sévérité 'Bloquante' (crash, blocage de flux) ou 'Majeure' (erreur de calcul financier) ne doit subsister à la clôture de la recette fonctionnelle."
+        ],
+        [
+          "RG04",
+          "Garantie de Performance & Temps de Réponse",
+          "Les temps de réponse sur les calculs de consolidation budgétaire et de reporting TCO doivent demeurer strictement inférieurs à 300 millisecondes sous charge nominale."
+        ],
+        [
+          "RG05",
+          "Validation Formelle & PV de Recette Finale",
+          "La clôture définitive du projet Park Auto MEF est conditionnée par la signature formelle du Procès-Verbal de Recette Finale (PV) par les représentants mandatés du Ministère."
+        ]
+      ]
+    ]
+  }
+}

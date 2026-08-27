@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @Builder
@@ -21,6 +22,10 @@ public class InterventionMaintenanceDto {
     private String immatriculation;
     private String marqueModele;
     private String direction;
+    private Long kilometrageActuelVehicule;
+    private Long prochainSeuilEntretienKm;
+    private Long garageAgreeId;
+    private String garageNom;
     private TypeMaintenance typeMaintenance;
     private NatureMaintenance natureOperation;
     private LocalDate datePrevisionnelle;
@@ -35,4 +40,5 @@ public class InterventionMaintenanceDto {
     private StatutMaintenance statut;
     private Boolean immobilisation;
     private String description;
+    private List<PieceRemplacementDto> pieces;
 }

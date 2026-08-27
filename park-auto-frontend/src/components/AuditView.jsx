@@ -18,7 +18,8 @@ export default function AuditView() {
     try {
       setLoading(true);
       const res = await api.get('/journal?size=50');
-      if (res?.data) setLogs(res.data.content || []);
+      const page = res?.data || res;
+      setLogs(page?.content || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -46,14 +47,14 @@ export default function AuditView() {
             Journal d'Audit Système
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Traçabilité et auditabilité — Section 30 du Cahier des Charges
+            Traçabilité et auditabilité complète des opérations administratives du Parc Automobile MEF
           </p>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-2.5 py-2 rounded-xl">
-            <Scale className="w-3.5 h-3.5 text-amber-600" />
-            <span className="text-[11px] font-bold text-amber-700">Section 30 — Conforme</span>
+          <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 px-2.5 py-2 rounded-xl">
+            <Scale className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="text-[11px] font-bold text-emerald-700">Registre Sécurisé & Certifié</span>
           </div>
           <button
             onClick={fetchLogs}

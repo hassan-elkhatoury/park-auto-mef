@@ -8,6 +8,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 public class InterventionMaintenanceRequest {
@@ -16,6 +17,8 @@ public class InterventionMaintenanceRequest {
 
     @NotNull(message = "Le véhicule est obligatoire")
     private Long vehiculeId;
+
+    private Long garageAgreeId;
 
     private TypeMaintenance typeMaintenance = TypeMaintenance.PREVENTIVE;
 
@@ -44,4 +47,6 @@ public class InterventionMaintenanceRequest {
     private Boolean immobilisation = false;
 
     private String description;
+
+    private List<PieceRemplacementRequest> pieces;
 }

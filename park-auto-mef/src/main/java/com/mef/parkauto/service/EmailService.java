@@ -11,4 +11,18 @@ public interface EmailService {
      * @param tempPassword le mot de passe temporaire en clair
      */
     void sendTemporaryPassword(String toEmail, String nom, String prenom, String tempPassword);
+
+    void sendAssuranceExpirationAlert(String toEmail, String nom, String prenom,
+            String immatriculation, String marqueModele, String numeroPolice, java.time.LocalDate dateFin);
+
+    void sendSinistreNotification(String toEmail, String nom, String prenom,
+            String immatriculation, String marqueModele, String natureAccident, String lieu);
+
+    void sendBudgetDepassementAlert(String toEmail, String nom, String prenom,
+            String direction, String natureDepense, java.math.BigDecimal montantAlloue, java.math.BigDecimal montantRealise);
+
+    void sendBudgetAlertEmail(String direction, String natureDepense, java.math.BigDecimal montantAlloue, java.math.BigDecimal montantRealise);
+
+    void sendVisiteTechniqueAlert(String toEmail, String nom, String prenom,
+            String immatriculation, String marqueModele, java.time.LocalDate dateProchaine);
 }

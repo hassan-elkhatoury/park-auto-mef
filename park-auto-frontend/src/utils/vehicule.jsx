@@ -145,25 +145,39 @@ export const getStatusStyle = (statut) => {
 };
 
 // Official Moroccan plate rendering: "12345 | أ | 1"
-export function MoroccanPlate({ immatriculation, className = '' }) {
-  if (!immatriculation) return null;
-  const parts = immatriculation.split('-');
+export function MoroccanPlate({ immatriculation, plate, value, className = '', size = 'md' }) {
+  const rawPlate = immatriculation || plate || value || '';
+  if (!rawPlate || typeof rawPlate !== 'string' || !rawPlate.trim()) return null;
+  
+  const text = rawPlate.trim();
+  const parts = text.includes('-') 
+    ? text.split('-') 
+    : text.includes('|') 
+      ? text.split('|') 
+      : text.includes(' ') 
+        ? text.split(/\s+/) 
+        : [text];
+
+  const sizeClass = size === 'sm' 
+    ? 'text-[10.5px] [&>.plate-content]:!py-0.5 [&>.plate-content]:!px-1.5 [&>.plate-content]:!gap-1 [&>.plate-content]:!text-[10.5px] border' 
+    : (size === 'xs' ? 'text-[9.5px] [&>.plate-content]:!py-0 [&>.plate-content]:!px-1 [&>.plate-content]:!gap-0.5 [&>.plate-content]:!text-[9.5px] border' : '');
+
   if (parts.length >= 3) {
     return (
-      <div className={`moroccan-plate ${className}`}>
+      <div className={`moroccan-plate ${sizeClass} ${className}`}>
         <div className="plate-content">
-          <span>{parts[0]}</span>
+          <span>{parts[0].trim()}</span>
           <span className="plate-separator">|</span>
-          <span>{parts[1]}</span>
+          <span>{parts[1].trim()}</span>
           <span className="plate-separator">|</span>
-          <span>{parts[2]}</span>
+          <span>{parts[2].trim()}</span>
         </div>
       </div>
     );
   }
   return (
-    <span className={`bg-[#0A1E3F] text-white px-3 py-1 rounded-md font-mono text-xs font-bold tracking-wider border border-[#C59B27]/40 ${className}`}>
-      {immatriculation}
+    <span className={`bg-[#0A1E3F] text-white ${size === 'sm' ? 'px-1.5 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'} rounded-md font-mono font-bold tracking-wider border border-[#C59B27]/40 shadow-sm inline-flex items-center ${className}`}>
+      {text}
     </span>
   );
 }

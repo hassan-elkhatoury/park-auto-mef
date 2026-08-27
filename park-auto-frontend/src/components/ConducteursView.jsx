@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, UserCheck, AlertTriangle, ShieldCheck, Phone, Mail, Edit, Trash2, Award, Eye } from 'lucide-react';
+import { Search, Plus, UserCheck, AlertTriangle, ShieldCheck, Phone, Mail, Edit, Trash2, Award, Eye, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../services/api';
 import ConfirmModal from './ConfirmModal';
@@ -339,173 +339,200 @@ export default function ConducteursView() {
 
       {/* Modal Add / Edit Driver */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-base font-extrabold text-[#0A1E3F] uppercase flex items-center gap-2">
-              <UserCheck className="w-5 h-5 text-[#C59B27]" />
-              {selectedConducteur ? 'Modifier le Conducteur' : 'Nouveau Conducteur Habilité'}
-            </h2>
-
-            <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Matricule *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.matricule}
-                    onChange={(e) => setFormData({ ...formData, matricule: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-mono font-bold"
-                  />
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl shadow-slate-900/20 border border-slate-200/80 max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header Banner */}
+            <div className="bg-[#0A1E3F] text-white p-5 flex items-center justify-between border-b border-[#C59B27]/30 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#C59B27]/20 border border-[#C59B27]/40 flex items-center justify-center text-[#C59B27]">
+                  <UserCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">N° CIN *</label>
+                  <h3 className="font-black text-sm uppercase tracking-wider text-white">
+                    {selectedConducteur ? 'Modifier le Conducteur' : 'Nouveau Conducteur Habilité'}
+                  </h3>
+                  <p className="text-[11px] text-slate-300 font-normal">Gestion des chauffeurs et agents habilités MEF</p>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setIsModalOpen(false)} 
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-6 overflow-y-auto space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Matricule *</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.matricule}
+                      onChange={(e) => setFormData({ ...formData, matricule: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all font-mono font-bold"
+                      placeholder="MAT-00123"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">N° CIN *</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.cin}
+                      onChange={(e) => setFormData({ ...formData, cin: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all"
+                      placeholder="AA123456"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Nom *</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.nom}
+                      onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Prénom *</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.prenom}
+                      onChange={(e) => setFormData({ ...formData, prenom: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">N° Permis de conduire *</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.numeroPermis}
+                      onChange={(e) => setFormData({ ...formData, numeroPermis: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all font-mono"
+                      placeholder="01/123456"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Catégorie(s) du Permis *</label>
+                    <select
+                      value={formData.categoriePermis}
+                      onChange={(e) => setFormData({ ...formData, categoriePermis: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all font-bold cursor-pointer"
+                    >
+                      <option value="B">Catégorie B (Tourisme)</option>
+                      <option value="B, C">Catégories B, C (Poids Lourd)</option>
+                      <option value="B, C, D">Catégories B, C, D (Transport Personnel)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Date délivrance permis</label>
+                    <input
+                      type="date"
+                      value={formData.dateDelivrancePermis}
+                      onChange={(e) => setFormData({ ...formData, dateDelivrancePermis: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Date d'expiration permis *</label>
+                    <input
+                      type="date"
+                      required
+                      value={formData.dateExpirationPermis}
+                      onChange={(e) => setFormData({ ...formData, dateExpirationPermis: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Direction</label>
+                    <input
+                      type="text"
+                      value={formData.direction}
+                      onChange={(e) => setFormData({ ...formData, direction: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all"
+                      placeholder="Direction du Budget"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Service</label>
+                    <input
+                      type="text"
+                      value={formData.service}
+                      onChange={(e) => setFormData({ ...formData, service: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all"
+                      placeholder="Service du Parc Automobile"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Téléphone</label>
+                    <input
+                      type="text"
+                      value={formData.telephone}
+                      onChange={(e) => setFormData({ ...formData, telephone: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all"
+                      placeholder="+212 600 000 000"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Email</label>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all"
+                      placeholder="nom.prenom@finances.gov.ma"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Habilitations spéciales</label>
                   <input
                     type="text"
-                    required
-                    value={formData.cin}
-                    onChange={(e) => setFormData({ ...formData, cin: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg"
+                    placeholder="ex: Conduite 4x4, Escorte Officielle, VIP..."
+                    value={formData.habilitationsSpeciales}
+                    onChange={(e) => setFormData({ ...formData, habilitationsSpeciales: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Nom *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.nom}
-                    onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Prénom *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.prenom}
-                    onChange={(e) => setFormData({ ...formData, prenom: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">N° Permis de conduire *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.numeroPermis}
-                    onChange={(e) => setFormData({ ...formData, numeroPermis: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Catégorie(s) du Permis *</label>
-                  <select
-                    value={formData.categoriePermis}
-                    onChange={(e) => setFormData({ ...formData, categoriePermis: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-bold"
-                  >
-                    <option value="B">Catégorie B (Tourisme)</option>
-                    <option value="B, C">Catégories B, C (Poids Lourd)</option>
-                    <option value="B, C, D">Catégories B, C, D (Transport Personnel)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Date délivrance permis</label>
-                  <input
-                    type="date"
-                    value={formData.dateDelivrancePermis}
-                    onChange={(e) => setFormData({ ...formData, dateDelivrancePermis: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Date d'expiration permis *</label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.dateExpirationPermis}
-                    onChange={(e) => setFormData({ ...formData, dateExpirationPermis: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Direction</label>
-                  <input
-                    type="text"
-                    value={formData.direction}
-                    onChange={(e) => setFormData({ ...formData, direction: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Service</label>
-                  <input
-                    type="text"
-                    value={formData.service}
-                    onChange={(e) => setFormData({ ...formData, service: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Téléphone</label>
-                  <input
-                    type="text"
-                    value={formData.telephone}
-                    onChange={(e) => setFormData({ ...formData, telephone: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Email</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Habilitations spéciales</label>
-                <input
-                  type="text"
-                  placeholder="ex: Conduite 4x4, Escorte Officielle, VIP..."
-                  value={formData.habilitationsSpeciales}
-                  onChange={(e) => setFormData({ ...formData, habilitationsSpeciales: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+              {/* Footer */}
+              <div className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center justify-end gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 font-bold text-slate-700"
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 text-xs font-bold transition-all cursor-pointer"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg gold-gradient-bg text-[#0A1E3F] font-extrabold shadow-md hover:brightness-105"
+                  className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-gold hover:brightness-105 transition-all flex items-center gap-2 cursor-pointer"
                 >
-                  Enregistrer
+                  <span>{selectedConducteur ? 'Enregistrer les modifications' : 'Enregistrer le conducteur'}</span>
                 </button>
               </div>
             </form>

@@ -1,0 +1,282 @@
+{
+  "project": {
+    "title": "Système Intégré de Gestion du Parc Automobile du Ministère de l'Économie et des Finances (Park Auto MEF)",
+    "author": "EL KHATOURY Hassan",
+    "supervisor": "M. ELKAOUMI Aimad",
+    "organization": "Ministère de l'Économie et des Finances (MEF)",
+    "school": "ENSA Al Hoceima / Université Abdelmalek Essaâdi",
+    "academic_year": "2026/2027",
+    "methodology": "Agile Scrum",
+    "total_sprints": 8,
+    "total_velocity_story_points": 354,
+    "period": "13/07/2026 au 04/09/2026"
+  },
+  "database_entities_count": 28,
+  "business_enums_count": 16,
+  "uml_figures_count": 39,
+  "frontend_views_count": 17,
+  "structural_gaps_identified": 5,
+  "sprints_roadmap": {
+    "Sprint 1": {
+      "title": "Initialisation Technique, Sécurité & Gestion des Utilisateurs",
+      "dates": "13/07/2026 au 17/07/2026",
+      "duration_days": 5,
+      "velocity_story_points": 34,
+      "objectives": [
+        "Mise en place socle Spring Boot 3.x / Java 17-25 + PostgreSQL / H2",
+        "Sécurité RBAC stateless JWT (Access 15 min / Refresh 7 j)",
+        "Gestion des utilisateurs (statuts ACTIVE/LOCKED/ARCHIVED), politique mots de passe SHA-256 avec sel",
+        "Journalisation et Audit Trail (JournalAction, AuditLog)"
+      ],
+      "roles_rbac": [
+        "ADMIN",
+        "GESTIONNAIRE_CENTRAL",
+        "GESTIONNAIRE_LOCAL",
+        "RESPONSABLE_FINANCIER",
+        "RESPONSABLE_SERVICE",
+        "CONDUCTEUR",
+        "CONSULTATION"
+      ],
+      "business_rules": [
+        "RG01: Unicité email et matricule administratif",
+        "RG02: Hachage cryptographique SHA-256 avec sel dynamique / BCrypt",
+        "RG03: Forçage changement mot de passe temporaire à la première connexion",
+        "RG04: Access Token 15 min / Refresh Token 7 jours",
+        "RG05: Traçabilité intégrale dans journal_actions"
+      ],
+      "entities": [
+        "Utilisateur",
+        "Role",
+        "RoleType",
+        "UserStatus",
+        "BaseEntity",
+        "JournalAction",
+        "AuditLog"
+      ],
+      "views": [
+        "LoginView.jsx",
+        "ForceChangePasswordModal.jsx",
+        "AuditView.jsx",
+        "UtilisateursView.jsx"
+      ]
+    },
+    "Sprint 2": {
+      "title": "Référentiel du Parc Automobile & Cycle de Vie des Véhicules",
+      "dates": "20/07/2026 au 24/07/2026",
+      "duration_days": 5,
+      "velocity_story_points": 42,
+      "objectives": [
+        "Modélisation de la flotte automobile (40+ attributs)",
+        "Gestion dynamique du cycle de vie (12 statuts administratifs, 8 états techniques)",
+        "Historisation automatique des mutations dans historique_statuts_vehicule",
+        "Recherche paginée, filtres multicritères et archivage logique"
+      ],
+      "business_rules": [
+        "RG01: Unicité immatriculation marocaine, VIN (17 car.) et inventaire MEF",
+        "RG02: Kilométrage actuel >= Kilométrage initial / dernier relevé",
+        "RG03: Archivage logique (Soft Delete) préservant l intégrité des données",
+        "RG04: Transition automatique des statuts lors des événements métier"
+      ],
+      "entities": [
+        "Vehicule",
+        "HistoriqueStatutVehicule",
+        "StatutAdministratif",
+        "EtatTechnique",
+        "TypeCarburant"
+      ],
+      "views": [
+        "VehiculesListView.jsx",
+        "VehiculeDetailView.jsx",
+        "VehiculeFormModal.jsx"
+      ]
+    },
+    "Sprint 3": {
+      "title": "Conducteurs, Demandes de Déplacement, Affectations & Ordres de Mission",
+      "dates": "27/07/2026 au 31/07/2026",
+      "duration_days": 5,
+      "velocity_story_points": 48,
+      "objectives": [
+        "Référentiel chauffeurs (permis A/B/C/D, validité médicale)",
+        "Workflow d approbation à 2 niveaux (N1 Responsable -> N2 Gestionnaire)",
+        "Affectation de véhicules et chauffeurs avec contrôle de disponibilité",
+        "Génération automatique Ordre de Mission PDF iText avec QR Code",
+        "Restitution avec contrôle kilométrique et carburant retour"
+      ],
+      "business_rules": [
+        "RG01: Contrôle validité permis et adéquation catégorie",
+        "RG02: Véhicule obligatoirement DISPONIBLE et conducteur ACTIF",
+        "RG03: Validation N1 obligatoire avant affectation opérationnelle N2",
+        "RG04: Contrôle kilométrique retour : Km retour >= Km départ",
+        "RG05: Ordre de mission PDF infalsifiable horodaté"
+      ],
+      "entities": [
+        "Conducteur",
+        "StatutConducteur",
+        "DemandeDeplacement",
+        "StatutDemande",
+        "Affectation",
+        "StatutAffectation",
+        "OrdreDeMission"
+      ],
+      "views": [
+        "ConducteursView.jsx",
+        "ConducteurDetailView.jsx",
+        "DemandesView.jsx",
+        "DemandeDetailView.jsx",
+        "AffectationsView.jsx",
+        "AffectationDetailView.jsx"
+      ]
+    },
+    "Sprint 4": {
+      "title": "Suivi Carburant, Cartes Pétrolières & Calcul du TCO Initial",
+      "dates": "03/08/2026 au 07/08/2026",
+      "duration_days": 5,
+      "velocity_story_points": 38,
+      "objectives": [
+        "Gestion des cartes carburant (numéro masqué, plafonds mensuels)",
+        "Saisie des transactions et pleins de carburant avec justificatifs",
+        "Calcul automatique consommation L/100km et détection surconsommation (+25%)",
+        "Calcul initial du Coût Global d Exploitation (TCO)"
+      ],
+      "business_rules": [
+        "RG01: Carte carburant ACTIVE et non dépassement du plafond mensuel",
+        "RG02: Index kilométrique croissant lors du plein",
+        "RG03: Alerte surconsommation si Conso > moyenne + 25%",
+        "RG04: Rapprochement obligatoire véhicule / carte assignée"
+      ],
+      "entities": [
+        "CarteCarburant",
+        "CarteCarburantStatut",
+        "PleinCarburant",
+        "PrevisionCarburant"
+      ],
+      "views": [
+        "CarburantView.jsx"
+      ]
+    },
+    "Sprint 5": {
+      "title": "Assurances Flotte, Sinistres, Visites Techniques, Taxes & Réforme",
+      "dates": "10/08/2026 au 14/08/2026",
+      "duration_days": 5,
+      "velocity_story_points": 52,
+      "objectives": [
+        "Suivi des polices d assurance (AXA, RMA, Wafa), garanties, primes, alertes J-30/J-7",
+        "Gestion des sinistres avec pièces jointes GED (constats, photos)",
+        "Infractions radar rattachées aux chauffeurs en mission",
+        "Visites techniques périodiques et taxes automobiles (vignettes)",
+        "Procédure de réforme et sortie formelle d inventaire"
+      ],
+      "business_rules": [
+        "RG01: Alertes proactives J-30 et J-7 expiration assurance et visite",
+        "RG02: Couverture assurance active obligatoire pour tout sinistre déclaré",
+        "RG03: Imputation nominative du PV d infraction au chauffeur en mission",
+        "RG04: Blocage irréversible des véhicules proposés à la réforme"
+      ],
+      "entities": [
+        "Assurance",
+        "Sinistre",
+        "Infraction",
+        "VisiteTechnique",
+        "TaxeAutomobile",
+        "ReformeVehicule",
+        "DocumentGED"
+      ],
+      "views": [
+        "AssurancesView.jsx",
+        "SinistresView.jsx",
+        "VisitesTaxesReformeView.jsx"
+      ]
+    },
+    "Sprint 6": {
+      "title": "Maintenance Préventive & Curative, Pannes & Garages Agréés",
+      "dates": "17/08/2026 au 21/08/2026",
+      "duration_days": 5,
+      "velocity_story_points": 46,
+      "objectives": [
+        "Planification des entretiens préventifs et alertes à 90% du seuil",
+        "Gestion du cycle de vie des pannes (Signalement -> Devis -> Réparation -> Clôture)",
+        "Référentiel des garages agréés MEF, catalogue pièces détachées, devis/factures",
+        "Mise à jour automatique état technique et immobilisation du véhicule"
+      ],
+      "business_rules": [
+        "RG01: Basculement véhicule à IMMOBILISE/EN_MAINTENANCE dès l intervention",
+        "RG02: Km intervention >= Km dernier relevé",
+        "RG03: Recalcul automatique prochaine échéance d entretien",
+        "RG04: Validation devis obligatoire si dépassement plafond de délégation"
+      ],
+      "entities": [
+        "InterventionMaintenance",
+        "PanneVehicule",
+        "PieceRemplacement",
+        "GarageAgree",
+        "TypeMaintenance",
+        "NatureMaintenance",
+        "StatutMaintenance",
+        "StatutPanne",
+        "UrgencePanne"
+      ],
+      "views": [
+        "MaintenanceView.jsx",
+        "PannesView.jsx",
+        "GaragesView.jsx"
+      ]
+    },
+    "Sprint 7": {
+      "title": "Contrôle Budgétaire Analytique, Tableaux de Bord & KPIs",
+      "dates": "24/08/2026 au 29/08/2026",
+      "duration_days": 6,
+      "velocity_story_points": 54,
+      "objectives": [
+        "Comptabilité budgétaire analytique (exercices, dotations par Direction MEF)",
+        "Chaîne des engagements financiers : Crédits Alloués -> Engagements -> Liquidations -> Reste",
+        "Alertes budgétaires préventives (80%) et critiques (95%)",
+        "Tableaux de bord décisionnels, calcul dynamique TCO, MAD/km et immobilisation",
+        "Génération des états financiers en PDF (iText) et Excel (Apache POI)"
+      ],
+      "business_rules": [
+        "RG01: Contrôle budgétaire bloquant : Reste disponible >= Montant engagé",
+        "RG02: Imputation analytique stricte par nature de dépense",
+        "RG03: Alerte 80% jauge orange et 95% notification rouge avec blocage",
+        "RG04: TCO = Acquisition + Somme(Carburant) + Somme(Maintenance) + Somme(Assurances) + Somme(Taxes) + Somme(Sinistres)"
+      ],
+      "entities": [
+        "ExerciceBudgetaire",
+        "BudgetDirection",
+        "EngagementBudgetaire",
+        "StatutExercice",
+        "StatutEngagement",
+        "NatureDepense"
+      ],
+      "views": [
+        "BudgetView.jsx",
+        "DashboardView.jsx"
+      ]
+    },
+    "Sprint 8": {
+      "title": "Recette Globale UAT, Moteur Exports, Sécurité & Déploiement",
+      "dates": "31/08/2026 au 04/09/2026",
+      "duration_days": 5,
+      "velocity_story_points": 40,
+      "objectives": [
+        "Recette fonctionnelle globale UAT couvrant 100% du Cahier des Charges MEF",
+        "Moteur universel d exportation de données multi-formats (PDF officiel, Excel, CSV)",
+        "Durcissement sécurité, audit trail exhaustif, conformité CNDP/DGSSI",
+        "Optimisation performances backend (JPQL, index) et frontend Vite/React",
+        "Industrialisation du déploiement Docker Compose et plan PRA"
+      ],
+      "business_rules": [
+        "RG01: 100% des scénarios de test UAT validés sans anomalie bloquante P1/P2",
+        "RG02: Conservation sécurisée des journaux d audit 5 ans",
+        "RG03: Temps de réponse API REST < 200 ms à 95%",
+        "RG04: Charte graphique officielle MEF sur 100% des exports"
+      ],
+      "entities": [
+        "Consolidation des 28 entités JPA"
+      ],
+      "views": [
+        "RapportsView.jsx",
+        "AuditView.jsx"
+      ]
+    }
+  }
+}

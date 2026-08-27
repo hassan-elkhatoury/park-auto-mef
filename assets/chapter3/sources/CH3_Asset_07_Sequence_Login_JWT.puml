@@ -1,0 +1,52 @@
+@startuml
+!include _theme.puml
+title Sequence - Authentification JWT
+autonumber
+
+actor Utilisateur as user
+participant "LoginView\nReact" as view
+participant AuthController as controller
+participant AuthenticationManager as auth
+participant UtilisateurService as service
+database UtilisateurRepository as repo
+participant BCryptPasswordEncoder as bcrypt
+participant JwtService as jwt
+participant AuditService as audit
+
+user -> view : saisir email + mot de passe
+view -> controller : POST /api/auth/login
+controller -> auth : authenticate(credentials)
+auth -> service : loadUserByUsername(email)
+service -> repo : findByEmail(email)
+repo --> service : Utilisateur + Role
+service --> auth : UserDetails
+auth -> bcrypt : matches(motDePasse, hash)
+
+alt compte introuvable ou mot de passe invalide
+  bcrypt --> auth : false
+  auth --> controller : BadCredentialsException
+  controller -> audit : LOGIN_FAILED + adresse IP
+  controller --> view : HTTP 401
+  view --> user : message d'erreur generique
+else compte LOCKED ou ARCHIVED
+  bcrypt --> auth : true
+  auth --> controller : Disabled/LockedException
+  controller -> audit : LOGIN_BLOCKED
+  controller --> view : HTTP 403
+else authentification reussie
+  bcrypt --> auth : true
+  auth --> controller : Authentication
+  controller -> jwt : generateAccessToken(user)
+  jwt --> controller : accessToken
+  controller -> jwt : generateRefreshToken(user)
+  jwt --> controller : refreshToken
+  controller -> audit : LOGIN_SUCCESS + adresse IP
+  controller --> view : HTTP 200\ntokens + profil + role\ndoitChangerMotDePasse
+  alt doitChangerMotDePasse = true
+    view --> user : ouvrir ForceChangePasswordModal
+  else mot de passe deja conforme
+    view --> user : ouvrir le tableau de bord
+  end
+end
+@enduml
+

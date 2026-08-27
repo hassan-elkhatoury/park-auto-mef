@@ -89,8 +89,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     log.debug("Token JWT invalide pour l'utilisateur: {}", username);
                 }
             }
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            log.debug("Token JWT expiré: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("Erreur lors de la validation du token JWT: {}", e.getMessage());
+            log.warn("Erreur lors de la validation du token JWT: {}", e.getMessage());
         }
 
         filterChain.doFilter(request, response);

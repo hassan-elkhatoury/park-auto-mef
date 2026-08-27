@@ -1,0 +1,37 @@
+@startuml
+!include _theme.puml
+title Sequence - Reservation, affectation et restitution
+autonumber
+
+actor "Agent" as agent
+actor "Responsable Service" as rs
+actor "Gestionnaire Parc" as gp
+participant DemandeController as dc
+participant AffectationController as ac
+participant "Services metier" as sv
+database "PostgreSQL" as db
+
+agent -> dc : POST /api/demandes
+dc -> sv : creerDemande() [EN_ATTENTE_VALIDATION]
+sv -> db : INSERT DemandeDeplacement
+dc --> agent : HTTP 201 (ref DEM-2026-xxxx)
+
+rs -> dc : PATCH /api/demandes/{id}/validation-service
+dc -> sv : validerNiveau1() [VALIDEE_SERVICE]
+sv -> db : UPDATE statut
+dc --> rs : HTTP 200
+
+gp -> ac : POST /api/affectations
+ac -> sv : creerAffectation()
+sv -> db : INSERT Affectation [EN_COURS]\nUPDATE Vehicule [AFFECTE]
+sv --> ac : AffectationResponse
+ac --> gp : HTTP 201 (ref AFF-2026-xxxx)
+
+gp -> ac : GET /api/ordres-de-mission/{affectationId}/pdf
+ac --> gp : HTTP 200 application/pdf (byte[])
+
+gp -> ac : POST /api/affectations/{id}/restitution
+ac -> sv : effectuerRestitution(km, etat) [RESTITUEE]
+sv -> db : UPDATE Affectation\nUPDATE Vehicule [DISPONIBLE]
+ac --> gp : HTTP 200
+@enduml

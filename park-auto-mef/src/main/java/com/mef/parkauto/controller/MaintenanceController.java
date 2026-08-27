@@ -1,9 +1,6 @@
 package com.mef.parkauto.controller;
 
-import com.mef.parkauto.dto.AlerteEcheanceDto;
-import com.mef.parkauto.dto.ApiResponse;
-import com.mef.parkauto.dto.InterventionMaintenanceDto;
-import com.mef.parkauto.dto.InterventionMaintenanceRequest;
+import com.mef.parkauto.dto.*;
 import com.mef.parkauto.service.MaintenanceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,6 +27,13 @@ public class MaintenanceController {
         return ResponseEntity.ok(ApiResponse.success(list, "Liste des interventions récupérée avec succès"));
     }
 
+    @GetMapping("/interventions/{id}")
+    @Operation(summary = "Obtenir une intervention par son identifiant")
+    public ResponseEntity<ApiResponse<InterventionMaintenanceDto>> getInterventionById(@PathVariable Long id) {
+        InterventionMaintenanceDto dto = maintenanceService.getInterventionById(id);
+        return ResponseEntity.ok(ApiResponse.success(dto, "Intervention récupérée avec succès"));
+    }
+
     @GetMapping("/interventions/vehicule/{vehiculeId}")
     @Operation(summary = "Obtenir les interventions de maintenance d'un véhicule")
     public ResponseEntity<ApiResponse<List<InterventionMaintenanceDto>>> getInterventionsByVehicule(@PathVariable Long vehiculeId) {
@@ -43,6 +47,15 @@ public class MaintenanceController {
         InterventionMaintenanceDto dto = maintenanceService.enregistrerIntervention(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(dto, "Intervention enregistrée avec succès"));
+    }
+
+    @PutMapping("/interventions/{id}/cloturer")
+    @Operation(summary = "Clôturer formellement une intervention (RG04 : contrôle kilométrage croissant, remise à DISPONIBLE et imputation RG05)")
+    public ResponseEntity<ApiResponse<InterventionMaintenanceDto>> cloturerIntervention(
+            @PathVariable Long id,
+            @Valid @RequestBody ClotureInterventionRequest request) {
+        InterventionMaintenanceDto dto = maintenanceService.cloturerIntervention(id, request);
+        return ResponseEntity.ok(ApiResponse.success(dto, "Intervention clôturée avec succès"));
     }
 
     @DeleteMapping("/interventions/{id}")

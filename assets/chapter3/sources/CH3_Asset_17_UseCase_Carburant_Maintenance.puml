@@ -1,0 +1,30 @@
+@startuml
+!include _theme.puml
+title Cas d'utilisation - Carburant et maintenance
+left to right direction
+
+actor "Gestionnaire\nLocal" as gl
+actor "Conducteur" as cd
+actor "Responsable\nFinancier" as rf
+
+rectangle "Module Carburant & Maintenance" {
+  usecase "Saisir un plein\n(litrage, montant, km)" as plein
+  usecase "Calcul automatique\nconso L/100km" as conso
+  usecase "Detecter une\nsurconsommation" as anomalie
+  usecase "Gerer les cartes\ncarburant" as cartes
+  usecase "Programmer un entretien\npreventif (seuil km)" as preventif
+  usecase "Enregistrer une\nintervention curative" as curatif
+  usecase "Consulter les alertes\n(echeances / km)" as alertes
+}
+
+cd --> plein
+gl --> plein
+gl --> cartes
+gl --> preventif
+gl --> curatif
+gl --> alertes
+rf --> alertes
+
+plein .> conso : <<include>>
+conso .> anomalie : <<extend>>
+@enduml

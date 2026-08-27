@@ -1,0 +1,32 @@
+@startuml
+!include _theme.puml
+title Cas d'utilisation - Assurances, sinistres et budget
+left to right direction
+
+actor "Gestionnaire" as ge
+actor "Responsable\nFinancier" as rf
+
+rectangle "Module Risques & Budget" {
+  usecase "Gerer les polices\n(Assurance)" as polices
+  usecase "Alerte echeance\nJ-30" as echeance
+  usecase "Declarer un\nsinistre" as sinistre
+  usecase "Suivre l'expertise\net l'indemnisation" as expertise
+  usecase "Enregistrer une\ninfraction / PV" as infraction
+  usecase "Planifier visite\ntechnique et taxes" as visite
+  usecase "Lancer une reforme\n(commission)" as reforme
+  usecase "Allouer un budget\npar direction" as budget
+  usecase "Suivre la consommation\nbudgetaire (taux)" as suivi
+}
+
+ge --> polices
+ge --> sinistre
+ge --> expertise
+ge --> infraction
+ge --> visite
+ge --> reforme
+rf --> budget
+rf --> suivi
+
+polices .> echeance : <<include>>
+sinistre .> expertise : <<include>>
+@enduml

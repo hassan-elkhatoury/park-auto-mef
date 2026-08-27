@@ -41,6 +41,7 @@ public class AffectationService {
     private final UtilisateurRepository utilisateurRepository;
     private final AffectationMapper affectationMapper;
     private final JournalService journalService;
+    private final AssuranceService assuranceService; // RG02 — vérification assurance valide
 
     @Transactional(readOnly = true)
     public List<AffectationDto> getAllAffectations() {
@@ -78,6 +79,9 @@ public class AffectationService {
         if (vehicule.getStatutAdministratif() != StatutAdministratif.DISPONIBLE) {
             throw new IllegalStateException("Le véhicule " + vehicule.getImmatriculation() + " n'est pas DISPONIBLE (Statut actuel : " + vehicule.getStatutAdministratif() + ").");
         }
+
+        // RG02 — Bloquer l'affectation si le véhicule n'a pas d'assurance valide
+        assuranceService.verifierAssuranceValide(vehicule.getId());
 
         Conducteur conducteur = conducteurRepository.findById(dto.getConducteurId())
                 .orElseThrow(() -> new ResourceNotFoundException("Conducteur non trouvé : " + dto.getConducteurId()));

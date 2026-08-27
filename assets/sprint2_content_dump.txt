@@ -1,0 +1,106 @@
+=== DUMP FOR Sprint_2_Gestion_des_Vehicules.docx ===
+
+=== DOCUMENT BODY ELEMENTS (IN ORDER) ===
+[P0] [Normal] Sprint 2 — Gestion des Véhicules
+[P1] [Normal] Rapport Technique de Réalisation et Spécifications — Ministère de l'Économie et des Finances
+[P2] [Normal] 
+[P3] [Heading 1] 1. Introduction et Objectifs du Sprint 2
+[P4] [Normal] Ce chapitre présente les travaux réalisés lors du deuxième sprint du projet, intitulé « Gestion des Véhicules » (période du 20/07/2026 au 24/07/2026). L'objectif majeur de ce sprint est de concevoir et d'implémenter le module complet de gestion du parc matériel automobile du Ministère de l'Économie et des Finances (MEF).
+[P5] [Normal] Les fonctionnalités et règles clés développées au cours de ce sprint incluent :
+[P6] [List Bullet] La création et la gestion détaillée de la fiche véhicule (identification, caractéristiques techniques, acquisition et rattachement administratif).
+[P7] [List Bullet] La recherche paginée et le filtrage multicritères des véhicules du parc (par immatriculation, marque, modèle, direction ou statut).
+[P8] [List Bullet] La gestion dynamique du cycle de vie des véhicules (12 statuts administratifs et 8 états techniques).
+[P9] [List Bullet] L'historisation automatique de chaque changement de statut dans une table dédiée (historique_statuts_vehicule).
+[P10] [List Bullet] Le contrôle strict des règles de gestion d'unicité (immatriculation, numéro de châssis, numéro d'inventaire) et de la cohérence kilométrique.
+[P11] [Normal] 
+[P12] [Heading 1] 2. Analyse Fonctionnelle du Sprint 2
+[P13] [Heading 2] 2.1. Besoins Fonctionnels Spécifiés
+[P14] [List Bullet] Création d'une fiche véhicule (CRUD) : Permettre aux gestionnaires et administrateurs de saisir les 40+ attributs caractérisant un véhicule (immatriculation, numéro d'inventaire, marque, modèle, puissance fiscale, type de carburant, date de mise en circulation, centre de coût, etc.).
+[P15] [List Bullet] Consultation et Recherche Paginée : Consulter la liste des véhicules du ministère avec recherche par mot-clé (immatriculation, marque, modèle, inventaire) et filtrage par direction ou statut administratif.
+[P16] [List Bullet] Modification et Archivage (Soft Delete) : Mettre à jour les informations d'un véhicule tout en conservant son historique. L'archivage passe le statut administratif à ARCHIVE sans suppression physique en base de données afin de préserver l'intégrité référentielle.
+[P17] [List Bullet] Gestion des Statuts et États : Permettre l'évolution du véhicule à travers 12 statuts administratifs (DISPONIBLE, AFFECTE, RESERVE, IMMOBILISE, EN_ENTRETIEN, EN_REPARATION, etc.) et 8 états techniques (NEUF, BON_ETAT, ENTRETIEN_NECESSAIRE, ACCIDENTE, etc.), avec saisie du motif et de la pièce justificative.
+[P18] [Heading 2] 2.2. Règles de Gestion Métier Strictes
+[P19] [Normal] Conformément aux exigences du cahier des charges du MEF, le système applique les règles suivantes :
+[P20] [List Bullet] RG01 - Unicité de l'immatriculation : Impossible d'enregistrer deux véhicules avec la même plaque d'immatriculation en base de données.
+[P21] [List Bullet] RG02 - Unicité du numéro de châssis : Le numéro de série / châssis doit être unique dans l'ensemble de la base du ministère.
+[P22] [List Bullet] RG03 - Unicité du numéro d'inventaire : Le numéro d'inventaire attribué par le Ministère doit être unique.
+[P23] [List Bullet] RG04 - Cohérence kilométrique : Le nouveau kilométrage actuel saisi ne peut jamais être inférieur au dernier kilométrage enregistré.
+[P24] [Heading 2] 2.3. Diagramme de Cas d'Utilisation UML (Sprint 2)
+[P25] [Normal] Le diagramme ci-dessous illustre les interactions des utilisateurs avec le module de gestion des véhicules :
+[P26] [Normal] 
+[P27] [Normal] Figure 13 : Diagramme de cas d'utilisation UML (Sprint 2 — Gestion des Véhicules)
+[P28] [Normal] 
+[P29] [Heading 1] 3. Conception et Modélisation Technique
+[P30] [Heading 2] 3.1. Modélisation Statique (Diagramme de Classes UML)
+[P31] [Normal] Le diagramme de classes ci-dessous présente l'enrichissement du modèle de données avec les entités du Sprint 2 :
+[P32] [Normal] • Vehicule : Hérite de BaseEntity et contient les attributs d'identification, de technique et de rattachement. Elle utilise les énumérations TypeCarburant, StatutAdministratif et EtatTechnique.
+• HistoriqueStatutVehicule : Hérite de BaseEntity. Elle est reliée à Vehicule par une relation Many-to-One et enregistre les états d'origine et de destination, la date du changement, le motif et l'auteur.
+[P33] [Normal] 
+[P34] [Normal] Figure 14 : Diagramme de classes UML (Sprint 2 — Vehicule & HistoriqueStatutVehicule)
+[P35] [Heading 2] 3.2. Modélisation Dynamique (Diagramme de Séquence UML)
+[P36] [Normal] Le diagramme ci-dessous décrit le processus de changement de statut d'un véhicule avec l'enregistrement automatique de la ligne d'historique et la journalisation d'audit :
+[P37] [Normal] 
+[P38] [Normal] Figure 15 : Diagramme de séquence UML — Changement de statut d'un véhicule
+[P39] [Heading 2] 3.3. Schéma de la Base de Données Relationnelle (MPD)
+[P40] [Normal] Le schéma physique mis à jour comprend désormais les tables suivantes :
+[P41] [List Bullet] vehicules : Contient l'ensemble des 40+ attributs caractérisant les véhicules du parc.
+[P42] [List Bullet] historique_statuts_vehicule : Table d'historisation stockant chaque transition de statut administratif ou état technique avec la date et l'auteur.
+[P43] [List Bullet] journal_actions : Table d'audit globale stockant la trace de toutes les actions d'écriture (exclusif en base de données).
+[P44] [Heading 1] 4. Réalisation, Architecture et Validation
+[P45] [Heading 2] 4.1. Structure et Architecture du Code Source
+[P46] [Normal] Le module véhicule respecte l'architecture modulaire établie :
+[P47] [List Bullet] com.mef.parkauto.entity : Classes Vehicule, HistoriqueStatutVehicule et énumérations TypeCarburant, StatutAdministratif, EtatTechnique.
+[P48] [List Bullet] com.mef.parkauto.repository : VehiculeRepository (avec requête JPQL personnalisée multicritères) et HistoriqueStatutRepository.
+[P49] [List Bullet] com.mef.parkauto.dto.vehicule : Records Java VehiculeRequest, VehiculeResponse, StatutChangeRequest, HistoriqueStatutResponse.
+[P50] [List Bullet] com.mef.parkauto.mapper : Interfaces MapStruct VehiculeMapper et HistoriqueStatutMapper.
+[P51] [List Bullet] com.mef.parkauto.service : VehiculeService et son implémentation VehiculeServiceImpl centralisant la logique métier.
+[P52] [List Bullet] com.mef.parkauto.controller : VehiculeController protégé par @PreAuthorize pour la gestion des droits d'accès.
+[P53] [Heading 1] 5. Démonstration Visuelle de l'Interface Web (Captures à Insérer)
+[P54] [Normal] Cette section contient les 5 emplacements pour les captures d'écran de démonstration de la flotte automobile :
+[P55] [Normal] ▶ Figure 4.1 : Vue d'ensemble du Tableau de Bord & Indicateurs KPI Flotte (URL /dashboard)
+[P56] [Normal] Capture de l'écran principal affichant les compteurs KPI (Total Flotte, Disponibles, En Mission, Maintenance) et les graphiques Recharts.
+
+--- [TABLE 0] (1 rows x 1 cols) ---
+  Row 0: 
+----------------------------------------
+
+[P57] [Normal] 
+[P58] [Normal] ▶ Figure 4.2 : Liste de la Flotte Automobile & Plaques Marocaines (URL /vehicules)
+[P59] [Normal] Capture du tableau dédié des véhicules avec photos réelles, filtres par Direction MEF, format d'immatriculation marocaine (| أ | 1) et bouton Consulter Fiche.
+
+--- [TABLE 1] (1 rows x 1 cols) ---
+  Row 0: 
+----------------------------------------
+
+[P60] [Normal] 
+[P61] [Normal] 
+[P62] [Normal] ▶ Figure 4.3 : Fiche Technique Détaillée du Véhicule (URL /vehicules/:id)
+[P63] [Normal] Capture de la vue détaillée d'un véhicule affichant la photo grand format, le numéro d'inventaire, le numéro de châssis (VIN), le kilométrage et les caractéristiques.
+
+--- [TABLE 2] (1 rows x 1 cols) ---
+  Row 0: 
+----------------------------------------
+
+[P64] [Normal] 
+[P65] [Normal] ▶ Figure 4.4 : Formulaire de Saisie & Rattachement aux Directions MEF
+[P66] [Normal] Capture de la modale de création/édition d'un véhicule avec sélection de la Direction du MEF (Direction du Budget, DGI, ADII, TGR, etc.) et modèle.
+
+--- [TABLE 3] (1 rows x 1 cols) ---
+  Row 0: 
+----------------------------------------
+
+[P67] [Normal] 
+[P68] [Normal] ▶ Figure 4.5 : Documentation Interactive Swagger UI des Endpoints REST Véhicules
+[P69] [Normal] Capture de l'interface Swagger UI exposant les endpoints REST sécurisés (/api/vehicules).
+
+--- [TABLE 4] (1 rows x 1 cols) ---
+  Row 0: 
+----------------------------------------
+
+[P70] [Normal] 
+[P71] [Heading 1] 6. Conclusion du Sprint 2
+[P72] [Normal] Le deuxième sprint a permis de livrer un module complet et sécurisé de gestion du parc de véhicules. Toutes les exigences du cahier des charges (40+ attributs métiers, 12 statuts administratifs, 8 états techniques, règles d'unicité et de kilométrage) ont été développées, testées et documentées sous Swagger.
+
+La prochaine étape de notre planning est le Sprint 3 : Gestion des Affectations et des Conducteurs, qui permettra d'affecter les véhicules disponibles aux différentes directions et conducteurs du Ministère.
+
+Summary: Extracted 73 paragraphs and 5 tables.

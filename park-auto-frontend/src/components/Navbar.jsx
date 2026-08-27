@@ -11,7 +11,7 @@ function StarBadge({ className = '' }) {
   );
 }
 
-export default function Navbar({ user, onLogout, collapsed, onToggleCollapse }) {
+export default function Navbar({ user, onLogout, collapsed, onToggleCollapse, notificationCount = 0 }) {
   const [time, setTime] = useState('');
   const [dateStr, setDateStr] = useState('');
 
@@ -82,9 +82,11 @@ export default function Navbar({ user, onLogout, collapsed, onToggleCollapse }) 
           {/* Notifications */}
           <button className="relative p-2 rounded-lg text-slate-600 hover:bg-[#C59B27]/10 transition-all cursor-pointer group">
             <Bell className="w-5 h-5 group-hover:text-[#C59B27] transition-colors" />
-            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-[#C1272D] text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white px-1 shadow-sm">
-              12
-            </span>
+            {notificationCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-[#C1272D] text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white px-1 shadow-sm">
+                {notificationCount > 99 ? '99+' : notificationCount}
+              </span>
+            )}
           </button>
 
           {/* User Profile Pill with Star Badge */}

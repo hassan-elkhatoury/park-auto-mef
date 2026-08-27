@@ -241,7 +241,7 @@ export default function UtilisateursView() {
             Gestion des Utilisateurs & Habilitations
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Conformité Cahier des Charges MEF — Sécurité, Contrôle des Accès & Rôles Agent
+            Administration des comptes, gestion des profils et contrôle des habilitations agents
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -471,77 +471,84 @@ export default function UtilisateursView() {
 
       {/* Create User Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0A1E3F]/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 w-full max-w-[580px] max-h-[90vh] overflow-y-auto">
-            {/* Modal header */}
-            <div className="flex items-center justify-between p-6 border-b border-[#E2E8F0]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 w-full max-w-[580px] max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header Banner */}
+            <div className="bg-[#0A1E3F] text-white p-5 flex items-center justify-between border-b border-[#C59B27]/30 shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl gold-gradient-bg flex items-center justify-center text-[#071530]">
+                <div className="w-9 h-9 rounded-xl bg-[#C59B27]/20 border border-[#C59B27]/40 flex items-center justify-center text-[#C59B27]">
                   <UserPlus className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="font-outfit font-extrabold text-lg text-[#0A1E3F]">Créer un Compte Agent MEF</h2>
-                  <p className="text-[10px] text-[#C59B27] font-bold">Enregistrement et attribution des habilitations</p>
+                  <h3 className="font-black text-sm uppercase tracking-wider text-white">Créer un Compte Agent MEF</h3>
+                  <p className="text-[11px] text-slate-300 font-normal">Enregistrement et attribution des habilitations</p>
                 </div>
               </div>
-              <button onClick={() => setIsModalOpen(false)} className="p-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">
-                <X className="w-5 h-5 text-slate-400" />
+              <button 
+                type="button" 
+                onClick={() => setIsModalOpen(false)} 
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+              >
+                <X className="w-4 h-4" />
               </button>
             </div>
+
             {/* Modal body */}
-            <form onSubmit={handleCreateUser} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={labelCls}>Matricule *</label>
-                  <input type="text" value={formData.matricule} onChange={(e) => setFormData({...formData, matricule: e.target.value})} placeholder="MEF-2026-099" className={inputCls} required />
+            <form onSubmit={handleCreateUser} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-6 overflow-y-auto space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelCls}>Matricule *</label>
+                    <input type="text" value={formData.matricule} onChange={(e) => setFormData({...formData, matricule: e.target.value})} placeholder="MEF-2026-099" className={inputCls} required />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Nom *</label>
+                    <input type="text" value={formData.nom} onChange={(e) => setFormData({...formData, nom: e.target.value})} placeholder="El Mansouri" className={inputCls} required />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Prénom *</label>
+                    <input type="text" value={formData.prenom} onChange={(e) => setFormData({...formData, prenom: e.target.value})} placeholder="Khadija" className={inputCls} required />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Email Professionnel *</label>
+                    <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="k.mansouri@mef.gov.ma" className={inputCls} required />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Rôle Système *</label>
+                    <select value={formData.role || 'GESTIONNAIRE_LOCAL'} onChange={(e) => setFormData({...formData, role: e.target.value})} className={`${inputCls} cursor-pointer font-medium`}>
+                      {roleOptions.map(r => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Direction MEF *</label>
+                    <select value={formData.direction} onChange={(e) => setFormData({...formData, direction: e.target.value})} className={`${inputCls} cursor-pointer font-medium`}>
+                      {directionOptions.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                    </select>
+                  </div>
                 </div>
                 <div>
-                  <label className={labelCls}>Nom *</label>
-                  <input type="text" value={formData.nom} onChange={(e) => setFormData({...formData, nom: e.target.value})} placeholder="El Mansouri" className={inputCls} required />
+                  <label className={labelCls}>Téléphone</label>
+                  <input type="tel" value={formData.telephone} onChange={(e) => setFormData({...formData, telephone: e.target.value})} placeholder="+212 6XX XX XX XX" className={inputCls} />
                 </div>
-                <div>
-                  <label className={labelCls}>Prénom *</label>
-                  <input type="text" value={formData.prenom} onChange={(e) => setFormData({...formData, prenom: e.target.value})} placeholder="Khadija" className={inputCls} required />
-                </div>
-                <div>
-                  <label className={labelCls}>Email Professionnel *</label>
-                  <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="k.mansouri@mef.gov.ma" className={inputCls} required />
-                </div>
-                <div>
-                  <label className={labelCls}>Rôle Système *</label>
-                  <select value={formData.role || 'GESTIONNAIRE_LOCAL'} onChange={(e) => setFormData({...formData, role: e.target.value})} className={`${inputCls} cursor-pointer`}>
-                    {roleOptions.map(r => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className={labelCls}>Direction MEF *</label>
-                  <select value={formData.direction} onChange={(e) => setFormData({...formData, direction: e.target.value})} className={`${inputCls} cursor-pointer`}>
-                    {directionOptions.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className={labelCls}>Téléphone</label>
-                <input type="tel" value={formData.telephone} onChange={(e) => setFormData({...formData, telephone: e.target.value})} placeholder="+212 6XX XX XX XX" className={inputCls} />
-              </div>
-              
-              {/* Security Warning */}
-              <div className="bg-[#0A1E3F] border border-[#C59B27]/40 rounded-xl p-3.5 text-xs text-white flex items-start gap-3 shadow-lg">
-                <Shield className="w-4 h-4 text-[#D7B14A] flex-shrink-0 mt-0.5" />
-                <div className="space-y-0.5">
-                  <strong className="text-[#D7B14A] font-extrabold block">Sécurité & Habilitation Ministère MEF :</strong>
-                  <span className="text-slate-300 text-[11px] leading-relaxed">
-                    Un mot de passe temporaire unique et sécurisé est généré automatiquement par le système et immédiatement envoyé par email à l'agent. L'agent sera <u>forcé de le modifier</u> dès sa première connexion.
-                  </span>
+                
+                {/* Security Warning */}
+                <div className="bg-[#0A1E3F] border border-[#C59B27]/40 rounded-xl p-3.5 text-xs text-white flex items-start gap-3 shadow-sm">
+                  <Shield className="w-4 h-4 text-[#D7B14A] flex-shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <strong className="text-[#D7B14A] font-extrabold block">Sécurité & Habilitation Ministère MEF :</strong>
+                    <span className="text-slate-300 text-[11px] leading-relaxed">
+                      Un mot de passe temporaire unique et sécurisé est généré automatiquement par le système et immédiatement envoyé par email à l'agent. L'agent sera <u>forcé de le modifier</u> dès sa première connexion.
+                    </span>
+                  </div>
                 </div>
               </div>
 
               {/* Modal footer */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-[#E2E8F0]">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="border border-[#E2E8F0] text-[#0A1E3F] font-bold text-xs px-4 py-2.5 rounded-xl hover:bg-[#F4F6FB] transition-all cursor-pointer">Annuler</button>
-                <button type="submit" className="gold-gradient-bg text-[#071530] font-extrabold text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md hover:brightness-105 transition-all cursor-pointer">
+              <div className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center justify-end gap-3 shrink-0">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 text-xs font-bold transition-all cursor-pointer">Annuler</button>
+                <button type="submit" className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-gold hover:brightness-105 transition-all flex items-center gap-2 cursor-pointer">
                   <Check className="w-4 h-4" />
-                  Créer le Compte
+                  <span>Créer le Compte</span>
                 </button>
               </div>
             </form>
@@ -551,97 +558,104 @@ export default function UtilisateursView() {
 
       {/* Edit User Modal */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0A1E3F]/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 w-full max-w-[580px] max-h-[90vh] overflow-y-auto">
-            {/* Modal header */}
-            <div className="flex items-center justify-between p-6 border-b border-[#E2E8F0]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 w-full max-w-[580px] max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header Banner */}
+            <div className="bg-[#0A1E3F] text-white p-5 flex items-center justify-between border-b border-[#C59B27]/30 shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl gold-gradient-bg flex items-center justify-center text-[#071530]">
+                <div className="w-9 h-9 rounded-xl bg-[#C59B27]/20 border border-[#C59B27]/40 flex items-center justify-center text-[#C59B27]">
                   <Edit className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="font-outfit font-extrabold text-lg text-[#0A1E3F]">Modifier l'Agent #{editingUser?.id}</h2>
-                  <p className="text-[10px] text-[#C59B27] font-bold">{editingUser?.prenom} {editingUser?.nom} — {editingUser?.matricule}</p>
+                  <h3 className="font-black text-sm uppercase tracking-wider text-white">Modifier l'Agent #{editingUser?.id}</h3>
+                  <p className="text-[11px] text-slate-300 font-normal">{editingUser?.prenom} {editingUser?.nom} — {editingUser?.matricule}</p>
                 </div>
               </div>
-              <button onClick={() => setIsEditModalOpen(false)} className="p-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">
-                <X className="w-5 h-5 text-slate-400" />
+              <button 
+                type="button" 
+                onClick={() => setIsEditModalOpen(false)} 
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+              >
+                <X className="w-4 h-4" />
               </button>
             </div>
+
             {/* Modal body */}
-            <form onSubmit={handleUpdateUser} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={labelCls}>Matricule *</label>
-                  <input type="text" value={formData.matricule} onChange={(e) => setFormData({...formData, matricule: e.target.value})} className={inputCls} required />
-                </div>
-                <div>
-                  <label className={labelCls}>Nom *</label>
-                  <input type="text" value={formData.nom} onChange={(e) => setFormData({...formData, nom: e.target.value})} className={inputCls} required />
-                </div>
-                <div>
-                  <label className={labelCls}>Prénom *</label>
-                  <input type="text" value={formData.prenom} onChange={(e) => setFormData({...formData, prenom: e.target.value})} className={inputCls} required />
-                </div>
-                <div>
-                  <label className={labelCls}>Email *</label>
-                  <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className={inputCls} required />
-                </div>
-                <div>
-                  <label className={labelCls}>Rôle Système *</label>
-                  <select value={formData.role || 'GESTIONNAIRE_LOCAL'} onChange={(e) => setFormData({...formData, role: e.target.value})} className={`${inputCls} cursor-pointer`}>
-                    {roleOptions.map(r => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className={labelCls}>Direction MEF *</label>
-                  <select value={formData.direction} onChange={(e) => setFormData({...formData, direction: e.target.value})} className={`${inputCls} cursor-pointer`}>
-                    {directionOptions.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className={labelCls}>Téléphone</label>
-                <input type="tel" value={formData.telephone} onChange={(e) => setFormData({...formData, telephone: e.target.value})} className={inputCls} />
-              </div>
-
-              {/* Account Status Toggle */}
-              <div>
-                <label className={labelCls}>Statut du Compte Agent *</label>
-                <div 
-                  onClick={() => setFormData({ ...formData, statut: formData.statut === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' })}
-                  className="flex items-center justify-between p-3.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl cursor-pointer hover:border-[#C59B27] transition-all select-none"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <span className={`w-3 h-3 rounded-full ${formData.statut === 'ACTIVE' ? 'bg-[#0D7A5F] shadow-[0_0_8px_rgba(13,122,95,0.6)] animate-pulse' : 'bg-red-500'}`} />
-                    <div>
-                      <span className="text-xs font-bold text-[#0A1E3F] block">
-                        {formData.statut === 'ACTIVE' ? 'Compte Agent Actif' : 'Compte Agent Désactivé'}
-                      </span>
-                      <span className="text-[10px] text-slate-500">
-                        {formData.statut === 'ACTIVE' ? 'Accès et fonctionnalités système autorisés' : 'Accès bloqué en base de données'}
-                      </span>
-                    </div>
+            <form onSubmit={handleUpdateUser} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-6 overflow-y-auto space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelCls}>Matricule *</label>
+                    <input type="text" value={formData.matricule} onChange={(e) => setFormData({...formData, matricule: e.target.value})} className={inputCls} required />
                   </div>
+                  <div>
+                    <label className={labelCls}>Nom *</label>
+                    <input type="text" value={formData.nom} onChange={(e) => setFormData({...formData, nom: e.target.value})} className={inputCls} required />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Prénom *</label>
+                    <input type="text" value={formData.prenom} onChange={(e) => setFormData({...formData, prenom: e.target.value})} className={inputCls} required />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Email *</label>
+                    <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className={inputCls} required />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Rôle Système *</label>
+                    <select value={formData.role || 'GESTIONNAIRE_LOCAL'} onChange={(e) => setFormData({...formData, role: e.target.value})} className={`${inputCls} cursor-pointer font-medium`}>
+                      {roleOptions.map(r => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Direction MEF *</label>
+                    <select value={formData.direction} onChange={(e) => setFormData({...formData, direction: e.target.value})} className={`${inputCls} cursor-pointer font-medium`}>
+                      {directionOptions.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                    </select>
+                  </div>
+                </div>
 
-                  {/* Toggle Switch */}
-                  <div className={`w-12 h-6.5 rounded-full p-0.5 transition-colors duration-300 flex items-center flex-shrink-0 ${
-                    formData.statut === 'ACTIVE' ? 'bg-[#0D7A5F]' : 'bg-slate-300'
-                  }`}>
-                    <div className={`w-5.5 h-5.5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
-                      formData.statut === 'ACTIVE' ? 'translate-x-[22px]' : 'translate-x-0'
-                    }`} />
+                <div>
+                  <label className={labelCls}>Téléphone</label>
+                  <input type="tel" value={formData.telephone} onChange={(e) => setFormData({...formData, telephone: e.target.value})} className={inputCls} />
+                </div>
+
+                {/* Account Status Toggle */}
+                <div>
+                  <label className={labelCls}>Statut du Compte Agent *</label>
+                  <div 
+                    onClick={() => setFormData({ ...formData, statut: formData.statut === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' })}
+                    className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer hover:border-[#C59B27] transition-all select-none"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className={`w-3 h-3 rounded-full ${formData.statut === 'ACTIVE' ? 'bg-[#0D7A5F] shadow-[0_0_8px_rgba(13,122,95,0.6)] animate-pulse' : 'bg-red-500'}`} />
+                      <div>
+                        <span className="text-xs font-bold text-[#0A1E3F] block">
+                          {formData.statut === 'ACTIVE' ? 'Compte Agent Actif' : 'Compte Agent Désactivé'}
+                        </span>
+                        <span className="text-[10px] text-slate-500">
+                          {formData.statut === 'ACTIVE' ? 'Accès et fonctionnalités système autorisés' : 'Accès bloqué en base de données'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Toggle Switch */}
+                    <div className={`w-12 h-6.5 rounded-full p-0.5 transition-colors duration-300 flex items-center flex-shrink-0 ${
+                      formData.statut === 'ACTIVE' ? 'bg-[#0D7A5F]' : 'bg-slate-300'
+                    }`}>
+                      <div className={`w-5.5 h-5.5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
+                        formData.statut === 'ACTIVE' ? 'translate-x-[22px]' : 'translate-x-0'
+                      }`} />
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Modal footer */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-[#E2E8F0]">
-                <button type="button" onClick={() => setIsEditModalOpen(false)} className="border border-[#E2E8F0] text-[#0A1E3F] font-bold text-xs px-4 py-2.5 rounded-xl hover:bg-[#F4F6FB] transition-all cursor-pointer">Annuler</button>
-                <button type="submit" className="gold-gradient-bg text-[#071530] font-extrabold text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md hover:brightness-105 transition-all cursor-pointer">
+              <div className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center justify-end gap-3 shrink-0">
+                <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 text-xs font-bold transition-all cursor-pointer">Annuler</button>
+                <button type="submit" className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-gold hover:brightness-105 transition-all flex items-center gap-2 cursor-pointer">
                   <Check className="w-4 h-4" />
-                  Enregistrer les Modifications
+                  <span>Enregistrer les Modifications</span>
                 </button>
               </div>
             </form>
@@ -654,7 +668,7 @@ export default function UtilisateursView() {
         isOpen={deactivateModal.isOpen}
         title="Désactivation du Compte Agent"
         message={`Voulez-vous vraiment désactiver le compte de ${deactivateModal.user?.prenom} ${deactivateModal.user?.nom} ?`}
-        badgeText="Accès bloqué en BDD conforme au Cahier des Charges MEF"
+        badgeText="Désactivation sécurisée enregistrée dans le journal d'audit"
         confirmText="Désactiver le compte"
         cancelText="Annuler"
         variant="danger"

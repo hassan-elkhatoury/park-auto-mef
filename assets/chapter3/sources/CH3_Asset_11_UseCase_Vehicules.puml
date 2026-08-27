@@ -1,0 +1,34 @@
+@startuml
+!include _theme.puml
+title Cas d'utilisation - Gestion du parc automobile
+left to right direction
+
+actor "Gestionnaire\nLocal" as gl
+actor "Gestionnaire\nCentral" as gc
+actor "Profil\nConsultation" as co
+
+rectangle "Module Gestion du Parc" {
+  usecase "Consulter le parc\n(liste paginee)" as consulter
+  usecase "Rechercher / filtrer\n(direction, carburant, statut)" as filtrer
+  usecase "Enregistrer\nun vehicule" as creer
+  usecase "Modifier\nun vehicule" as modifier
+  usecase "Changer le statut\nadministratif" as statut
+  usecase "Consulter l'historique\ndes statuts" as historique
+  usecase "Archiver un vehicule\n(suppression logique)" as archiver
+}
+
+gl --> consulter
+gl --> filtrer
+gl --> creer
+gl --> modifier
+gl --> statut
+gl --> historique
+gl --> archiver
+gc --> consulter
+gc --> statut
+gc --> archiver
+co --> consulter
+co --> filtrer
+
+statut .> historique : <<include>>
+@enduml

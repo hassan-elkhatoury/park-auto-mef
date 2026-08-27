@@ -1,5 +1,16 @@
 import axios from 'axios';
 
+export const getApiErrorMessage = (error, fallback = 'Une erreur est survenue.') => {
+  const payload = error?.response?.data ?? error?.data ?? error;
+  if (typeof payload === 'string' && payload.trim()) return payload;
+  if (payload?.message && typeof payload.message === 'string') return payload.message;
+  if (payload?.data && typeof payload.data === 'string') return payload.data;
+  if (payload?.errors && typeof payload.errors === 'object') {
+    return Object.values(payload.errors).filter(Boolean).join(' · ');
+  }
+  return error?.message || fallback;
+};
+
 const api = axios.create({
   baseURL: '/api',
   headers: {
@@ -27,9 +38,10 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    // If JWT token expired or 401 unauthorized on authenticated endpoint, trigger login redirection
+    // If JWT token expired or 401/403 unauthorized on authenticated endpoint, trigger login redirection
     const isLoginRequest = error.config && error.config.url && error.config.url.includes('/auth/login');
-    if (error.response && error.response.status === 401 && !isLoginRequest) {
+    const status = error?.response?.status;
+    if ((status === 401 || status === 403) && !isLoginRequest) {
       localStorage.clear();
       window.dispatchEvent(new Event('auth:expired'));
     }

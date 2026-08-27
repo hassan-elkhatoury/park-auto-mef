@@ -18,8 +18,8 @@ const itemVariants = {
 };
 
 export default function LoginView({ onLoginSuccess }) {
-  const [email, setEmail] = useState('admin@mef.gov.ma');
-  const [password, setPassword] = useState('Admin@2026');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

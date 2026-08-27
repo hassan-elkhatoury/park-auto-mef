@@ -489,57 +489,75 @@ export default function DemandesView({ onOpenAffectationModal }) {
 
       {/* Modal New Request */}
       {isNewModalOpen && (
-        <div className="fixed inset-0 bg-[#0A1E3F]/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-extrabold text-[#0A1E3F] uppercase flex items-center gap-2">
-                <Send className="w-5 h-5 text-[#C59B27]" />
-                Nouvelle Demande
-              </h2>
-              <button onClick={() => setIsNewModalOpen(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
-                <X className="w-5 h-5" />
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header Banner */}
+            <div className="bg-[#0A1E3F] text-white p-5 flex items-center justify-between border-b border-[#C59B27]/30 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#C59B27]/20 border border-[#C59B27]/40 flex items-center justify-center text-[#C59B27]">
+                  <Send className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm uppercase tracking-wider text-white">Nouvelle Demande de Véhicule</h3>
+                  <p className="text-[11px] text-slate-300 font-normal">Réservation pour mission officielle ou déplacement de service</p>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setIsNewModalOpen(false)} 
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+              >
+                <X className="w-4 h-4" />
               </button>
             </div>
-            <form onSubmit={handleCreateDemande} className="space-y-4 text-xs">
-              <div>
-                <label className="block font-bold text-slate-700 mb-1.5">Motif de la mission *</label>
-                <input type="text" required placeholder="ex: Inspection budgétaire régionale..." value={newForm.motif} onChange={e => setNewForm({ ...newForm, motif: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C59B27]/30 font-medium" />
-              </div>
-              <div>
-                <label className="block font-bold text-slate-700 mb-1.5">Destination *</label>
-                <input type="text" required placeholder="ex: Tanger, Casablanca..." value={newForm.destination} onChange={e => setNewForm({ ...newForm, destination: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C59B27]/30 font-medium" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
+
+            <form onSubmit={handleCreateDemande} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-6 overflow-y-auto space-y-4 text-xs">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1.5">Départ *</label>
-                  <input type="datetime-local" required value={newForm.dateHeureDepart} onChange={e => setNewForm({ ...newForm, dateHeureDepart: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C59B27]/30 font-medium" />
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Motif de la mission *</label>
+                  <input type="text" required placeholder="ex: Inspection budgétaire régionale..." value={newForm.motif} onChange={e => setNewForm({ ...newForm, motif: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] font-medium" />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1.5">Retour estimé *</label>
-                  <input type="datetime-local" required value={newForm.dateHeureRetourEstimee} onChange={e => setNewForm({ ...newForm, dateHeureRetourEstimee: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C59B27]/30 font-medium" />
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Destination *</label>
+                  <input type="text" required placeholder="ex: Tanger, Casablanca..." value={newForm.destination} onChange={e => setNewForm({ ...newForm, destination: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] font-medium" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Départ *</label>
+                    <input type="datetime-local" required value={newForm.dateHeureDepart} onChange={e => setNewForm({ ...newForm, dateHeureDepart: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] font-medium" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Retour estimé *</label>
+                    <input type="datetime-local" required value={newForm.dateHeureRetourEstimee} onChange={e => setNewForm({ ...newForm, dateHeureRetourEstimee: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] font-medium" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Passagers</label>
+                    <input type="number" min="1" value={newForm.nombrePassagers} onChange={e => setNewForm({ ...newForm, nombrePassagers: parseInt(e.target.value) || 1 })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] font-bold" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Accompagnateurs</label>
+                    <input type="text" placeholder="M. Bennani, Mme Alami..." value={newForm.listePassagers} onChange={e => setNewForm({ ...newForm, listePassagers: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] font-medium" />
+                  </div>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1.5">Passagers</label>
-                  <input type="number" min="1" value={newForm.nombrePassagers} onChange={e => setNewForm({ ...newForm, nombrePassagers: parseInt(e.target.value) || 1 })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C59B27]/30 font-bold" />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1.5">Accompagnateurs</label>
-                  <input type="text" placeholder="M. Bennani, Mme Alami..." value={newForm.listePassagers} onChange={e => setNewForm({ ...newForm, listePassagers: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C59B27]/30 font-medium" />
-                </div>
-              </div>
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+
+              {/* Footer */}
+              <div className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center justify-end gap-3 shrink-0">
                 <button type="button" onClick={() => setIsNewModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold text-slate-700 text-xs transition-all cursor-pointer">Annuler</button>
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 text-xs font-bold transition-all cursor-pointer">Annuler</button>
                 <button type="submit"
-                  className="px-4 py-2.5 rounded-xl gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs shadow-md hover:brightness-105 transition-all cursor-pointer">Soumettre la demande</button>
+                  className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-gold hover:brightness-105 transition-all flex items-center gap-2 cursor-pointer">
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Soumettre la demande</span>
+                </button>
               </div>
             </form>
           </div>
@@ -548,56 +566,75 @@ export default function DemandesView({ onOpenAffectationModal }) {
 
       {/* Modal Validation N1 */}
       {isValidN1ModalOpen && selectedDemande && (
-        <div className="fixed inset-0 bg-[#0A1E3F]/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-extrabold text-[#0A1E3F] uppercase flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-[#C59B27]" />
-                Décision N1 (Service)
-              </h2>
-              <button onClick={() => setIsValidN1ModalOpen(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1">
-              <p><span className="font-bold text-slate-700">Réf :</span> {selectedDemande.reference}</p>
-              <p><span className="font-bold text-slate-700">Motif :</span> {selectedDemande.motif}</p>
-              <p><span className="font-bold text-slate-700">Destination :</span> {selectedDemande.destination}</p>
-              <p><span className="font-bold text-slate-700">Agent :</span> {selectedDemande.demandeurNomComplet}</p>
-            </div>
-            <form onSubmit={handleValidationN1Submit} className="space-y-4 text-xs">
-              <div>
-                <label className="block font-bold text-slate-700 mb-2">Décision *</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button type="button" onClick={() => setValAction('APPROUVER')}
-                    className={`p-3 rounded-xl font-extrabold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
-                      valAction === 'APPROUVER' ? 'bg-emerald-600 text-white border-emerald-600 shadow-md' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                    }`}>
-                    <CheckCircle className="w-4 h-4" /> Approuver
-                  </button>
-                  <button type="button" onClick={() => setValAction('REJETER')}
-                    className={`p-3 rounded-xl font-extrabold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
-                      valAction === 'REJETER' ? 'bg-red-600 text-white border-red-600 shadow-md' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                    }`}>
-                    <XCircle className="w-4 h-4" /> Rejeter
-                  </button>
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header Banner */}
+            <div className="bg-[#0A1E3F] text-white p-5 flex items-center justify-between border-b border-[#C59B27]/30 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#C59B27]/20 border border-[#C59B27]/40 flex items-center justify-center text-[#C59B27]">
+                  <CheckCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm uppercase tracking-wider text-white">Décision N1 (Chef de Service)</h3>
+                  <p className="text-[11px] text-slate-300 font-normal">{selectedDemande.reference}</p>
                 </div>
               </div>
-              {valAction === 'REJETER' && (
-                <div>
-                  <label className="block font-bold text-red-700 mb-1.5">Motif du rejet *</label>
-                  <textarea required rows={3} placeholder="Raison détaillée du rejet..." value={motifRejet}
-                    onChange={e => setMotifRejet(e.target.value)}
-                    className="w-full p-2.5 bg-red-50/50 border border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-400 font-medium" />
+              <button 
+                type="button" 
+                onClick={() => setIsValidN1ModalOpen(false)} 
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleValidationN1Submit} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-6 overflow-y-auto space-y-4 text-xs">
+                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs space-y-1.5">
+                  <p><span className="font-bold text-slate-700">Réf :</span> <span className="font-mono">{selectedDemande.reference}</span></p>
+                  <p><span className="font-bold text-slate-700">Motif :</span> {selectedDemande.motif}</p>
+                  <p><span className="font-bold text-slate-700">Destination :</span> {selectedDemande.destination}</p>
+                  <p><span className="font-bold text-slate-700">Agent :</span> {selectedDemande.demandeurNomComplet}</p>
                 </div>
-              )}
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-2">Décision *</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button type="button" onClick={() => setValAction('APPROUVER')}
+                      className={`p-3 rounded-xl font-extrabold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                        valAction === 'APPROUVER' ? 'bg-emerald-600 text-white border-emerald-600 shadow-md' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                      }`}>
+                      <CheckCircle className="w-4 h-4" /> Approuver
+                    </button>
+                    <button type="button" onClick={() => setValAction('REJETER')}
+                      className={`p-3 rounded-xl font-extrabold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                        valAction === 'REJETER' ? 'bg-red-600 text-white border-red-600 shadow-md' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                      }`}>
+                      <XCircle className="w-4 h-4" /> Rejeter
+                    </button>
+                  </div>
+                </div>
+                {valAction === 'REJETER' && (
+                  <div>
+                    <label className="block text-xs font-bold text-red-700 mb-1.5">Motif du rejet *</label>
+                    <textarea required rows={3} placeholder="Raison détaillée du rejet..." value={motifRejet}
+                      onChange={e => setMotifRejet(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-red-50/50 border border-red-200 rounded-xl text-xs text-red-900 outline-none focus:ring-2 focus:ring-red-400 font-medium" />
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center justify-end gap-3 shrink-0">
                 <button type="button" onClick={() => setIsValidN1ModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold text-slate-700 transition-all cursor-pointer">Annuler</button>
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 text-xs font-bold transition-all cursor-pointer">Annuler</button>
                 <button type="submit"
-                  className={`px-4 py-2.5 rounded-xl font-extrabold text-white shadow-md transition-all cursor-pointer ${
+                  className={`px-5 py-2.5 rounded-xl font-extrabold text-xs text-white shadow-md transition-all cursor-pointer flex items-center gap-2 ${
                     valAction === 'APPROUVER' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'
-                  }`}>Valider la décision</button>
+                  }`}>
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Valider la décision</span>
+                </button>
               </div>
             </form>
           </div>
