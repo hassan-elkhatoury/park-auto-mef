@@ -22,11 +22,67 @@ const api = axios.create({
 // Les autres endpoints /auth/* (me, change-password, logout) exigent le jeton d'accès.
 const PUBLIC_AUTH_ENDPOINTS = ['/auth/login', '/auth/refresh'];
 
+const isPublicAuthUrl = (url = '') => PUBLIC_AUTH_ENDPOINTS.some((p) => url.includes(p));
+
+const isCredentialCheckUrl = (url = '') =>
+  url.includes('/auth/login')
+  || url.includes('/auth/change-password')
+  || url.includes('/auth/logout')
+  || url.includes('/auth/refresh');
+
+const expireSession = () => {
+  localStorage.clear();
+  window.dispatchEvent(new Event('auth:expired'));
+};
+
+const persistTokens = (payload) => {
+  if (!payload?.accessToken) return null;
+  localStorage.setItem('token', payload.accessToken);
+  if (payload.refreshToken) localStorage.setItem('refreshToken', payload.refreshToken);
+  if (payload.utilisateur) localStorage.setItem('user', JSON.stringify(payload.utilisateur));
+  return payload.accessToken;
+};
+
+/** Appel refresh hors intercepteurs pour éviter toute boucle 401. */
+const refreshClient = axios.create({
+  baseURL: '/api',
+  headers: { 'Content-Type': 'application/json' }
+});
+
+const requestNewAccessToken = async () => {
+  const refreshToken = localStorage.getItem('refreshToken');
+  if (!refreshToken) {
+    throw new Error('Refresh token absent');
+  }
+  const res = await refreshClient.post('/auth/refresh', { refreshToken });
+  const payload = res.data?.data || res.data;
+  const token = persistTokens(payload);
+  if (!token) {
+    throw new Error('Réponse de rafraîchissement invalide');
+  }
+  return token;
+};
+
+let isRefreshing = false;
+let refreshQueue = [];
+
+const flushRefreshQueue = (error, token = null) => {
+  refreshQueue.forEach(({ resolve, reject }) => {
+    if (error) reject(error);
+    else resolve(token);
+  });
+  refreshQueue = [];
+};
+
+const enqueueWhileRefreshing = () =>
+  new Promise((resolve, reject) => {
+    refreshQueue.push({ resolve, reject });
+  });
+
 // Request Interceptor: Attach JWT Token
 api.interceptors.request.use(
   (config) => {
-    const isPublicAuth = config.url && PUBLIC_AUTH_ENDPOINTS.some((p) => config.url.includes(p));
-    if (isPublicAuth) {
+    if (isPublicAuthUrl(config.url)) {
       delete config.headers.Authorization;
     } else {
       const token = localStorage.getItem('token');
@@ -34,26 +90,54 @@ api.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor: Handle Unauthorized / Expired Tokens
+// Response Interceptor: silent refresh on 401, then retry the original request.
 api.interceptors.response.use(
   (response) => response.data,
-  (error) => {
-    // 401 (token expired / not authenticated) on an authenticated endpoint => trigger login redirection.
-    // 403 (authenticated but not authorized) => notify only, keep the session.
-    const url = error.config?.url || '';
-    // Un 401 sur login (identifiants erronés), change-password (ancien mot de passe erroné) ou logout
-    // ne doit pas être interprété comme une expiration de session.
-    const isCredentialCheck = url.includes('/auth/login') || url.includes('/auth/change-password') || url.includes('/auth/logout');
+  async (error) => {
+    const originalRequest = error.config || {};
+    const url = originalRequest.url || '';
     const status = error?.response?.status;
-    if (status === 401 && !isCredentialCheck) {
-      localStorage.clear();
-      window.dispatchEvent(new Event('auth:expired'));
-    } else if (status === 403 && !isCredentialCheck) {
+
+    if (status === 401 && !isCredentialCheckUrl(url) && !originalRequest._retry) {
+      if (isRefreshing) {
+        try {
+          const token = await enqueueWhileRefreshing();
+          originalRequest.headers = originalRequest.headers || {};
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return api(originalRequest);
+        } catch (refreshError) {
+          return Promise.reject(refreshError?.response?.data || refreshError);
+        }
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+      try {
+        const token = await requestNewAccessToken();
+        flushRefreshQueue(null, token);
+        originalRequest.headers = originalRequest.headers || {};
+        originalRequest.headers.Authorization = `Bearer ${token}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        flushRefreshQueue(refreshError, null);
+        expireSession();
+        return Promise.reject(refreshError?.response?.data || refreshError);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    if (status === 401 && !isCredentialCheckUrl(url)) {
+      expireSession();
+    } else if (status === 403 && !isCredentialCheckUrl(url)) {
       window.dispatchEvent(new CustomEvent('auth:forbidden', {
         detail: error?.response?.data?.message || "Accès refusé : vous n'avez pas les droits nécessaires pour cette action."
       }));

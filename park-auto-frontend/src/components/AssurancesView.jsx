@@ -11,14 +11,32 @@ import { sinistreService } from '../services/sinistreService';
 import { infractionService } from '../services/infractionService';
 import { vehiculeService } from '../services/vehiculeService';
 import api, { getApiErrorMessage } from '../services/api';
+import { documentService } from '../services/documentService';
 import { MoroccanPlate } from '../utils/vehicule';
 import ConfirmModal from './ConfirmModal';
+import GedDocumentsPanel from './GedDocumentsPanel';
+
+const readCurrentUser = () => {
+  try {
+    const raw = localStorage.getItem('user');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
 
 const COMPAGNIES = ['AXA', 'RMA', 'WAFA', 'SAHAM', 'ATLANTA', 'AUTRE'];
 const GARANTIES = ['TOUS_RISQUES', 'TIERS', 'VOL', 'INCENDIE'];
 const NATURES_ACCIDENT = ['COLLISION', 'INCENDIE', 'VOL', 'VANDALISME', 'AUTRE'];
 
 export default function AssurancesView() {
+  const user = readCurrentUser();
+  const roleName = typeof user?.role === 'string' ? user.role : (user?.role?.nom || user?.role?.name || 'CONSULTATION');
+  const canUploadGed = ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_SERVICE', 'RESPONSABLE_FINANCIER'].includes(roleName);
+  const canDeleteGed = ['ADMIN', 'GESTIONNAIRE_CENTRAL'].includes(roleName);
+  const [pendingPoliceFiles, setPendingPoliceFiles] = useState([]);
+  const [pendingSinistreFiles, setPendingSinistreFiles] = useState([]);
+  const [pendingInfractionFiles, setPendingInfractionFiles] = useState([]);
   const [activeTab, setActiveTab] = useState('polices'); // 'polices', 'sinistres', 'infractions'
   const [polices, setPolices] = useState([]);
   const [sinistres, setSinistres] = useState([]);
@@ -100,8 +118,17 @@ export default function AssurancesView() {
         montantPrime: policeForm.montantPrime ? parseFloat(policeForm.montantPrime) : 0,
         franchise: policeForm.franchise ? parseFloat(policeForm.franchise) : 0
       };
-      if (policeForm.id) await assuranceService.update(policeForm.id, payload);
-      else await assuranceService.create(payload);
+      const saved = policeForm.id
+        ? await assuranceService.update(policeForm.id, payload)
+        : await assuranceService.create(payload);
+      const entityId = policeForm.id || saved?.id;
+      if (entityId && pendingPoliceFiles.length) {
+        try {
+          await documentService.uploadMany(pendingPoliceFiles, 'assurance', entityId, 'POLICE');
+        } catch (uploadErr) {
+          toast.error(getApiErrorMessage(uploadErr, 'Police enregistrée, mais le dépôt GED a échoué.'));
+        }
+      }
       toast.success(policeForm.id ? 'Police mise à jour avec succès' : 'Police d\'assurance enregistrée');
       setShowPoliceModal(false);
       resetPoliceForm();
@@ -122,8 +149,17 @@ export default function AssurancesView() {
         assuranceId: sinistreForm.assuranceId ? Number(sinistreForm.assuranceId) : null,
         montantDommages: sinistreForm.montantDommages ? parseFloat(sinistreForm.montantDommages) : 0
       };
-      if (sinistreForm.id) await sinistreService.modifier(sinistreForm.id, payload);
-      else await sinistreService.declarer(payload);
+      const saved = sinistreForm.id
+        ? await sinistreService.modifier(sinistreForm.id, payload)
+        : await sinistreService.declarer(payload);
+      const entityId = sinistreForm.id || saved?.id;
+      if (entityId && pendingSinistreFiles.length) {
+        try {
+          await documentService.uploadMany(pendingSinistreFiles, 'sinistre', entityId, 'CONSTAT');
+        } catch (uploadErr) {
+          toast.error(getApiErrorMessage(uploadErr, 'Sinistre enregistré, mais le dépôt GED a échoué.'));
+        }
+      }
       toast.success(sinistreForm.id ? 'Sinistre mis à jour avec succès' : 'Sinistre déclaré — le véhicule est passé en statut ACCIDENTÉ');
       setShowSinistreModal(false);
       resetSinistreForm();
@@ -143,8 +179,17 @@ export default function AssurancesView() {
         conducteurId: infractionForm.conducteurId ? Number(infractionForm.conducteurId) : null,
         montantAmende: infractionForm.montantAmende ? parseFloat(infractionForm.montantAmende) : 0
       };
-      if (infractionForm.id) await infractionService.update(infractionForm.id, payload);
-      else await infractionService.create(payload);
+      const saved = infractionForm.id
+        ? await infractionService.update(infractionForm.id, payload)
+        : await infractionService.create(payload);
+      const entityId = infractionForm.id || saved?.id;
+      if (entityId && pendingInfractionFiles.length) {
+        try {
+          await documentService.uploadMany(pendingInfractionFiles, 'infraction', entityId, 'PV');
+        } catch (uploadErr) {
+          toast.error(getApiErrorMessage(uploadErr, 'Infraction enregistrée, mais le dépôt GED a échoué.'));
+        }
+      }
       toast.success(infractionForm.id ? 'Infraction mise à jour avec succès' : 'Infraction enregistrée avec succès');
       setShowInfractionModal(false);
       resetInfractionForm();
@@ -178,12 +223,15 @@ export default function AssurancesView() {
   };
 
   const resetPoliceForm = () => {
+    setPendingPoliceFiles([]);
     setPoliceForm({ id: null, vehiculeId: '', numeroPolice: generateAutoNumeroPolice('AXA'), compagnie: 'AXA', typeGarantie: 'TOUS_RISQUES', dateDebut: '', dateFin: '', montantPrime: '', franchise: '', statut: 'ACTIVE', documents: '', observations: '' });
   };
   const resetSinistreForm = () => {
+    setPendingSinistreFiles([]);
     setSinistreForm({ id: null, vehiculeId: '', conducteurId: '', assuranceId: '', dateAccident: '', lieuAccident: '', description: '', tiersImpliques: '', natureAccident: 'COLLISION', montantDommages: '', statut: 'DECLARE', referenceExpertise: '' });
   };
   const resetInfractionForm = () => {
+    setPendingInfractionFiles([]);
     setInfractionForm({ id: null, vehiculeId: '', conducteurId: '', dateInfraction: '', lieuInfraction: '', typeInfraction: '', montantAmende: '', statut: 'EN_ATTENTE', referenceContravention: '', observations: '' });
   };
 
@@ -856,11 +904,18 @@ export default function AssurancesView() {
                       </select>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Référence des documents</label>
-                      <input type="text" placeholder="ex: DOC-POL-2026" value={policeForm.documents || ''} onChange={(e) => setPoliceForm({ ...policeForm, documents: e.target.value })} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27]" />
-                    </div>
                   </div>
+
+                  <GedDocumentsPanel
+                    entite="assurance"
+                    entiteId={policeForm.id}
+                    typeDocument="POLICE"
+                    canUpload={canUploadGed && Boolean(policeForm.id)}
+                    canDelete={canDeleteGed}
+                    pendingFiles={pendingPoliceFiles}
+                    onPendingFilesChange={canUploadGed ? setPendingPoliceFiles : undefined}
+                    title="Attestation, contrat et avenants"
+                  />
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1.5">Observations</label>
@@ -975,6 +1030,17 @@ export default function AssurancesView() {
                       className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27]"
                     />
                   </div>
+
+                  <GedDocumentsPanel
+                    entite="sinistre"
+                    entiteId={sinistreForm.id}
+                    typeDocument="CONSTAT"
+                    canUpload={canUploadGed && Boolean(sinistreForm.id)}
+                    canDelete={canDeleteGed}
+                    pendingFiles={pendingSinistreFiles}
+                    onPendingFilesChange={canUploadGed ? setPendingSinistreFiles : undefined}
+                    title="Constat, photos et rapport d'expertise"
+                  />
                 </div>
 
                 {/* Footer */}
@@ -1106,6 +1172,16 @@ export default function AssurancesView() {
                     <label className="block text-xs font-bold text-slate-700 mb-1.5">Observations</label>
                     <textarea rows="2" placeholder="Remarques sur la contravention..." value={infractionForm.observations || ''} onChange={(e) => setInfractionForm({ ...infractionForm, observations: e.target.value })} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27]" />
                   </div>
+                  <GedDocumentsPanel
+                    entite="infraction"
+                    entiteId={infractionForm.id}
+                    typeDocument="PV"
+                    canUpload={canUploadGed && Boolean(infractionForm.id)}
+                    canDelete={canDeleteGed}
+                    pendingFiles={pendingInfractionFiles}
+                    onPendingFilesChange={canUploadGed ? setPendingInfractionFiles : undefined}
+                    title="PV, photo radar et justificatifs"
+                  />
                 </div>
 
                 {/* Footer */}
@@ -1229,6 +1305,14 @@ export default function AssurancesView() {
                         <p className="text-slate-600 font-medium">{selectedItemDetail.item.observations}</p>
                       </div>
                     )}
+                    <GedDocumentsPanel
+                      entite="assurance"
+                      entiteId={selectedItemDetail.item.id}
+                      typeDocument="POLICE"
+                      canUpload={canUploadGed}
+                      canDelete={canDeleteGed}
+                      title="Documents GED de la police"
+                    />
                   </div>
                 )}
 
@@ -1267,6 +1351,14 @@ export default function AssurancesView() {
                         <p className="text-slate-600 font-medium">{selectedItemDetail.item.description}</p>
                       </div>
                     )}
+                    <GedDocumentsPanel
+                      entite="sinistre"
+                      entiteId={selectedItemDetail.item.id}
+                      typeDocument="CONSTAT"
+                      canUpload={canUploadGed}
+                      canDelete={canDeleteGed}
+                      title="Pièces GED du sinistre"
+                    />
                   </div>
                 )}
 
@@ -1294,6 +1386,14 @@ export default function AssurancesView() {
                         </span>
                       </div>
                     </div>
+                    <GedDocumentsPanel
+                      entite="infraction"
+                      entiteId={selectedItemDetail.item.id}
+                      typeDocument="PV"
+                      canUpload={canUploadGed}
+                      canDelete={canDeleteGed}
+                      title="Pièces GED de l'infraction"
+                    />
                   </div>
                 )}
               </div>

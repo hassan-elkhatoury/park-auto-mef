@@ -1,33 +1,45 @@
-import React, { useState, useEffect } from 'react';
+import React, { lazy, Suspense, useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
 import LoginView from './components/LoginView';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
-import DashboardView from './components/DashboardView';
-import VehiculesListView from './components/VehiculesListView';
-import VehiculeDetailView from './components/VehiculeDetailView';
-import UtilisateursView from './components/UtilisateursView';
-import DemandesView from './components/DemandesView';
-import DemandeDetailView from './components/DemandeDetailView';
-import AffectationsView from './components/AffectationsView';
-import AffectationDetailView from './components/AffectationDetailView';
-import ConducteursView from './components/ConducteursView';
-import ConducteurDetailView from './components/ConducteurDetailView';
-import ForceChangePasswordModal from './components/ForceChangePasswordModal';
-import AuditView from './components/AuditView';
-import CarburantView from './components/CarburantView';
-import MaintenanceView from './components/MaintenanceView';
-import PannesView from './components/PannesView';
-import SinistresView from './components/SinistresView';
-import GaragesView from './components/GaragesView';
-import RapportsView from './components/RapportsView';
-import AssurancesView from './components/AssurancesView';
-import VisitesTaxesReformeView from './components/VisitesTaxesReformeView';
-import BudgetView from './components/BudgetView';
-import ProfileView from './components/ProfileView';
-import ChangePasswordView from './components/ChangePasswordView';
 import api, { logoutSession } from './services/api';
+
+const DashboardView = lazy(() => import('./components/DashboardView'));
+const VehiculesListView = lazy(() => import('./components/VehiculesListView'));
+const VehiculeDetailView = lazy(() => import('./components/VehiculeDetailView'));
+const UtilisateursView = lazy(() => import('./components/UtilisateursView'));
+const DemandesView = lazy(() => import('./components/DemandesView'));
+const DemandeDetailView = lazy(() => import('./components/DemandeDetailView'));
+const AffectationsView = lazy(() => import('./components/AffectationsView'));
+const AffectationDetailView = lazy(() => import('./components/AffectationDetailView'));
+const ConducteursView = lazy(() => import('./components/ConducteursView'));
+const ConducteurDetailView = lazy(() => import('./components/ConducteurDetailView'));
+const ForceChangePasswordModal = lazy(() => import('./components/ForceChangePasswordModal'));
+const AuditView = lazy(() => import('./components/AuditView'));
+const CarburantView = lazy(() => import('./components/CarburantView'));
+const MaintenanceView = lazy(() => import('./components/MaintenanceView'));
+const PannesView = lazy(() => import('./components/PannesView'));
+const SinistresView = lazy(() => import('./components/SinistresView'));
+const GaragesView = lazy(() => import('./components/GaragesView'));
+const RapportsView = lazy(() => import('./components/RapportsView'));
+const AssurancesView = lazy(() => import('./components/AssurancesView'));
+const VisitesTaxesReformeView = lazy(() => import('./components/VisitesTaxesReformeView'));
+const BudgetView = lazy(() => import('./components/BudgetView'));
+const ProfileView = lazy(() => import('./components/ProfileView'));
+const ChangePasswordView = lazy(() => import('./components/ChangePasswordView'));
+
+function PageFallback() {
+  return (
+    <div className="flex-1 flex items-center justify-center py-24">
+      <div className="text-center">
+        <div className="w-8 h-8 border-2 border-[#C59B27] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-xs font-semibold text-slate-500">Chargement du module…</p>
+      </div>
+    </div>
+  );
+}
 
 const isJwtValid = (token) => {
   if (!token || typeof token !== 'string') return false;
@@ -56,8 +68,11 @@ export default function App() {
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('user');
     const savedToken = localStorage.getItem('token');
-    if (savedUser && savedToken) {
-      if (!isJwtValid(savedToken)) {
+    const savedRefresh = localStorage.getItem('refreshToken');
+    if (savedUser && (savedToken || savedRefresh)) {
+      const accessOk = isJwtValid(savedToken);
+      const refreshOk = isJwtValid(savedRefresh);
+      if (!accessOk && !refreshOk) {
         localStorage.clear();
         return null;
       }
@@ -189,10 +204,12 @@ export default function App() {
     <div className="h-screen flex flex-col bg-[#F4F6FB] overflow-hidden">
       <Toaster position="top-right" toastOptions={{ style: { background: '#0A1E3F', color: '#fff', border: '1px solid #122B55', fontSize: '13px', fontFamily: 'Inter, sans-serif', borderRadius: '8px' }, duration: 4000 }} />
       {mustChangePassword && (
-        <ForceChangePasswordModal 
-          user={user} 
-          onPasswordChanged={(updatedUser) => setUser(updatedUser)} 
-        />
+        <Suspense fallback={null}>
+          <ForceChangePasswordModal
+            user={user}
+            onPasswordChanged={(updatedUser) => setUser(updatedUser)}
+          />
+        </Suspense>
       )}
       <Navbar user={user} onLogout={handleLogout} collapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)} notificationCount={notificationCount} />
       <div className="flex flex-1 overflow-hidden">
@@ -201,6 +218,7 @@ export default function App() {
           collapsed={sidebarCollapsed}
         />
         <main className="flex-1 overflow-y-auto bg-[#F4F6FB]">
+          <Suspense fallback={<PageFallback />}>
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/login" element={<Navigate to="/dashboard" replace />} />
@@ -228,6 +246,7 @@ export default function App() {
             <Route path="/profil/mot-de-passe" element={<ChangePasswordView user={user} onUserUpdate={(u) => setUser(u)} />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
+          </Suspense>
         </main>
       </div>
     </div>

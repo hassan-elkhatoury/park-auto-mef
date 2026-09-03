@@ -10,9 +10,20 @@ import { sinistreService } from '../services/sinistreService';
 import { vehiculeService } from '../services/vehiculeService';
 import { assuranceService } from '../services/assuranceService';
 import { garageService } from '../services/garageService';
-import api from '../services/api';
+import api, { getApiErrorMessage } from '../services/api';
+import { documentService } from '../services/documentService';
 import { MoroccanPlate } from '../utils/vehicule';
 import ConfirmModal from './ConfirmModal';
+import GedDocumentsPanel from './GedDocumentsPanel';
+
+const readCurrentUser = () => {
+  try {
+    const raw = localStorage.getItem('user');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
 
 const STATUTS_SINISTRE = [
   { key: 'DECLARE', label: '1. Déclaré', desc: 'Dossier ouvert, constat déposé' },
@@ -23,6 +34,11 @@ const STATUTS_SINISTRE = [
 ];
 
 export default function SinistresView() {
+  const user = readCurrentUser();
+  const roleName = typeof user?.role === 'string' ? user.role : (user?.role?.nom || user?.role?.name || 'CONSULTATION');
+  const canUploadGed = ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_SERVICE', 'RESPONSABLE_FINANCIER'].includes(roleName);
+  const canDeleteGed = ['ADMIN', 'GESTIONNAIRE_CENTRAL'].includes(roleName);
+  const [pendingFiles, setPendingFiles] = useState([]);
   const [activeTab, setActiveTab] = useState('liste'); // 'liste' | 'declarer'
   const [sinistres, setSinistres] = useState([]);
   const [vehicules, setVehicules] = useState([]);
@@ -144,6 +160,7 @@ export default function SinistresView() {
       perteTotale: Boolean(sinistre.perteTotale),
       observations: sinistre.observations || ''
     });
+    setPendingFiles([]);
     setActiveTab('declarer');
   };
 
@@ -165,13 +182,20 @@ export default function SinistresView() {
         montantRembourse: form.montantRembourse ? parseFloat(form.montantRembourse) : 0
       };
 
-      if (form.id) {
-        await sinistreService.modifier(form.id, payload);
-        toast.success('Dossier de sinistre mis à jour avec succès !');
-      } else {
-        await sinistreService.declarer(payload);
-        toast.success('Sinistre déclaré avec succès ! Le véhicule est passé au statut ACCIDENTE.');
+      const saved = form.id
+        ? await sinistreService.modifier(form.id, payload)
+        : await sinistreService.declarer(payload);
+      const entityId = form.id || saved?.id;
+      if (entityId && pendingFiles.length) {
+        try {
+          await documentService.uploadMany(pendingFiles, 'sinistre', entityId, 'CONSTAT');
+        } catch (uploadErr) {
+          toast.error(getApiErrorMessage(uploadErr, 'Dossier enregistré, mais le dépôt GED a échoué.'));
+        }
       }
+      toast.success(form.id
+        ? 'Dossier de sinistre mis à jour avec succès !'
+        : 'Sinistre déclaré avec succès ! Le véhicule est passé au statut ACCIDENTE.');
 
       setSearchTerm('');
       setStatutFilter('ALL');
@@ -199,6 +223,7 @@ export default function SinistresView() {
         perteTotale: false,
         observations: ''
       });
+      setPendingFiles([]);
       setActiveTab('liste');
       await fetchData();
     } catch (err) {
@@ -520,6 +545,19 @@ export default function SinistresView() {
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   placeholder="Circonstances précises de l'accident, choc avant/arrière, dégâts apparents..."
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <GedDocumentsPanel
+                  entite="sinistre"
+                  entiteId={form.id}
+                  typeDocument="CONSTAT"
+                  canUpload={canUploadGed && Boolean(form.id)}
+                  canDelete={canDeleteGed}
+                  pendingFiles={pendingFiles}
+                  onPendingFilesChange={canUploadGed ? setPendingFiles : undefined}
+                  title="Pièces du dossier (constat, photos, PV)"
                 />
               </div>
 
@@ -938,6 +976,15 @@ export default function SinistresView() {
                     </div>
                   </div>
                 </div>
+
+                <GedDocumentsPanel
+                  entite="sinistre"
+                  entiteId={selectedSinistreDetail.id}
+                  typeDocument="CONSTAT"
+                  canUpload={canUploadGed}
+                  canDelete={canDeleteGed}
+                  title="Pièces GED du sinistre"
+                />
               </div>
 
               <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-between items-center">

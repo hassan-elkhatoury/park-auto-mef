@@ -11,7 +11,19 @@ import { garageService } from '../services/garageService';
 import { MoroccanPlate } from '../utils/vehicule';
 import ConfirmModal from './ConfirmModal';
 
+const readCurrentUser = () => {
+  try {
+    const raw = localStorage.getItem('user');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
 export default function MaintenanceView() {
+  const user = readCurrentUser();
+  const roleName = typeof user?.role === 'string' ? user.role : (user?.role?.nom || user?.role?.name || 'CONSULTATION');
+  const canManage = ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL'].includes(roleName);
   const [activeTab, setActiveTab] = useState('interventions'); // 'interventions' | 'alertes'
   const [interventions, setInterventions] = useState([]);
   const [alertes, setAlertes] = useState([]);
@@ -142,6 +154,7 @@ export default function MaintenanceView() {
   };
 
   const handleEditIntervention = (i) => {
+    if (!canManage) return;
     setForm({
       id: i.id,
       vehiculeId: i.vehiculeId || i.vehicule?.id || '',
@@ -164,6 +177,10 @@ export default function MaintenanceView() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!canManage) {
+      toast.error("Vous n'avez pas les droits pour programmer une intervention.");
+      return;
+    }
     try {
       const mo = parseFloat(form.coutMainOeuvre || '0');
       const p = parseFloat(form.coutPieces || '0');
@@ -190,6 +207,10 @@ export default function MaintenanceView() {
 
   // Clôture Handler
   const openClotureModal = (intervention) => {
+    if (!canManage) {
+      toast.error("Vous n'avez pas les droits pour clôturer une intervention.");
+      return;
+    }
     const v = vehicules.find(item => item.id === intervention.vehiculeId);
     const kmActuel = v?.kilometrageActuel || intervention.kilometragePrevu || 0;
 
@@ -250,7 +271,7 @@ export default function MaintenanceView() {
 
   const handleClotureSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedInterventionForCloture) return;
+    if (!canManage || !selectedInterventionForCloture) return;
 
     const v = vehicules.find(item => item.id === selectedInterventionForCloture.vehiculeId);
     const kmActuel = v?.kilometrageActuel || 0;
@@ -288,7 +309,7 @@ export default function MaintenanceView() {
   };
 
   const confirmDeleteIntervention = async () => {
-    if (!deleteModal.item) return;
+    if (!canManage || !deleteModal.item) return;
     try {
       setDeleteModal(prev => ({ ...prev, loading: true }));
       await maintenanceService.deleteIntervention(deleteModal.item.id);
@@ -351,6 +372,7 @@ export default function MaintenanceView() {
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
 
+          {canManage && (
           <button
             onClick={() => {
               setForm({
@@ -377,6 +399,7 @@ export default function MaintenanceView() {
             <Plus className="w-4 h-4" />
             Programmer un Entretien
           </button>
+          )}
         </div>
       </motion.div>
 
@@ -644,7 +667,7 @@ export default function MaintenanceView() {
 
                           <td className="!text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-1">
-                              {!isTerminee && (
+                              {canManage && !isTerminee && (
                                 <button
                                   onClick={() => openClotureModal(i)}
                                   className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-xs transition-all mr-1"
@@ -655,6 +678,7 @@ export default function MaintenanceView() {
                                 </button>
                               )}
 
+                              {canManage && (
                               <button
                                 onClick={() => handleEditIntervention(i)}
                                 className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -662,6 +686,7 @@ export default function MaintenanceView() {
                               >
                                 <Edit className="w-4 h-4" />
                               </button>
+                              )}
                               <button
                                 onClick={() => setSelectedInterventionForDetail(i)}
                                 className="p-1.5 text-slate-400 hover:text-[#C59B27] hover:bg-amber-50 rounded-lg transition-colors"
@@ -669,6 +694,7 @@ export default function MaintenanceView() {
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
+                              {canManage && (
                               <button
                                 onClick={() => setDeleteModal({ isOpen: true, item: i, loading: false })}
                                 className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -676,6 +702,7 @@ export default function MaintenanceView() {
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
+                              )}
                             </div>
                           </td>
                         </tr>
