@@ -21,9 +21,48 @@ const RESULTATS_VISITE = [
 ];
 
 const TYPES_TAXE = ['VIGNETTE', 'TAXE_CIRCULATION'];
-const STATUTS_REFORME = ['INITIE', 'EN_COURS_DE_REFORME', 'VALIDE', 'REFORME', 'VENDU'];
+const LIBELLE_STATUT_REFORME = {
+  INITIE: 'Initié',
+  EN_COURS_DE_REFORME: 'En cours de réforme',
+  VALIDE: 'Validé (PV réunis)',
+  REFORME: 'Réformé — sorti du parc',
+  VENDU: 'Vendu / cédé'
+};
+// RG07 — le dossier de réforme comporte les deux PV (Commission de réforme + Domaines) et les données de cession
+const EMPTY_REFORME_FORM = {
+  id: null, vehiculeId: '', sinistreId: null, motifReforme: '', dateDecision: '',
+  pvCommission: '', datePvCommission: '', pvDomaines: '', datePvDomaines: '',
+  prixCession: '', dateCession: '', acquereur: '', observation: ''
+};
+const toReformeForm = (r) => ({
+  ...EMPTY_REFORME_FORM,
+  ...r,
+  dateDecision: r.dateDecision || '',
+  datePvCommission: r.datePvCommission || '',
+  datePvDomaines: r.datePvDomaines || '',
+  dateCession: r.dateCession || '',
+  pvCommission: r.pvCommission || '',
+  pvDomaines: r.pvDomaines || '',
+  acquereur: r.acquereur || '',
+  observation: r.observation || '',
+  prixCession: r.prixCession != null ? String(r.prixCession) : ''
+});
 
-export default function VisitesTaxesReformeView() {
+const readCurrentUser = () => {
+  try {
+    const raw = localStorage.getItem('user');
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+};
+
+export default function VisitesTaxesReformeView({ user: userProp }) {
+  const user = userProp || readCurrentUser();
+  const roleName = typeof user?.role === 'string' ? user.role : (user?.role?.nom || user?.role?.name || 'CONSULTATION');
+  const canManage = ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER'].includes(roleName);
+  const canValiderReforme = ['ADMIN'].includes(roleName);
+
   const [activeTab, setActiveTab] = useState('visites'); // 'visites', 'taxes', 'reforme'
   const [visites, setVisites] = useState([]);
   const [taxes, setTaxes] = useState([]);
@@ -51,9 +90,7 @@ export default function VisitesTaxesReformeView() {
     id: null, vehiculeId: '', annee: new Date().getFullYear(), type: 'VIGNETTE', montant: '', statut: 'PAYEE', dateEcheance: '', referencePaiement: ''
   });
 
-  const [reformeForm, setReformeForm] = useState({
-    id: null, vehiculeId: '', motifReforme: '', dateDecision: '', pvCommission: '', statut: 'INITIE', prixCession: ''
-  });
+  const [reformeForm, setReformeForm] = useState(EMPTY_REFORME_FORM);
 
   useEffect(() => {
     fetchData();
@@ -62,12 +99,14 @@ export default function VisitesTaxesReformeView() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      let loadErrors = [];
       const [vData, tData, rData, vehData] = await Promise.all([
-        visiteTechniqueService.getAll().catch(() => []),
-        taxeService.getAll().catch(() => []),
-        reformeService.getAll().catch(() => []),
-        vehiculeService.getVehicules().catch(() => [])
+        visiteTechniqueService.getAll().catch((e) => { loadErrors.push(e); return []; }),
+        taxeService.getAll().catch((e) => { loadErrors.push(e); return []; }),
+        reformeService.getAll().catch((e) => { loadErrors.push(e); return []; }),
+        vehiculeService.getVehicules().catch((e) => { loadErrors.push(e); return []; })
       ]);
+      if (loadErrors.length > 0) toast.error(`Certaines données n'ont pas pu être chargées (${loadErrors.length} erreur(s)).`);
       setVisites(Array.isArray(vData) ? vData : (vData?.content || vData?.data || []));
       setTaxes(Array.isArray(tData) ? tData : (tData?.content || tData?.data || []));
       setReformes(Array.isArray(rData) ? rData : (rData?.content || rData?.data || []));
@@ -137,10 +176,20 @@ export default function VisitesTaxesReformeView() {
   const handleReformeSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Le statut n'est jamais envoyé depuis le formulaire : les transitions passent par la machine à états serveur
+      const { statut, transitionsPossibles, nbDocumentsGED, immatriculation, marqueModele, dateSortieParc, ...champs } = reformeForm;
       const payload = {
-        ...reformeForm,
+        ...champs,
         vehiculeId: Number(reformeForm.vehiculeId),
-        prixCession: reformeForm.prixCession ? parseFloat(reformeForm.prixCession) : 0
+        dateDecision: reformeForm.dateDecision || null,
+        datePvCommission: reformeForm.datePvCommission || null,
+        datePvDomaines: reformeForm.datePvDomaines || null,
+        dateCession: reformeForm.dateCession || null,
+        pvCommission: reformeForm.pvCommission || null,
+        pvDomaines: reformeForm.pvDomaines || null,
+        acquereur: reformeForm.acquereur || null,
+        observation: reformeForm.observation || null,
+        prixCession: reformeForm.prixCession ? parseFloat(reformeForm.prixCession) : null
       };
       if (reformeForm.id) await reformeService.update(reformeForm.id, payload);
       else await reformeService.create(payload);
@@ -153,14 +202,26 @@ export default function VisitesTaxesReformeView() {
     }
   };
 
-  // Valider Réforme
+  // Valider Réforme (RG07 : PV Commission + PV Domaines obligatoires, contrôlés côté serveur)
   const handleValiderReforme = async (reformeId) => {
     try {
       await reformeService.valider(reformeId);
       toast.success('Réforme validée définitivement — Véhicule sorti de l\'inventaire actif');
       fetchData();
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Le Procès-Verbal de la Commission de Réforme est obligatoire pour valider.'));
+      toast.error(getApiErrorMessage(err, 'Les PV de la Commission de Réforme et des Domaines sont obligatoires pour valider.'));
+    }
+  };
+
+  // Transition de statut contrôlée par la machine à états serveur
+  const handleChangerStatutReforme = async (reformeId, statut) => {
+    if (!statut) return;
+    try {
+      await reformeService.changerStatut(reformeId, statut);
+      toast.success(`Dossier de réforme passé au statut « ${LIBELLE_STATUT_REFORME[statut] || statut} »`);
+      fetchData();
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Transition de statut refusée par le serveur.'));
     }
   };
 
@@ -187,7 +248,7 @@ export default function VisitesTaxesReformeView() {
     setTaxeForm({ id: null, vehiculeId: '', annee: new Date().getFullYear(), type: 'VIGNETTE', montant: '', statut: 'PAYEE', dateEcheance: '', referencePaiement: '' });
   };
   const resetReformeForm = () => {
-    setReformeForm({ id: null, vehiculeId: '', motifReforme: '', dateDecision: '', pvCommission: '', statut: 'INITIE', prixCession: '' });
+    setReformeForm(EMPTY_REFORME_FORM);
   };
 
   // Filtered
@@ -233,6 +294,7 @@ export default function VisitesTaxesReformeView() {
           </div>
         </div>
         
+        {canManage && (
         <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={() => { resetTaxeForm(); setShowTaxeModal(true); }}
@@ -250,6 +312,7 @@ export default function VisitesTaxesReformeView() {
             Saisir Visite
           </button>
         </div>
+        )}
       </motion.div>
 
       {/* KPI Stats Cards Bar */}
@@ -323,7 +386,7 @@ export default function VisitesTaxesReformeView() {
           </button>
         </div>
 
-        {activeTab === 'visites' && (
+        {canManage && activeTab === 'visites' && (
           <button
             onClick={() => { resetVisiteForm(); setShowVisiteModal(true); }}
             className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-4 py-2 rounded-xl shadow-gold hover:opacity-95 transition-all cursor-pointer flex items-center gap-1.5"
@@ -332,7 +395,7 @@ export default function VisitesTaxesReformeView() {
           </button>
         )}
 
-        {activeTab === 'taxes' && (
+        {canManage && activeTab === 'taxes' && (
           <button
             onClick={() => { resetTaxeForm(); setShowTaxeModal(true); }}
             className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-4 py-2 rounded-xl shadow-gold hover:opacity-95 transition-all cursor-pointer flex items-center gap-1.5"
@@ -341,7 +404,7 @@ export default function VisitesTaxesReformeView() {
           </button>
         )}
 
-        {activeTab === 'reforme' && (
+        {canManage && activeTab === 'reforme' && (
           <button
             onClick={() => { resetReformeForm(); setShowReformeModal(true); }}
             className="border border-rose-200 bg-rose-50 text-rose-700 font-bold text-xs px-4 py-2 rounded-xl hover:bg-rose-100 transition-all cursor-pointer flex items-center gap-1.5"
@@ -455,20 +518,24 @@ export default function VisitesTaxesReformeView() {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => { setVisiteForm(v); setShowVisiteModal(true); }}
-                            className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center cursor-pointer"
-                            title="Modifier la visite"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => setDeleteModal({ isOpen: true, item: v, type: 'visite', loading: false })}
-                            className="w-8 h-8 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all cursor-pointer"
-                            title="Supprimer la visite"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {canManage && (
+                            <>
+                              <button
+                                onClick={() => { setVisiteForm(v); setShowVisiteModal(true); }}
+                                className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center cursor-pointer"
+                                title="Modifier la visite"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => setDeleteModal({ isOpen: true, item: v, type: 'visite', loading: false })}
+                                className="w-8 h-8 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+                                title="Supprimer la visite"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -548,20 +615,24 @@ export default function VisitesTaxesReformeView() {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => { setTaxeForm(t); setShowTaxeModal(true); }}
-                            className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center cursor-pointer"
-                            title="Modifier la taxe"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => setDeleteModal({ isOpen: true, item: t, type: 'taxe', loading: false })}
-                            className="w-8 h-8 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all cursor-pointer"
-                            title="Supprimer la taxe"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {canManage && (
+                            <>
+                              <button
+                                onClick={() => { setTaxeForm(t); setShowTaxeModal(true); }}
+                                className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center cursor-pointer"
+                                title="Modifier la taxe"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => setDeleteModal({ isOpen: true, item: t, type: 'taxe', loading: false })}
+                                className="w-8 h-8 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+                                title="Supprimer la taxe"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -614,15 +685,29 @@ export default function VisitesTaxesReformeView() {
                       </td>
 
                       <td>
-                        {r.pvCommission ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full">
-                            <FileText className="w-3 h-3 text-blue-600" /> {r.pvCommission}
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-black text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
-                            ⚠️ PV Commission Manquant
-                          </span>
-                        )}
+                        <div className="flex flex-col gap-1">
+                          {r.pvCommission ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full w-fit">
+                              <FileText className="w-3 h-3 text-blue-600" /> Commission : {r.pvCommission}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-black text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md w-fit">
+                              ⚠️ PV Commission manquant
+                            </span>
+                          )}
+                          {r.pvDomaines ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full w-fit">
+                              <FileText className="w-3 h-3 text-indigo-600" /> Domaines : {r.pvDomaines}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-black text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md w-fit">
+                              ⚠️ PV Domaines manquant
+                            </span>
+                          )}
+                          {r.nbDocumentsGED > 0 && (
+                            <span className="text-[10px] text-slate-500 font-semibold">{r.nbDocumentsGED} pièce(s) GED jointe(s)</span>
+                          )}
+                        </div>
                       </td>
 
                       <td className="font-extrabold text-[#0A1E3F]">
@@ -632,14 +717,31 @@ export default function VisitesTaxesReformeView() {
                       <td>
                         <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-black ${
                           r.statut === 'REFORME' || r.statut === 'VENDU' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                          r.statut === 'VALIDE' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
                           'bg-amber-50 text-amber-800 border border-amber-200'
                         }`}>
-                          {r.statut}
+                          {LIBELLE_STATUT_REFORME[r.statut] || r.statut}
                         </span>
+                        {r.dateSortieParc && (
+                          <div className="text-[10px] text-slate-500 mt-1 font-medium">Sortie du parc : {new Date(r.dateSortieParc).toLocaleDateString('fr-FR')}</div>
+                        )}
                       </td>
 
                       <td>
                         <div className="flex items-center justify-end gap-1.5">
+                          {canValiderReforme && Array.isArray(r.transitionsPossibles) && r.transitionsPossibles.length > 0 && (
+                            <select
+                              value=""
+                              onChange={(e) => handleChangerStatutReforme(r.id, e.target.value)}
+                              className="h-8 px-2 rounded-lg bg-slate-50 border border-slate-200 text-[10px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-[#C59B27] cursor-pointer"
+                              title="Faire évoluer le statut du dossier (transitions autorisées par le serveur)"
+                            >
+                              <option value="">Passer à…</option>
+                              {r.transitionsPossibles.map((s) => (
+                                <option key={s} value={s}>{LIBELLE_STATUT_REFORME[s] || s}</option>
+                              ))}
+                            </select>
+                          )}
                           <button
                             onClick={() => setSelectedItemDetail({ item: r, type: 'reforme' })}
                             className="w-8 h-8 rounded-lg bg-[#C59B27]/10 border border-[#C59B27]/40 text-[#94700E] hover:bg-[#C59B27] hover:text-[#0A1E3F] flex items-center justify-center transition-all cursor-pointer"
@@ -647,29 +749,34 @@ export default function VisitesTaxesReformeView() {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => { setReformeForm(r); setShowReformeModal(true); }}
-                            className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center cursor-pointer"
-                            title="Modifier le dossier"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          {r.statut !== 'REFORME' && r.statut !== 'VENDU' && (
+                          {canManage && (
+                            <button
+                              onClick={() => { setReformeForm(toReformeForm(r)); setShowReformeModal(true); }}
+                              className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center cursor-pointer"
+                              title="Modifier le dossier"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                          )}
+                          {canValiderReforme && r.statut !== 'REFORME' && r.statut !== 'VENDU' && (
                             <button
                               onClick={() => handleValiderReforme(r.id)}
-                              className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-600 hover:bg-emerald-600 hover:text-white flex items-center justify-center transition-all cursor-pointer"
-                              title="Valider la réforme"
+                              disabled={!r.pvCommission || !r.pvDomaines}
+                              className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-600 hover:bg-emerald-600 hover:text-white flex items-center justify-center transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-emerald-50 disabled:hover:text-emerald-600"
+                              title={!r.pvCommission || !r.pvDomaines ? 'RG07 : PV Commission et PV Domaines requis avant validation' : 'Valider la réforme (sortie définitive du parc)'}
                             >
                               <Check className="w-4 h-4" />
                             </button>
                           )}
-                          <button
-                            onClick={() => setDeleteModal({ isOpen: true, item: r, type: 'reforme', loading: false })}
-                            className="w-8 h-8 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all cursor-pointer"
-                            title="Supprimer la réforme"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {canManage && r.statut !== 'VALIDE' && r.statut !== 'REFORME' && r.statut !== 'VENDU' && (
+                            <button
+                              onClick={() => setDeleteModal({ isOpen: true, item: r, type: 'reforme', loading: false })}
+                              className="w-8 h-8 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+                              title="Supprimer la réforme"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -965,8 +1072,13 @@ export default function VisitesTaxesReformeView() {
                 <div className="p-6 overflow-y-auto space-y-4">
                   <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 font-medium flex items-center gap-2.5">
                     <FileText className="w-4 h-4 text-[#C59B27] shrink-0" />
-                    <span>Le Procès-Verbal de la Commission de Réforme doit être joint pour permettre la validation finale.</span>
+                    <span>RG07 — Le PV de la Commission de Réforme <strong>et</strong> le PV des Domaines sont obligatoires pour la validation finale. Le statut évolue via les transitions contrôlées depuis la liste (INITIÉ → EN COURS → VALIDÉ → RÉFORMÉ → VENDU).</span>
                   </div>
+                  {reformeForm.id && (
+                    <div className="text-xs text-slate-600 font-semibold">
+                      Statut actuel : <span className="text-[#0A1E3F] font-black">{LIBELLE_STATUT_REFORME[reformeForm.statut] || reformeForm.statut || 'Initié'}</span>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -990,34 +1102,76 @@ export default function VisitesTaxesReformeView() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Statut du dossier</label>
-                      <select value={reformeForm.statut} onChange={(e) => setReformeForm({ ...reformeForm, statut: e.target.value })} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] cursor-pointer font-medium">
-                        {STATUTS_REFORME.filter(s => s !== 'REFORME' && s !== 'VENDU').map(s => <option key={s} value={s}>{s.replaceAll('_', ' ')}</option>)}
-                      </select>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Référence PV Commission de Réforme</label>
+                      <input
+                        type="text"
+                        placeholder="PV-COM-2026-014"
+                        value={reformeForm.pvCommission}
+                        onChange={(e) => setReformeForm({ ...reformeForm, pvCommission: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] font-mono"
+                      />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Prix de cession estimé (MAD)</label>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Date PV Commission</label>
+                      <input type="date" value={reformeForm.datePvCommission || ''} onChange={(e) => setReformeForm({ ...reformeForm, datePvCommission: e.target.value })} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] transition-all" />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Référence PV des Domaines</label>
+                      <input
+                        type="text"
+                        placeholder="PV-DOM-2026-007"
+                        value={reformeForm.pvDomaines}
+                        onChange={(e) => setReformeForm({ ...reformeForm, pvDomaines: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Date PV des Domaines</label>
+                      <input type="date" value={reformeForm.datePvDomaines || ''} onChange={(e) => setReformeForm({ ...reformeForm, datePvDomaines: e.target.value })} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] transition-all" />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Prix de cession (MAD)</label>
                       <input
                         type="number"
                         step="0.01"
+                        min="0"
                         placeholder="35000.00"
                         value={reformeForm.prixCession}
                         onChange={(e) => setReformeForm({ ...reformeForm, prixCession: e.target.value })}
                         className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] font-mono"
                       />
+                      <p className="text-[10px] text-slate-400 mt-1">Obligatoire pour clôturer le dossier en « Vendu / cédé ».</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Date de cession</label>
+                      <input type="date" value={reformeForm.dateCession || ''} onChange={(e) => setReformeForm({ ...reformeForm, dateCession: e.target.value })} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] transition-all" />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Acquéreur (Domaines / vente aux enchères)</label>
+                      <input
+                        type="text"
+                        placeholder="Direction des Domaines de l'État — adjudicataire..."
+                        value={reformeForm.acquereur}
+                        onChange={(e) => setReformeForm({ ...reformeForm, acquereur: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27]"
+                      />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Fichier PV Commission de Réforme *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="PV_Commission_Reforme_2026.pdf"
-                      value={reformeForm.pvCommission}
-                      onChange={(e) => setReformeForm({ ...reformeForm, pvCommission: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] font-mono"
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Observations</label>
+                    <textarea
+                      rows="2"
+                      placeholder="Remarques de la commission, état du véhicule, pièces jointes GED..."
+                      value={reformeForm.observation}
+                      onChange={(e) => setReformeForm({ ...reformeForm, observation: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27]"
                     />
                   </div>
 
@@ -1181,7 +1335,10 @@ export default function VisitesTaxesReformeView() {
                       </div>
                       <div className="bg-white p-3 rounded-xl border border-slate-200">
                         <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Statut Procédure</span>
-                        <span className="font-extrabold text-amber-800 text-xs">{selectedItemDetail.item.statut}</span>
+                        <span className="font-extrabold text-amber-800 text-xs">{LIBELLE_STATUT_REFORME[selectedItemDetail.item.statut] || selectedItemDetail.item.statut}</span>
+                        {selectedItemDetail.item.dateSortieParc && (
+                          <span className="block text-[10px] text-slate-500 mt-1">Sortie du parc le {new Date(selectedItemDetail.item.dateSortieParc).toLocaleDateString('fr-FR')}</span>
+                        )}
                       </div>
                       <div className="bg-white p-3 rounded-xl border border-slate-200">
                         <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Prix de Cession</span>
@@ -1190,10 +1347,44 @@ export default function VisitesTaxesReformeView() {
                         </span>
                       </div>
                       <div className="bg-white p-3 rounded-xl border border-slate-200">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">PV Commission</span>
-                        <span className="font-bold text-blue-700 text-xs">{selectedItemDetail.item.pvCommission || 'Non téléversé'}</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">PV Commission de Réforme</span>
+                        <span className={`font-bold text-xs ${selectedItemDetail.item.pvCommission ? 'text-blue-700' : 'text-rose-600'}`}>
+                          {selectedItemDetail.item.pvCommission || 'Manquant'}
+                        </span>
+                        {selectedItemDetail.item.datePvCommission && (
+                          <span className="block text-[10px] text-slate-500 mt-1">du {new Date(selectedItemDetail.item.datePvCommission).toLocaleDateString('fr-FR')}</span>
+                        )}
                       </div>
+                      <div className="bg-white p-3 rounded-xl border border-slate-200">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">PV des Domaines</span>
+                        <span className={`font-bold text-xs ${selectedItemDetail.item.pvDomaines ? 'text-indigo-700' : 'text-rose-600'}`}>
+                          {selectedItemDetail.item.pvDomaines || 'Manquant'}
+                        </span>
+                        {selectedItemDetail.item.datePvDomaines && (
+                          <span className="block text-[10px] text-slate-500 mt-1">du {new Date(selectedItemDetail.item.datePvDomaines).toLocaleDateString('fr-FR')}</span>
+                        )}
+                      </div>
+                      {(selectedItemDetail.item.acquereur || selectedItemDetail.item.dateCession) && (
+                        <div className="bg-white p-3 rounded-xl border border-slate-200 col-span-2">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Cession</span>
+                          <span className="font-bold text-[#0A1E3F] text-xs">
+                            {selectedItemDetail.item.acquereur || 'Acquéreur non renseigné'}
+                            {selectedItemDetail.item.dateCession ? ` — le ${new Date(selectedItemDetail.item.dateCession).toLocaleDateString('fr-FR')}` : ''}
+                          </span>
+                        </div>
+                      )}
+                      {selectedItemDetail.item.sinistreId && (
+                        <div className="bg-rose-50 p-3 rounded-xl border border-rose-200 col-span-2 text-xs text-rose-800 font-semibold">
+                          Procédure ouverte automatiquement suite au sinistre n° {selectedItemDetail.item.sinistreId} (perte totale).
+                        </div>
+                      )}
                     </div>
+                    {selectedItemDetail.item.observation && (
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+                        <span className="font-bold text-slate-700 block mb-1">Observations :</span>
+                        <p className="text-slate-600 font-medium">{selectedItemDetail.item.observation}</p>
+                      </div>
+                    )}
 
                     {selectedItemDetail.item.motifReforme && (
                       <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
@@ -1207,6 +1398,7 @@ export default function VisitesTaxesReformeView() {
 
               {/* Modal Footer */}
               <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
+                {canManage && (
                 <button
                   onClick={() => {
                     const itemToEdit = selectedItemDetail.item;
@@ -1214,12 +1406,13 @@ export default function VisitesTaxesReformeView() {
                     setSelectedItemDetail(null);
                     if (type === 'visite') { setVisiteForm(itemToEdit); setShowVisiteModal(true); }
                     else if (type === 'taxe') { setTaxeForm(itemToEdit); setShowTaxeModal(true); }
-                    else if (type === 'reforme') { setReformeForm(itemToEdit); setShowReformeModal(true); }
+                    else if (type === 'reforme') { setReformeForm(toReformeForm(itemToEdit)); setShowReformeModal(true); }
                   }}
                   className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-600 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
                 >
                   <Edit className="w-3.5 h-3.5" /> Modifier cet enregistrement
                 </button>
+                )}
 
                 <button
                   onClick={() => setSelectedItemDetail(null)}

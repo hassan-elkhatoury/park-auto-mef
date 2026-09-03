@@ -22,6 +22,10 @@ public interface AffectationRepository extends JpaRepository<Affectation, Long> 
 
     List<Affectation> findByStatutOrderByDateCreationDesc(StatutAffectation statut);
 
+    boolean existsByVehiculeIdAndStatut(Long vehiculeId, StatutAffectation statut);
+
+    boolean existsByConducteurIdAndStatut(Long conducteurId, StatutAffectation statut);
+
     @Query("SELECT a FROM Affectation a ORDER BY a.dateCreation DESC")
     List<Affectation> findAllCustom();
 

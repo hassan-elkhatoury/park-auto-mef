@@ -73,6 +73,9 @@ public class Sinistre extends BaseEntity {
 
     private Boolean remorquageRequis = false;
 
+    /** Perte totale (épave / vol non retrouvé) : déclenche l'ouverture d'une procédure de réforme (RG07). */
+    private Boolean perteTotale = false;
+
     @Column(length = 500)
     private String observations;
 }

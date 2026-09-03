@@ -39,6 +39,7 @@ export default function VehiculesListView() {
       }
     } catch (err) {
       console.error('Erreur de chargement des véhicules:', err);
+      toast.error('Erreur lors du chargement des données. Veuillez réessayer.');
     } finally {
       setLoading(false);
     }

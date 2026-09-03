@@ -40,6 +40,9 @@ public class SinistreDto {
     private LocalDate dateExpertise;
     private LocalDate dateCloture;
     private Boolean remorquageRequis;
+    private Boolean perteTotale;
+    /** Identifiant de la procédure de réforme ouverte suite à la perte totale, le cas échéant. */
+    private Long reformeId;
     private String observations;
     private LocalDateTime dateCreation;
 }

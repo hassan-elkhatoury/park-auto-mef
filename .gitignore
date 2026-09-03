@@ -1,9 +1,63 @@
 # ==============================================================================
-# Root .gitignore — Park Auto MEF (Monorepo: Spring Boot Backend + React Frontend)
+# .gitignore — PARK AUTO MEF (Ministère de l'Économie et des Finances)
+#
+# Dépôt GitHub restreint exclusivement aux composants essentiels du projet :
+#   1. park-auto-mef/      (Backend Spring Boot 3 & API REST)
+#   2. park-auto-frontend/ (Frontend React 19 / Vite / Tailwind CSS)
+#   3. README.md           (Documentation officielle)
+#   4. docker-compose.yml  (Orchestration Docker multi-conteneurs)
+#   5. .env.example        (Gabarit des variables d'environnement)
+#   6. .gitignore          (Ce fichier)
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
-# Frontend & Node.js (park-auto-frontend)
+# 1. RAPPORTS, PLANNINGS & DOCUMENTS DE RÉDACTION (STRICTEMENT EXCLUS)
+# ------------------------------------------------------------------------------
+rapports/
+planning/
+docs/
+assets/
+tmp_final_render/
+
+*.docx
+*.pdf
+*.pptx
+*.xlsx
+*.xls
+~$*
+
+# Documents de travail, contextes et dumps d'analyse
+CONSOLIDATED_PROJECT_CONTEXT.md
+GUIDE_PRESENTATION_PAGES_PARK_AUTO_MEF.md
+AGENTS.md
+
+# Fichiers JSON intermédiaires à la racine
+/*.json
+
+# ------------------------------------------------------------------------------
+# 2. SCRIPTS PYTHON & OUTILS DE GÉNÉRATION (EXCLUS)
+# ------------------------------------------------------------------------------
+scripts/
+*.py
+*.py[cod]
+*$py.class
+__pycache__/
+.venv/
+venv/
+env/
+ENV/
+
+# ------------------------------------------------------------------------------
+# 3. OUTILS IA, CACHES & ASSISTANTS
+# ------------------------------------------------------------------------------
+.claude/
+.cursor/
+.codex/
+.gemini/
+graphify-out/
+
+# ------------------------------------------------------------------------------
+# 4. FRONTEND (park-auto-frontend) — DÉPENDANCES & BUILDS
 # ------------------------------------------------------------------------------
 node_modules/
 dist/
@@ -13,23 +67,29 @@ build/
 .output/
 .turbo/
 .cache/
-.eslintcache
 .parcel-cache/
+.eslintcache
 
-# Node package manager logs
+# Logs Node
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Frontend environment variables & local overrides
+# Variables d'environnement locales (Secrets)
+.env
 .env.local
 .env.*.local
 *.local
+!.env.example
+
+# Stockage GED local
+uploads/
+backups/
 
 # ------------------------------------------------------------------------------
-# Backend & Java / Spring Boot / Maven (park-auto-mef)
+# 5. BACKEND (park-auto-mef) — MAVEN & COMPILATION
 # ------------------------------------------------------------------------------
 target/
 *.class
@@ -41,12 +101,7 @@ target/
 *.tar.gz
 *.rar
 
-# Maven wrapper executable binaries (if any)
-!.mvn/wrapper/maven-wrapper.jar
-
-# ------------------------------------------------------------------------------
-# Databases & Local Embedded Storage
-# ------------------------------------------------------------------------------
+# Bases de données locales
 data/
 *.mv.db
 *.trace.db
@@ -55,35 +110,8 @@ data/
 *.sqlite3
 
 # ------------------------------------------------------------------------------
-# Python & Scripts
+# 6. IDEs & ÉDITEURS DE CODE
 # ------------------------------------------------------------------------------
-__pycache__/
-*.py[cod]
-*$py.class
-*.pyo
-.pytest_cache/
-.coverage
-htmlcov/
-.venv/
-venv/
-env/
-ENV/
-
-# ------------------------------------------------------------------------------
-# Logs & Temporary Files
-# ------------------------------------------------------------------------------
-*.log
-logs/
-temp/
-tmp/
-tmp_final_render/
-*.tmp
-*.temp
-
-# ------------------------------------------------------------------------------
-# IDEs & Code Editors
-# ------------------------------------------------------------------------------
-# JetBrains (IntelliJ IDEA, WebStorm, etc.)
 .idea/
 *.iml
 *.iws
@@ -91,7 +119,6 @@ tmp_final_render/
 out/
 .idea_modules/
 
-# Visual Studio Code
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
@@ -99,37 +126,24 @@ out/
 !.vscode/extensions.json
 *.code-workspace
 
-# Eclipse
 .metadata/
 .classpath
 .project
 .settings/
-*.launch
 bin/
-
-# Sublime / NetBeans
 *.sublime-workspace
 *.sublime-project
-nbproject/private/
-
-# AI Assistants, Local Tooling & Graphify Caches
-.claude/
-.codex/
-.gemini/
-graphify-out/cache/
-graphify-out/20*/
+nbproject/
 
 # ------------------------------------------------------------------------------
-# Operating System Generated Files
+# 7. FICHIERS SYSTÈMES & TEMPORAIRES
 # ------------------------------------------------------------------------------
-# macOS
 .DS_Store
 .DS_Store?
 ._*
 .Spotlight-V100
 .Trashes
 
-# Windows
 Thumbs.db
 Thumbs.db:encryptable
 ehthumbs.db
@@ -137,5 +151,10 @@ ehthumbs_vista.db
 [Dd]esktop.ini
 $RECYCLE.BIN/
 
-# Linux
+*.log
+logs/
+temp/
+tmp/
+*.tmp
+*.temp
 *~

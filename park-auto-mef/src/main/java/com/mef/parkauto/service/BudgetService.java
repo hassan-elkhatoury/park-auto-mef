@@ -32,6 +32,30 @@ public class BudgetService {
     private final EngagementBudgetaireRepository engagementRepository;
     private final JournalService journalService;
     private final EmailService emailService;
+    private final UtilisateurRepository utilisateurRepository;
+
+    /**
+     * RG03 — Notifie les Responsables Financiers et Administrateurs actifs du franchissement d'un seuil.
+     * Ne renvoie pas d'e-mail si le seuil était déjà atteint (anti-spam).
+     */
+    private void notifierSeuilBudget(BudgetDirection budget, BigDecimal alloue, BigDecimal consomme, String seuil) {
+        try {
+            List<Utilisateur> destinataires = utilisateurRepository.findAll().stream()
+                    .filter(u -> u.isEnabled() && u.getRole() != null
+                            && (u.getRole().getNom() == RoleType.RESPONSABLE_FINANCIER || u.getRole().getNom() == RoleType.ADMIN))
+                    .toList();
+            if (destinataires.isEmpty()) {
+                emailService.sendBudgetAlertEmail(budget.getDirection(), budget.getNatureDepense().name(), alloue, consomme);
+                return;
+            }
+            for (Utilisateur u : destinataires) {
+                emailService.sendBudgetDepassementAlert(u.getEmail(), u.getNom(), u.getPrenom(),
+                        budget.getDirection(), budget.getNatureDepense().name() + " — seuil " + seuil, alloue, consomme);
+            }
+        } catch (Exception e) {
+            log.warn("Impossible d'envoyer l'email d'alerte budgétaire : {}", e.getMessage());
+        }
+    }
 
     // ==========================================
     // 1. EXERCICES BUDGÉTAIRES (RG04)
@@ -107,6 +131,23 @@ public class BudgetService {
         }
     }
 
+    /**
+     * RG04 — Une opération est rattachée à l'exercice de sa date comptable. L'année déclarée
+     * et l'année de la date de l'opération doivent coïncider, et l'exercice correspondant doit
+     * être ouvert. Empêche de contourner la clôture en déclarant une année différente de la date.
+     */
+    public void verifierExerciceOuvert(Integer annee, LocalDate dateOperation) {
+        if (dateOperation != null) {
+            int anneeDate = dateOperation.getYear();
+            if (annee != null && annee != anneeDate) {
+                throw new BadRequestException("Incohérence d'exercice : la date de l'opération (" + dateOperation
+                        + ") relève de l'exercice " + anneeDate + " alors que l'exercice déclaré est " + annee + ".");
+            }
+            verifierExerciceOuvert(anneeDate);
+        }
+        verifierExerciceOuvert(annee);
+    }
+
     // ==========================================
     // 2. ENVELOPPES BUDGÉTAIRES (BUDGET DIRECTION)
     // ==========================================
@@ -131,12 +172,18 @@ public class BudgetService {
                 .filter(m -> m != null).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal totalRealise = lignes.stream().map(BudgetDirectionDto::getMontantRealise)
                 .filter(m -> m != null).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal totalRestant = totalAlloue.subtract(totalRealise);
+        // Disponible = alloué − engagé − réalisé (les engagements non liquidés gèlent des crédits)
+        BigDecimal totalRestant = totalAlloue.subtract(totalEngage).subtract(totalRealise);
+        BigDecimal ecart = totalAlloue.subtract(totalRealise);
         double taux = totalAlloue.compareTo(BigDecimal.ZERO) > 0
                 ? totalRealise.divide(totalAlloue, 4, RoundingMode.HALF_UP).doubleValue() * 100 : 0.0;
+        double tauxEngagement = totalAlloue.compareTo(BigDecimal.ZERO) > 0
+                ? totalEngage.add(totalRealise).divide(totalAlloue, 4, RoundingMode.HALF_UP).doubleValue() * 100 : 0.0;
         return BudgetSyntheseDto.builder()
-                .annee(annee).totalAlloue(totalAlloue).totalRealise(totalRealise)
-                .totalRestant(totalRestant).tauxConsommationGlobal(taux).lignes(lignes).build();
+                .annee(annee).totalAlloue(totalAlloue).totalEngage(totalEngage).totalRealise(totalRealise)
+                .totalRestant(totalRestant).ecartPrevisionnelRealise(ecart)
+                .tauxConsommationGlobal(taux).tauxEngagementGlobal(tauxEngagement)
+                .lignes(lignes).build();
     }
 
     @Transactional(readOnly = true)
@@ -211,7 +258,8 @@ public class BudgetService {
     @Transactional
     public EngagementBudgetaireDto creerEngagement(EngagementBudgetaireRequest request, String username) {
         if (request.getAnnee() == null) throw new BadRequestException("L'année budgétaire est obligatoire.");
-        verifierExerciceOuvert(request.getAnnee());
+        LocalDate dateEngagement = request.getDateEngagement() != null ? request.getDateEngagement() : LocalDate.now();
+        verifierExerciceOuvert(request.getAnnee(), dateEngagement);
 
         if (request.getDirection() == null || request.getDirection().isBlank()) throw new BadRequestException("La direction est obligatoire.");
         if (request.getNatureDepense() == null) throw new BadRequestException("La nature de dépense est obligatoire.");
@@ -244,7 +292,7 @@ public class BudgetService {
 
         EngagementBudgetaire engagement = EngagementBudgetaire.builder()
                 .numeroEngagement(numEngagement)
-                .dateEngagement(request.getDateEngagement() != null ? request.getDateEngagement() : LocalDate.now())
+                .dateEngagement(dateEngagement)
                 .annee(request.getAnnee())
                 .direction(request.getDirection())
                 .service(request.getService())
@@ -404,21 +452,15 @@ public class BudgetService {
         double taux = consomme.divide(alloue, 4, RoundingMode.HALF_UP).doubleValue() * 100;
 
         if (taux >= 95.0) {
+            boolean nouveau = !Boolean.TRUE.equals(budget.getSeuilAlerte95Atteint());
             budget.setSeuilAlerte95Atteint(true);
             budget.setSeuilAlerte80Atteint(true);
-            try {
-                emailService.sendBudgetAlertEmail(budget.getDirection(), budget.getNatureDepense().name(), alloue, consomme);
-            } catch (Exception e) {
-                log.warn("Impossible d'envoyer l'email d'alerte : {}", e.getMessage());
-            }
+            if (nouveau) notifierSeuilBudget(budget, alloue, consomme, "95 %");
         } else if (taux >= 80.0) {
+            boolean nouveau = !Boolean.TRUE.equals(budget.getSeuilAlerte80Atteint());
             budget.setSeuilAlerte80Atteint(true);
             budget.setSeuilAlerte95Atteint(false);
-            try {
-                emailService.sendBudgetAlertEmail(budget.getDirection(), budget.getNatureDepense().name(), alloue, consomme);
-            } catch (Exception e) {
-                log.warn("Impossible d'envoyer l'email d'alerte : {}", e.getMessage());
-            }
+            if (nouveau) notifierSeuilBudget(budget, alloue, consomme, "80 %");
         } else {
             budget.setSeuilAlerte80Atteint(false);
             budget.setSeuilAlerte95Atteint(false);

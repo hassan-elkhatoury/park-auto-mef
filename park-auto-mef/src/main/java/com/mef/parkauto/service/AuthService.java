@@ -38,6 +38,14 @@ public interface AuthService {
     LoginResponse refreshToken(RefreshTokenRequest request);
 
     /**
+     * Déconnecte l'utilisateur : révoque l'access token courant et le refresh token fourni.
+     *
+     * @param accessToken  le token d'accès Bearer courant (peut être null)
+     * @param refreshToken le refresh token à révoquer (peut être null)
+     */
+    void logout(String accessToken, String refreshToken);
+
+    /**
      * Récupère l'utilisateur connecté de la session courante.
      *
      * @return les détails de l'utilisateur connecté

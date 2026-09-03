@@ -16,6 +16,11 @@ public class ExecutiveSummaryDto {
     private Long totalVehicules;
     private Long vehiculesEnMaintenance;
     private Double tauxImmobilisation; // %
+    private Long vehiculesAffectes;
+    private Long vehiculesDisponibles;
+    private Long vehiculesReformes;
+    /** Taux d'utilisation du parc = véhicules affectés / véhicules en service (%) — CdC §20. */
+    private Double tauxUtilisationParc;
     private BigDecimal coutTotalAcquisition;
     private BigDecimal coutTotalCarburant;
     private BigDecimal totalCarburant; // alias

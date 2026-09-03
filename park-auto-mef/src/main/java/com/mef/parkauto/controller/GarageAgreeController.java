@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -39,12 +40,14 @@ public class GarageAgreeController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE_CENTRAL')")
     @Operation(summary = "Créer ou mettre à jour un garage agréé")
     public ResponseEntity<GarageAgreeDto> enregistrer(@Valid @RequestBody GarageAgreeRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(garageService.creerOuModifierGarage(request));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE_CENTRAL')")
     @Operation(summary = "Supprimer un garage agréé")
     public ResponseEntity<Void> supprimer(@PathVariable Long id) {
         garageService.supprimerGarage(id);
@@ -64,6 +67,7 @@ public class GarageAgreeController {
     }
 
     @PostMapping("/pieces")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE_CENTRAL')")
     @Operation(summary = "Ajouter une pièce au catalogue")
     public ResponseEntity<PieceRemplacementDto> creerPiece(@Valid @RequestBody PieceRemplacementRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(garageService.creerPiece(request));

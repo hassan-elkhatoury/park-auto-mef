@@ -75,7 +75,12 @@ public class PanneService {
             conducteurRepository.findById(request.getConducteurId()).ifPresent(panne::setConducteur);
         }
         if (request.getGarageAgreeId() != null) {
-            garageRepository.findById(request.getGarageAgreeId()).ifPresent(panne::setGarageAgree);
+            GarageAgree g = garageRepository.findById(request.getGarageAgreeId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Garage non trouvé : " + request.getGarageAgreeId()));
+            if (!Boolean.TRUE.equals(g.getActif()) || !Boolean.TRUE.equals(g.getAgreeMEF())) {
+                throw new BadRequestException("Le garage « " + g.getNomGarage() + " » n'est pas agréé MEF ou est désactivé : sélection refusée.");
+            }
+            panne.setGarageAgree(g);
         }
 
         panne.setDateDeclaration(request.getDateDeclaration() != null ? request.getDateDeclaration() : LocalDateTime.now());

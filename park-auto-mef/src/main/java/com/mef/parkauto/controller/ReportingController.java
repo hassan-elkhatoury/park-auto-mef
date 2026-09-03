@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,6 +21,7 @@ import java.util.List;
 @RequestMapping("/api/reporting")
 @RequiredArgsConstructor
 @Tag(name = "Reporting Décisionnel & TCO MEF", description = "États financiers, calcul du TCO dynamique (MAD/km), consolidations par motorisation et direction, exports Excel et PDF")
+@PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONSULTATION')")
 public class ReportingController {
 
     private final ReportingService reportingService;
@@ -83,5 +85,18 @@ public class ReportingController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdfBytes);
+    }
+
+    @GetMapping("/export/csv")
+    @Operation(summary = "Exporter les données consolidées du parc et TCO en format CSV normalisé (SID MEF)")
+    public ResponseEntity<byte[]> exportCsv() {
+        byte[] csvBytes = reportingService.generateCsvReport();
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String filename = "Rapport_TCO_MEF_" + timestamp + ".csv";
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .body(csvBytes);
     }
 }

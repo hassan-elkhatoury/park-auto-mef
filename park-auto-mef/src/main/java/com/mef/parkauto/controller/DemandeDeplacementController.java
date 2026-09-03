@@ -61,6 +61,7 @@ public class DemandeDeplacementController {
     }
 
     @PatchMapping("/{id}/annuler")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESPONSABLE_SERVICE', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'CONDUCTEUR')")
     @Operation(summary = "Annuler une demande de déplacement")
     public ResponseEntity<Void> annulerDemande(@PathVariable Long id) {
         demandeService.annulerDemande(id);

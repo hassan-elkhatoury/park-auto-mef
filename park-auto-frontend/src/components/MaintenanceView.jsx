@@ -84,12 +84,14 @@ export default function MaintenanceView() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      let loadErrors = [];
       const [iData, aData, vData, gData] = await Promise.all([
-        maintenanceService.getInterventions().catch(() => []),
-        maintenanceService.getAlertes().catch(() => []),
-        vehiculeService.getVehicules().catch(() => []),
-        garageService.getActifs().catch(() => [])
+        maintenanceService.getInterventions().catch((e) => { loadErrors.push(e); return []; }),
+        maintenanceService.getAlertes().catch((e) => { loadErrors.push(e); return []; }),
+        vehiculeService.getVehicules().catch((e) => { loadErrors.push(e); return []; }),
+        garageService.getActifs().catch((e) => { loadErrors.push(e); return []; })
       ]);
+      if (loadErrors.length > 0) toast.error(`Certaines données n'ont pas pu être chargées (${loadErrors.length} erreur(s)).`);
       setInterventions(Array.isArray(iData) ? iData : (iData?.data || iData?.content || []));
       setAlertes(Array.isArray(aData) ? aData : (aData?.data || aData?.content || []));
       const vList = Array.isArray(vData) ? vData : (vData?.content || vData?.data || []);

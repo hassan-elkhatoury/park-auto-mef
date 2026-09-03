@@ -42,14 +42,33 @@ public class TaxeAutomobileService {
         TaxeAutomobile taxe = request.getId() != null
                 ? taxeRepository.findById(request.getId()).orElseThrow(() -> new ResourceNotFoundException("Taxe non trouvée : " + request.getId()))
                 : new TaxeAutomobile();
+        boolean creation = request.getId() == null;
+        if (creation && taxeRepository.existsByVehiculeIdAndAnneeAndType(vehicule.getId(), request.getAnnee(), request.getType())) {
+            throw new com.mef.parkauto.exception.DuplicateResourceException("Une taxe " + request.getType() + " existe déjà pour le véhicule "
+                    + vehicule.getImmatriculation() + " au titre de l'année " + request.getAnnee() + ".");
+        }
+        if (request.getMontant() != null && request.getMontant().signum() < 0) {
+            throw new BadRequestException("Le montant de la taxe ne peut pas être négatif.");
+        }
         taxe.setVehicule(vehicule);
         taxe.setAnnee(request.getAnnee());
         taxe.setType(request.getType());
         taxe.setMontant(request.getMontant());
-        taxe.setStatut(request.getStatut() != null ? request.getStatut() : StatutTaxe.EN_RETARD);
         taxe.setDateEcheance(request.getDateEcheance());
         taxe.setReferencePaiement(request.getReferencePaiement());
-        boolean creation = request.getId() == null;
+
+        // Statut : PAYEE exige une référence de paiement ; sinon A_PAYER / EN_RETARD selon l'échéance
+        StatutTaxe statut = request.getStatut() != null ? request.getStatut() : StatutTaxe.A_PAYER;
+        if (statut == StatutTaxe.PAYEE) {
+            if (taxe.getReferencePaiement() == null || taxe.getReferencePaiement().isBlank()) {
+                throw new BadRequestException("La référence de paiement est obligatoire pour marquer une taxe comme PAYÉE.");
+            }
+            if (taxe.getDatePaiement() == null) taxe.setDatePaiement(java.time.LocalDate.now());
+        } else if (statut == StatutTaxe.A_PAYER && taxe.getDateEcheance() != null
+                && taxe.getDateEcheance().isBefore(java.time.LocalDate.now())) {
+            statut = StatutTaxe.EN_RETARD;
+        }
+        taxe.setStatut(statut);
         TaxeAutomobile saved = taxeRepository.save(taxe);
         journalService.log("TAXE", creation ? "CREATE" : "UPDATE", "TaxeAutomobile", saved.getId(), null,
                 saved.getType() + " / " + saved.getAnnee(), null);
@@ -58,9 +77,26 @@ public class TaxeAutomobileService {
 
     @Transactional
     public void supprimer(Long id) {
-        if (!taxeRepository.existsById(id)) throw new ResourceNotFoundException("Taxe non trouvée : " + id);
-        taxeRepository.deleteById(id);
-        journalService.log("TAXE", "DELETE", "TaxeAutomobile", id, null, null, null);
+        TaxeAutomobile t = taxeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Taxe non trouvée : " + id));
+        if (t.getStatut() == StatutTaxe.PAYEE) {
+            throw new BadRequestException("Une taxe réglée est verrouillée et ne peut pas être supprimée (CdC §24).");
+        }
+        taxeRepository.delete(t);
+        journalService.log("TAXE", "DELETE", "TaxeAutomobile", id, t.getStatut().name(),
+                "Suppression taxe " + t.getType() + " " + t.getAnnee(), null);
+    }
+
+    /**
+     * Passe automatiquement en EN_RETARD les taxes A_PAYER dont l'échéance est dépassée
+     * (appelé par le planificateur d'alertes — CdC §21 « taxe non payée »).
+     */
+    @Transactional
+    public int actualiserRetards() {
+        List<TaxeAutomobile> enRetard = taxeRepository.findByStatutAndDateEcheanceBefore(StatutTaxe.A_PAYER, java.time.LocalDate.now());
+        enRetard.forEach(t -> t.setStatut(StatutTaxe.EN_RETARD));
+        taxeRepository.saveAll(enRetard);
+        return enRetard.size();
     }
 
     private TaxeAutomobileDto mapToDto(TaxeAutomobile t) {
@@ -72,6 +108,7 @@ public class TaxeAutomobileService {
                 .annee(t.getAnnee()).type(t.getType()).montant(t.getMontant())
                 .statut(t.getStatut()).dateEcheance(t.getDateEcheance())
                 .referencePaiement(t.getReferencePaiement())
+                .datePaiement(t.getDatePaiement())
                 .dateCreation(t.getDateCreation()).build();
     }
 }

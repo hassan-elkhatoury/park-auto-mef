@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -42,6 +43,7 @@ public class MaintenanceController {
     }
 
     @PostMapping("/interventions")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL')")
     @Operation(summary = "Créer ou mettre à jour une intervention de maintenance")
     public ResponseEntity<ApiResponse<InterventionMaintenanceDto>> enregistrerIntervention(@Valid @RequestBody InterventionMaintenanceRequest request) {
         InterventionMaintenanceDto dto = maintenanceService.enregistrerIntervention(request);
@@ -50,6 +52,7 @@ public class MaintenanceController {
     }
 
     @PutMapping("/interventions/{id}/cloturer")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL')")
     @Operation(summary = "Clôturer formellement une intervention (RG04 : contrôle kilométrage croissant, remise à DISPONIBLE et imputation RG05)")
     public ResponseEntity<ApiResponse<InterventionMaintenanceDto>> cloturerIntervention(
             @PathVariable Long id,
@@ -59,6 +62,7 @@ public class MaintenanceController {
     }
 
     @DeleteMapping("/interventions/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL')")
     @Operation(summary = "Supprimer une intervention de maintenance")
     public ResponseEntity<ApiResponse<Void>> deleteIntervention(@PathVariable Long id) {
         maintenanceService.deleteIntervention(id);

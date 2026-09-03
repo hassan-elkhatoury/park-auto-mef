@@ -6,6 +6,7 @@ import com.mef.parkauto.service.SinistreService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,16 +34,19 @@ public class SinistreController {
     }
 
     @PostMapping({"", "/", "/declarer"})
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_SERVICE', 'CONDUCTEUR')")
     public ResponseEntity<SinistreDto> declarer(@RequestBody SinistreRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(sinistreService.declarer(request));
     }
 
     @PutMapping({"/{id:\\d+}", "/modifier/{id:\\d+}"})
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_SERVICE')")
     public ResponseEntity<SinistreDto> modifier(@PathVariable Long id, @RequestBody SinistreRequest request) {
         return ResponseEntity.ok(sinistreService.modifier(id, request));
     }
 
     @DeleteMapping("/{id:\\d+}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE_CENTRAL')")
     public ResponseEntity<Void> supprimer(@PathVariable Long id) {
         sinistreService.supprimer(id);
         return ResponseEntity.noContent().build();

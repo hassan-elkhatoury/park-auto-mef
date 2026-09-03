@@ -63,6 +63,7 @@ public class DataInitializer implements CommandLineRunner {
         initializeSampleSprint5Data();
         initializeSampleSprint6Data();
         initializeSampleSprint7Data();
+        initializeAuditJournal();
 
         log.info("=== Initialisation des données terminée ===");
     }
@@ -87,6 +88,7 @@ public class DataInitializer implements CommandLineRunner {
     private final com.mef.parkauto.repository.PieceRemplacementRepository pieceRemplacementRepository;
     private final com.mef.parkauto.repository.ExerciceBudgetaireRepository exerciceBudgetaireRepository;
     private final com.mef.parkauto.repository.EngagementBudgetaireRepository engagementBudgetaireRepository;
+    private final com.mef.parkauto.repository.JournalActionRepository journalActionRepository;
     private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     private void initializeSampleSprint3Data() {
@@ -837,5 +839,78 @@ public class DataInitializer implements CommandLineRunner {
         engagementBudgetaireRepository.save(eng3);
 
         log.info("Initialisation des données du Sprint 7 terminée avec succès.");
+    }
+
+    private void initializeAuditJournal() {
+        if (journalActionRepository.count() > 15) {
+            return;
+        }
+        log.info("Initialisation des données du Journal d'Audit Système (Traçabilité multi-modules)...");
+
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+
+        java.util.List<com.mef.parkauto.entity.JournalAction> actions = java.util.List.of(
+            createJournal("VEHICULE", "CREATE", "Vehicule", 1L, null, "Immatriculation: 12345-A-1, Marque: Toyota Land Cruiser Prado, Direction: DGI", "admin@mef.gov.ma", now.minusDays(25), "192.168.1.10"),
+            createJournal("VEHICULE", "CREATE", "Vehicule", 2L, null, "Immatriculation: 67890-B-2, Marque: Peugeot 508 Allure, Direction: DTFE", "admin@mef.gov.ma", now.minusDays(24), "192.168.1.10"),
+            createJournal("VEHICULE", "CREATE", "Vehicule", 3L, null, "Immatriculation: 11223-C-3, Marque: Dacia Duster 4x4, Direction: DGT", "admin@mef.gov.ma", now.minusDays(24), "192.168.1.10"),
+            createJournal("VEHICULE", "UPDATE", "Vehicule", 1L, "Statut: DISPONIBLE", "Statut: AFFECTE", "gestionnaire.central@mef.gov.ma", now.minusDays(20), "192.168.1.15"),
+            
+            createJournal("CONDUCTEUR", "CREATE", "Conducteur", 1L, null, "Matricule: CND-001, Nom: Ahmed Tazi, Permis: B (Exp: 12/2028)", "admin@mef.gov.ma", now.minusDays(22), "192.168.1.10"),
+            createJournal("CONDUCTEUR", "CREATE", "Conducteur", 2L, null, "Matricule: CND-002, Nom: Karim El Mansouri, Permis: B, C", "admin@mef.gov.ma", now.minusDays(22), "192.168.1.10"),
+            createJournal("CONDUCTEUR", "UPDATE", "Conducteur", 1L, null, "Visite médicale aptitude validée jusqu'en 2028", "gestionnaire.central@mef.gov.ma", now.minusDays(18), "192.168.1.15"),
+
+            createJournal("DEMANDE_DEPLACEMENT", "CREATE", "DemandeDeplacement", 1L, null, "Destination: Marrakech, Motif: Audit régional Trésorerie, Véhicule sollicité: Berline", "conducteur@mef.gov.ma", now.minusDays(17), "192.168.1.42"),
+            createJournal("DEMANDE_DEPLACEMENT", "VALIDATION_N1", "DemandeDeplacement", 1L, "Statut: EN_ATTENTE_VALIDATION", "Statut: VALIDEE_SERVICE", "responsable.service@mef.gov.ma", now.minusDays(16), "192.168.1.25"),
+            createJournal("DEMANDE_DEPLACEMENT", "APPROBATION_N2", "DemandeDeplacement", 1L, "Statut: VALIDEE_SERVICE", "Statut: APPROUVEE", "gestionnaire.central@mef.gov.ma", now.minusDays(16), "192.168.1.15"),
+
+            createJournal("AFFECTATION", "CREATE", "Affectation", 1L, null, "Affectation Véhicule 12345-A-1 au Conducteur Karim El Mansouri pour mission Marrakech", "gestionnaire.central@mef.gov.ma", now.minusDays(15), "192.168.1.15"),
+            createJournal("AFFECTATION", "RESTITUTION", "Affectation", 1L, "Kilométrage départ: 44,200 km", "Kilométrage retour: 45,210 km, Anomalies: Aucune, Niveau carburant: 3/4", "gestionnaire.central@mef.gov.ma", now.minusDays(12), "192.168.1.15"),
+
+            createJournal("CARBURANT", "CREATE", "CarteCarburant", 1L, null, "Carte TotalEnergies N° 7001-4458-9921, Plafond: 3000 MAD, Direction: DGI", "responsable.financier@mef.gov.ma", now.minusDays(19), "192.168.1.18"),
+            createJournal("CARBURANT", "CREATE", "PleinCarburant", 1L, null, "Plein 55.0L Gasoil (715.00 MAD) - Station Total Agdal - Véhicule: 12345-A-1", "conducteur@mef.gov.ma", now.minusDays(14), "192.168.1.42"),
+            createJournal("CARBURANT", "CONTROLE", "PleinCarburant", 2L, null, "Contrôle RG05 — Surconsommation détectée sur 11223-C-3 : 9.8 L/100km (référence 7.2 L/100km)", "SYSTEM", now.minusDays(8), "127.0.0.1"),
+
+            createJournal("MAINTENANCE", "CREATE", "InterventionMaintenance", 1L, null, "Vidange moteur + remplacement filtre à huile 60 000 km - Véhicule: 67890-B-2", "gestionnaire.central@mef.gov.ma", now.minusDays(11), "192.168.1.15"),
+            createJournal("MAINTENANCE", "CLOTURE", "InterventionMaintenance", 1L, "Statut: EN_COURS", "Statut: CLOTUREE, Coût TTC: 1,450 MAD, Facture acquittée", "responsable.financier@mef.gov.ma", now.minusDays(9), "192.168.1.18"),
+
+            createJournal("PANNE", "DECLARE", "PanneVehicule", 1L, null, "Panne d'alternateur et batterie à plat signalée sur véhicule Dacia Duster", "conducteur@mef.gov.ma", now.minusDays(7), "192.168.1.42"),
+            createJournal("PANNE", "CLOTURE_REPARATION", "PanneVehicule", 1L, "Statut: EN_DIAGNOSTIC", "Statut: REPAREE - Batterie remplacée par Garage Central Rabat", "gestionnaire.central@mef.gov.ma", now.minusDays(5), "192.168.1.15"),
+
+            createJournal("SINISTRE", "DECLARE", "Sinistre", 1L, null, "Accrochage pare-chocs arrière parking MEF Rabat - Tiers identifié - Constat n° 2026-881", "conducteur@mef.gov.ma", now.minusDays(6), "192.168.1.42"),
+            createJournal("SINISTRE", "UPDATE", "Sinistre", 1L, "Statut: EN_ATTENTE", "Statut: EN_COURS_D_EXPERTISE, Dossier transmis à la compagnie d'assurance", "gestionnaire.central@mef.gov.ma", now.minusDays(4), "192.168.1.15"),
+
+            createJournal("ASSURANCE", "CREATE", "Assurance", 1L, null, "Police Flotte Tous Risques Wafa Assurance N° POL-MEF-2026-001 (Prime: 120 000 MAD)", "responsable.financier@mef.gov.ma", now.minusDays(20), "192.168.1.18"),
+            createJournal("TAXE", "CREATE", "TaxeAutomobile", 1L, null, "Vignette automobile 2026 acquittée pour flotte centrale (15 véhicules - 18 500 MAD)", "responsable.financier@mef.gov.ma", now.minusDays(18), "192.168.1.18"),
+
+            createJournal("BUDGET", "CREATE_EXERCICE", "ExerciceBudgetaire", 1L, null, "Ouverture de l'Exercice Budgétaire 2026 - Dotation globale: 1 500 000 MAD", "responsable.financier@mef.gov.ma", now.minusDays(26), "192.168.1.18"),
+            createJournal("BUDGET", "ENGAGEMENT", "EngagementBudgetaire", 1L, null, "Engagement N° ENG-2026-0012 - Dotation carburant T1 (Montant: 150 000 MAD)", "responsable.financier@mef.gov.ma", now.minusDays(21), "192.168.1.18"),
+            createJournal("BUDGET", "LIQUIDATION", "EngagementBudgetaire", 2L, null, "Liquidation facture semestrielle révisions ateliers (28 000 MAD)", "responsable.financier@mef.gov.ma", now.minusDays(10), "192.168.1.18"),
+
+            createJournal("GARAGE", "CREATE", "GarageAgree", 1L, null, "Agrément Garage Central Hassan II - Rabat (Spécialité: Révision & Diagnostic multimarques)", "gestionnaire.central@mef.gov.ma", now.minusDays(23), "192.168.1.15"),
+            createJournal("DOCUMENT_GED", "UPLOAD", "DocumentGED", 1L, null, "Téléversement Carte Grise & Visite Technique pour véhicule 12345-A-1", "gestionnaire.central@mef.gov.ma", now.minusDays(13), "192.168.1.15"),
+
+            createJournal("AUTH", "LOGIN", "Utilisateur", 1L, null, "Authentification réussie via portail MEF", "admin@mef.gov.ma", now.minusHours(2), "192.168.1.10"),
+            createJournal("AUTH", "CHANGE_PASSWORD", "Utilisateur", 1L, null, "Mise à jour sécurisée du mot de passe selon politique DGSSI", "admin@mef.gov.ma", now.minusMinutes(45), "192.168.1.10")
+        );
+
+        journalActionRepository.saveAll(actions);
+        log.info("Journal d'Audit initialisé avec succès ({} entrées multi-modules enregistrées).", actions.size());
+    }
+
+    private com.mef.parkauto.entity.JournalAction createJournal(String module, String action, String entityName,
+                                                               Long entityId, String oldValue, String newValue,
+                                                               String username, java.time.LocalDateTime timestamp,
+                                                               String ipAddress) {
+        com.mef.parkauto.entity.JournalAction a = new com.mef.parkauto.entity.JournalAction();
+        a.setModule(module);
+        a.setAction(action);
+        a.setEntityName(entityName);
+        a.setEntityId(entityId);
+        a.setOldValue(oldValue);
+        a.setNewValue(newValue);
+        a.setUsername(username);
+        a.setTimestamp(timestamp);
+        a.setIpAddress(ipAddress);
+        return a;
     }
 }

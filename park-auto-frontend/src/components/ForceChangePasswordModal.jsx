@@ -12,8 +12,14 @@ export default function ForceChangePasswordModal({ user, onPasswordChanged }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (nouveauMotDePasse.length < 8) {
-      toast.error('Le mot de passe doit contenir au moins 8 caractères.');
+    const PASSWORD_POLICY = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!PASSWORD_POLICY.test(nouveauMotDePasse)) {
+      toast.error('Le mot de passe doit contenir au moins 8 caractères, dont une majuscule, une minuscule, un chiffre et un caractère spécial (@$!%*?&).');
+      return;
+    }
+
+    if (nouveauMotDePasse === ancientMotDePasse) {
+      toast.error("Le nouveau mot de passe doit être différent de l'ancien.");
       return;
     }
 
@@ -25,7 +31,7 @@ export default function ForceChangePasswordModal({ user, onPasswordChanged }) {
     try {
       setLoading(true);
       await api.post('/auth/change-password', {
-        ancientMotDePasse: ancientMotDePasse,
+        ancienMotDePasse: ancientMotDePasse,
         nouveauMotDePasse: nouveauMotDePasse
       });
 
@@ -36,11 +42,8 @@ export default function ForceChangePasswordModal({ user, onPasswordChanged }) {
       localStorage.setItem('user', JSON.stringify(updatedUser));
       onPasswordChanged(updatedUser);
     } catch (err) {
-      // If API fails locally (or dev mode), update state gracefully for smooth user testing
-      const updatedUser = { ...user, doitChangerMotDePasse: false, mustChangePassword: false, firstLogin: false };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      onPasswordChanged(updatedUser);
-      toast.success('Mot de passe mis à jour avec succès !');
+      const message = err?.message || err?.response?.data?.message || 'Échec de la modification du mot de passe. Vérifiez votre mot de passe actuel.';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -55,7 +58,7 @@ export default function ForceChangePasswordModal({ user, onPasswordChanged }) {
           <div className="w-12 h-12 rounded-xl gold-gradient-bg mx-auto flex items-center justify-center mb-3 shadow-lg">
             <ShieldAlert className="w-6 h-6 text-[#0A1E3F]" />
           </div>
-          <h2 className="text-lg font-black font-['Outfit'] tracking-wide text-white">
+          <h2 className="text-lg font-black font-['Outfit'] tracking-wide !text-white">
             Changement de Mot de Passe Obligatoire
           </h2>
           <p className="text-xs text-[#D7B14A] mt-1 font-medium">

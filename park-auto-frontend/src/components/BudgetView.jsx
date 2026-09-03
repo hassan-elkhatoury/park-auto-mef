@@ -47,7 +47,20 @@ const MOIS_NOMS = [
 
 const PALETTE = ['#0F1D32', '#C5A059', '#2563EB', '#059669', '#D97706', '#DC2626', '#7C3AED', '#DB2777'];
 
-export default function BudgetView() {
+const readCurrentUser = () => {
+  try {
+    const raw = localStorage.getItem('user');
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+};
+
+export default function BudgetView({ user: userProp }) {
+  const user = userProp || readCurrentUser();
+  const roleName = typeof user?.role === 'string' ? user.role : (user?.role?.nom || user?.role?.name || 'CONSULTATION');
+  const canManageBudget = ['ADMIN', 'RESPONSABLE_FINANCIER'].includes(roleName);
+
   const [activeTab, setActiveTab] = useState('directions'); // 'directions' | 'engagements' | 'exercices' | 'alertes' | 'previsions' | 'synthese'
   const [annee, setAnnee] = useState(new Date().getFullYear());
   const [budgets, setBudgets] = useState([]);
@@ -143,14 +156,16 @@ export default function BudgetView() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      let loadErrors = [];
       const [bData, eData, exData, aData, pData, sData] = await Promise.all([
-        budgetService.getBudgetsByAnnee(annee).catch(() => []),
-        budgetService.getAllEngagements(annee).catch(() => []),
-        budgetService.getAllExercices().catch(() => []),
-        budgetService.getAlertesActives(annee).catch(() => []),
-        budgetService.getAllPrevisions().catch(() => []),
-        budgetService.getSynthese(annee).catch(() => null)
+        budgetService.getBudgetsByAnnee(annee).catch((e) => { loadErrors.push(e); return []; }),
+        budgetService.getAllEngagements(annee).catch((e) => { loadErrors.push(e); return []; }),
+        budgetService.getAllExercices().catch((e) => { loadErrors.push(e); return []; }),
+        budgetService.getAlertesActives(annee).catch((e) => { loadErrors.push(e); return []; }),
+        budgetService.getAllPrevisions().catch((e) => { loadErrors.push(e); return []; }),
+        budgetService.getSynthese(annee).catch((e) => { loadErrors.push(e); return null; })
       ]);
+      if (loadErrors.length > 0) toast.error(`Certaines données n'ont pas pu être chargées (${loadErrors.length} erreur(s)).`);
 
       const bList = Array.isArray(bData) ? bData : (bData?.content || bData?.data || []);
       setBudgets(Array.isArray(bList) ? bList : []);
@@ -559,6 +574,7 @@ export default function BudgetView() {
             <RefreshCw className="w-4 h-4" />
           </button>
 
+          {canManageBudget && (
           <button
             onClick={() => handleOpenEngagementModal()}
             disabled={isExerciceCloture}
@@ -567,7 +583,9 @@ export default function BudgetView() {
             <Plus className="w-4 h-4" />
             Nouvel Engagement
           </button>
+          )}
 
+          {canManageBudget && (
           <button
             onClick={() => {
               setBudgetForm({
@@ -588,6 +606,7 @@ export default function BudgetView() {
             <Plus className="w-4 h-4" />
             Nouvelle Dotation
           </button>
+          )}
         </div>
       </motion.div>
 
@@ -784,12 +803,14 @@ export default function BudgetView() {
                   <DollarSign className="w-12 h-12 mx-auto text-slate-300 mb-3" />
                   <p className="font-semibold text-slate-600">Aucune dotation budgétaire trouvée</p>
                   <p className="text-xs text-slate-400 mt-1">Créez une enveloppe budgétaire pour cet exercice.</p>
+                  {canManageBudget && (
                   <button
                     onClick={() => setShowBudgetModal(true)}
                     className="mt-4 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all"
                   >
                     <Plus className="w-4 h-4" /> Nouvelle Dotation
                   </button>
+                  )}
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -868,28 +889,34 @@ export default function BudgetView() {
                             </td>
                             <td className="py-3.5 px-4 text-center">
                               <div className="flex items-center justify-center gap-1.5">
-                                <button
-                                  onClick={() => handleOpenEngagementModal(b)}
-                                  disabled={isExerciceCloture || disponible <= 0}
-                                  title="Engager une dépense sur cette enveloppe"
-                                  className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                                >
-                                  <Plus className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => handleEditBudget(b)}
-                                  title="Modifier la dotation"
-                                  className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-all"
-                                >
-                                  <Edit className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteBudget(b)}
-                                  title="Supprimer"
-                                  className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg transition-all"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                                {canManageBudget ? (
+                                  <>
+                                    <button
+                                      onClick={() => handleOpenEngagementModal(b)}
+                                      disabled={isExerciceCloture || disponible <= 0}
+                                      title="Engager une dépense sur cette enveloppe"
+                                      className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleEditBudget(b)}
+                                      title="Modifier la dotation"
+                                      className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-all"
+                                    >
+                                      <Edit className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteBudget(b)}
+                                      title="Supprimer"
+                                      className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg transition-all"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </>
+                                ) : (
+                                  <span className="text-[10px] font-bold text-slate-400 italic">Lecture seule</span>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -928,6 +955,7 @@ export default function BudgetView() {
                   <FileText className="w-12 h-12 mx-auto text-slate-300 mb-3" />
                   <p className="font-semibold text-slate-600">Aucun engagement enregistré</p>
                   <p className="text-xs text-slate-400 mt-1">Créez un engagement pour imputer sur le solde disponible.</p>
+                  {canManageBudget && (
                   <button
                     onClick={() => handleOpenEngagementModal()}
                     disabled={isExerciceCloture}
@@ -935,6 +963,7 @@ export default function BudgetView() {
                   >
                     <Plus className="w-4 h-4 text-amber-400" /> Nouvel Engagement
                   </button>
+                  )}
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -995,7 +1024,7 @@ export default function BudgetView() {
                             </td>
                             <td className="py-3.5 px-4 text-center">
                               <div className="flex items-center justify-center gap-1.5">
-                                {!isLiquide && !isAnnule && (
+                                {canManageBudget && !isLiquide && !isAnnule && (
                                   <>
                                     <button
                                       onClick={() => handleOpenLiquidation(eng)}
@@ -1042,6 +1071,7 @@ export default function BudgetView() {
                     Clôture annuelle au 31 Décembre avec scellement comptable et bascule en lecture seule.
                   </p>
                 </div>
+                {canManageBudget && (
                 <button
                   onClick={() => {
                     setExerciceForm({
@@ -1055,6 +1085,7 @@ export default function BudgetView() {
                   <Plus className="w-4 h-4 text-amber-400" />
                   <span>Ouvrir Nouvel Exercice</span>
                 </button>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1097,6 +1128,7 @@ export default function BudgetView() {
                         )}
                       </div>
 
+                      {canManageBudget && (
                       <div className="mt-4 pt-3 flex items-center gap-2">
                         {isCloture ? (
                           <button
@@ -1114,6 +1146,7 @@ export default function BudgetView() {
                           </button>
                         )}
                       </div>
+                      )}
                     </div>
                   );
                 })}
@@ -1194,6 +1227,7 @@ export default function BudgetView() {
                           </div>
                         </div>
 
+                        {canManageBudget && (
                         <div className="mt-4 flex items-center justify-end gap-2">
                           <button
                             onClick={() => {
@@ -1206,6 +1240,7 @@ export default function BudgetView() {
                             Réajuster Dotation
                           </button>
                         </div>
+                        )}
                       </div>
                     );
                   })}
@@ -1226,6 +1261,7 @@ export default function BudgetView() {
                     Modélisation des volumes (Litres) et montants prévisionnels par Direction et par mois.
                   </p>
                 </div>
+                {canManageBudget && (
                 <button
                   onClick={() => {
                     setPrevisionForm({
@@ -1246,6 +1282,7 @@ export default function BudgetView() {
                   <Plus className="w-4 h-4 text-amber-400" />
                   <span>Nouvelle Prévision</span>
                 </button>
+                )}
               </div>
 
               {previsions.length === 0 ? (
@@ -1295,6 +1332,7 @@ export default function BudgetView() {
                               {budgetPrev.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} MAD
                             </td>
                             <td className="py-3.5 px-4 text-center">
+                              {canManageBudget && (
                               <button
                                 onClick={() => {
                                   setConfirmModal({
@@ -1321,6 +1359,7 @@ export default function BudgetView() {
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
+                              )}
                             </td>
                           </tr>
                         );

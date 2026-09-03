@@ -69,8 +69,17 @@ public class AffectationService {
         DemandeDeplacement demande = demandeRepository.findById(dto.getDemandeDeplacementId())
                 .orElseThrow(() -> new ResourceNotFoundException("Demande de déplacement non trouvée : " + dto.getDemandeDeplacementId()));
 
-        if (demande.getStatut() != StatutDemande.VALIDEE_SERVICE && demande.getStatut() != StatutDemande.EN_ATTENTE_VALIDATION) {
-            throw new IllegalStateException("Seule une demande validée ou en attente peut être affectée. Statut actuel : " + demande.getStatut());
+        // Workflow à deux niveaux (CdC §9) : l'affectation (N2, Gestionnaire du Parc) exige
+        // impérativement la validation préalable du Responsable de Service (N1).
+        if (demande.getStatut() != StatutDemande.VALIDEE_SERVICE) {
+            throw new IllegalStateException("Seule une demande VALIDÉE par le Responsable de Service (niveau 1) peut être affectée. Statut actuel : "
+                    + demande.getStatut());
+        }
+        if (affectationRepository.findByDemandeDeplacementId(demande.getId()).isPresent()) {
+            throw new IllegalStateException("Cette demande dispose déjà d'une affectation.");
+        }
+        if (dto.getVehiculeId() == null || dto.getConducteurId() == null) {
+            throw new IllegalArgumentException("Le véhicule et le conducteur sont obligatoires pour une affectation.");
         }
 
         Vehicule vehicule = vehiculeRepository.findById(dto.getVehiculeId())

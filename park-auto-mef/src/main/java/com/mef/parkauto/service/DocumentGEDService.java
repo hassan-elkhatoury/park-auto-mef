@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 public class DocumentGEDService {
 
     private final DocumentGEDRepository documentRepository;
+    private final JournalService journalService;
 
     @Value("${app.ged.upload-dir:./uploads}")
     private String uploadDir;
@@ -39,10 +40,39 @@ public class DocumentGEDService {
             "application/vnd.ms-excel"
     );
 
+    /** Extensions autorisées, cohérentes avec les types MIME acceptés. */
+    private static final Set<String> ALLOWED_EXT = Set.of(".pdf", ".png", ".jpg", ".jpeg", ".xlsx", ".xls");
+
+    /** Entités métier pouvant porter des pièces jointes GED (liste blanche anti path-traversal). */
+    private static final Set<String> ALLOWED_ENTITES = Set.of(
+            "vehicule", "conducteur", "mission", "sinistre", "assurance", "maintenance",
+            "panne", "reforme", "infraction", "carburant", "taxe", "visite_technique", "engagement", "budget"
+    );
+
+    /** Signatures binaires (magic numbers) des formats acceptés. */
+    private static final byte[] MAGIC_PDF = {0x25, 0x50, 0x44, 0x46};            // %PDF
+    private static final byte[] MAGIC_PNG = {(byte) 0x89, 0x50, 0x4E, 0x47};     // .PNG
+    private static final byte[] MAGIC_JPG = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF};
+    private static final byte[] MAGIC_ZIP = {0x50, 0x4B, 0x03, 0x04};            // XLSX (zip)
+    private static final byte[] MAGIC_OLE = {(byte) 0xD0, (byte) 0xCF, 0x11, (byte) 0xE0}; // XLS
+
     @Transactional
     public DocumentGEDDto uploadDocument(MultipartFile file, String entite, Long entiteId,
                                          String typeDocument, String uploadePar) throws IOException {
-        // Validation MIME
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Aucun fichier fourni.");
+        }
+        if (entiteId == null || entiteId <= 0) {
+            throw new IllegalArgumentException("Identifiant d'entité invalide.");
+        }
+
+        // Liste blanche de l'entité : empêche toute injection de chemin (../, séparateurs, etc.)
+        String entiteKey = entite == null ? "" : entite.trim().toLowerCase();
+        if (!ALLOWED_ENTITES.contains(entiteKey)) {
+            throw new IllegalArgumentException("Entité GED non autorisée : '" + entite + "'.");
+        }
+
+        // Validation MIME déclaré
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_MIME.contains(contentType)) {
             throw new IllegalArgumentException(
@@ -51,12 +81,29 @@ public class DocumentGEDService {
             );
         }
 
-        // Création du répertoire si nécessaire
-        Path uploadPath = Paths.get(uploadDir, entite.toLowerCase(), String.valueOf(entiteId));
+        // Validation extension + contenu réel (magic number) pour contrer le spoofing MIME
+        String extension = getExtension(file.getOriginalFilename()).toLowerCase();
+        if (!ALLOWED_EXT.contains(extension)) {
+            throw new IllegalArgumentException("Extension de fichier non autorisée : '" + extension + "'.");
+        }
+        byte[] header = new byte[4];
+        int read;
+        try (java.io.InputStream in = file.getInputStream()) {
+            read = in.read(header);
+        }
+        if (read < 3 || !matchesMagic(header, contentType)) {
+            throw new IllegalArgumentException("Le contenu du fichier ne correspond pas à son type déclaré.");
+        }
+
+        // Création du répertoire si nécessaire (racine normalisée + vérification de confinement)
+        Path root = Paths.get(uploadDir).toAbsolutePath().normalize();
+        Path uploadPath = root.resolve(entiteKey).resolve(String.valueOf(entiteId)).normalize();
+        if (!uploadPath.startsWith(root)) {
+            throw new IllegalArgumentException("Chemin de stockage invalide.");
+        }
         Files.createDirectories(uploadPath);
 
-        // Nom de fichier unique
-        String extension = getExtension(file.getOriginalFilename());
+        // Nom de fichier unique (généré côté serveur : le nom d'origine n'est jamais utilisé sur disque)
         String uniqueName = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss").format(LocalDateTime.now())
                 + "_" + UUID.randomUUID().toString().substring(0, 8) + extension;
         Path targetPath = uploadPath.resolve(uniqueName);
@@ -75,7 +122,10 @@ public class DocumentGEDService {
                 .uploadePar(uploadePar)
                 .build();
 
-        return mapToDto(documentRepository.save(doc));
+        DocumentGED saved = documentRepository.save(doc);
+        journalService.log("DOCUMENT_GED", "UPLOAD", "DocumentGED", saved.getId(),
+                null, "Fichier: " + saved.getNomFichier() + ", Type: " + saved.getTypeDocument() + ", Entité: " + entite + "#" + entiteId, null);
+        return mapToDto(saved);
     }
 
     @Transactional(readOnly = true)
@@ -113,6 +163,8 @@ public class DocumentGEDService {
         } catch (IOException e) {
             log.error("GED - Erreur suppression fichier physique {}: {}", doc.getCheminFichier(), e.getMessage());
         }
+        journalService.log("DOCUMENT_GED", "DELETE", "DocumentGED", id,
+                doc.getNomFichier(), null, null);
         documentRepository.delete(doc);
     }
 
@@ -136,5 +188,24 @@ public class DocumentGEDService {
         if (filename == null) return "";
         int dot = filename.lastIndexOf('.');
         return dot >= 0 ? filename.substring(dot) : "";
+    }
+
+    private boolean matchesMagic(byte[] header, String contentType) {
+        return switch (contentType) {
+            case "application/pdf" -> startsWith(header, MAGIC_PDF);
+            case "image/png" -> startsWith(header, MAGIC_PNG);
+            case "image/jpeg" -> startsWith(header, MAGIC_JPG);
+            case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" -> startsWith(header, MAGIC_ZIP);
+            case "application/vnd.ms-excel" -> startsWith(header, MAGIC_OLE) || startsWith(header, MAGIC_ZIP);
+            default -> false;
+        };
+    }
+
+    private boolean startsWith(byte[] data, byte[] prefix) {
+        if (data.length < prefix.length) return false;
+        for (int i = 0; i < prefix.length; i++) {
+            if (data[i] != prefix[i]) return false;
+        }
+        return true;
     }
 }

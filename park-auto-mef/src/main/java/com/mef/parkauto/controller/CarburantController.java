@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -45,6 +46,7 @@ public class CarburantController {
     }
 
     @PostMapping("/pleins")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_SERVICE', 'CONDUCTEUR')")
     @Operation(summary = "Enregistrer un nouveau plein de carburant")
     public ResponseEntity<ApiResponse<PleinCarburantDto>> enregistrerPlein(@Valid @RequestBody PleinCarburantRequest request) {
         PleinCarburantDto plein = carburantService.enregistrerPlein(request);
@@ -53,6 +55,7 @@ public class CarburantController {
     }
 
     @DeleteMapping("/pleins/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL')")
     @Operation(summary = "Supprimer un enregistrement de plein")
     public ResponseEntity<ApiResponse<Void>> deletePlein(@PathVariable Long id) {
         carburantService.deletePlein(id);
@@ -67,6 +70,7 @@ public class CarburantController {
     }
 
     @PostMapping("/cartes")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE_CENTRAL')")
     @Operation(summary = "Créer ou mettre à jour une carte carburant")
     public ResponseEntity<ApiResponse<CarteCarburantDto>> enregistrerCarte(@RequestBody CarteCarburantDto dto) {
         CarteCarburantDto saved = carburantService.enregistrerCarte(dto);
@@ -75,6 +79,7 @@ public class CarburantController {
     }
 
     @DeleteMapping("/cartes/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE_CENTRAL')")
     @Operation(summary = "Supprimer une carte carburant")
     public ResponseEntity<ApiResponse<Void>> deleteCarte(@PathVariable Long id) {
         carburantService.deleteCarte(id);

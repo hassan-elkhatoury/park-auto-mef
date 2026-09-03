@@ -18,7 +18,20 @@ const roleBadgeStyles = {
 const inputCls = "w-full p-2.5 bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#C59B27]";
 const labelCls = "block text-xs font-bold text-[#0A1E3F] mb-1.5";
 
+const readCurrentUser = () => {
+  try {
+    const raw = localStorage.getItem('user');
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+};
+
 export default function UtilisateursView() {
+  const currentUser = readCurrentUser();
+  const roleName = typeof currentUser?.role === 'string' ? currentUser.role : (currentUser?.role?.nom || currentUser?.role?.name || 'CONSULTATION');
+  const isAdmin = roleName === 'ADMIN';
+
   const emptyForm = {
     matricule: '', nom: '', prenom: '', email: '',
     telephone: '', direction: 'Direction du Budget', service: 'Service Logistique',
@@ -252,6 +265,7 @@ export default function UtilisateursView() {
             <RotateCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             <span>Actualiser</span>
           </button>
+          {isAdmin && (
           <button
             onClick={() => { 
               const autoMatricule = generateNextUserMatricule(users);
@@ -263,6 +277,7 @@ export default function UtilisateursView() {
             <UserPlus className="w-4 h-4" />
             <span>Nouveau Compte</span>
           </button>
+          )}
         </div>
       </div>
 
@@ -429,6 +444,8 @@ export default function UtilisateursView() {
                     </td>
                     <td>
                       <div className="flex items-center justify-end gap-1.5">
+                        {isAdmin && (
+                        <>
                         <button
                           onClick={() => {
                             setEditingUser(u);
@@ -459,6 +476,11 @@ export default function UtilisateursView() {
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
+                        </>
+                        )}
+                        {!isAdmin && (
+                          <span className="text-[10px] font-bold text-slate-400 italic">Lecture seule</span>
+                        )}
                       </div>
                     </td>
                   </tr>

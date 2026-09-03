@@ -49,6 +49,12 @@ export const reportingService = {
   exportPdf: async () => {
     const res = await api.get('/reporting/export/pdf', { responseType: 'blob' });
     return (res instanceof Blob) ? res : (res?.data ?? res);
+  },
+
+  // GET /api/reporting/export/csv — Exportation CSV normalisée (SID MEF)
+  exportCsv: async () => {
+    const res = await api.get('/reporting/export/csv', { responseType: 'blob' });
+    return (res instanceof Blob) ? res : (res?.data ?? res);
   }
 };
 

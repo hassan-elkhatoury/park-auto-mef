@@ -138,12 +138,23 @@ public class GlobalExceptionHandler {
 
     // ---- 500 Internal Server Error (fallback) ----
 
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMaxUpload(org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
+        return ResponseEntity
+                .status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(ApiResponse.error(HttpStatus.PAYLOAD_TOO_LARGE.value(),
+                        "Fichier trop volumineux : la taille maximale autorisée est de 10 Mo."));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
-        log.error("Erreur interne inattendue", ex);
-        String msg = (ex.getMessage() != null && !ex.getMessage().isBlank()) ? ex.getMessage() : "Erreur inattendue lors du traitement.";
+        // Identifiant de corrélation pour retrouver la trace complète dans les journaux serveur
+        String errorId = java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        log.error("[ERR-{}] Erreur interne inattendue", errorId, ex);
+        // Aucun détail technique (message d'exception, stack trace, SQL) n'est renvoyé au client
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), msg));
+                .body(ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                        "Une erreur interne est survenue. Contactez l'administrateur en indiquant la référence ERR-" + errorId + "."));
     }
 }

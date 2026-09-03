@@ -92,14 +92,14 @@ export default function LoginView({ onLoginSuccess }) {
             >
               <img 
                 src="/assets/logo.png" 
-                alt="Royaume du Maroc" 
+                alt="Ministère de l'Économie et des Finances" 
                 className="max-w-[280px] h-auto drop-shadow-2xl object-contain" 
               />
-              <div className="h-12 w-[1px] bg-[#C59B27]/40" />
+              <div className="h-20 w-[1px] bg-[#C59B27]/40" />
               <img 
                 src="/assets/royaume_logo.png" 
-                alt="Logo Royaume du Maroc" 
-                className="h-24 w-auto object-contain drop-shadow-2xl" 
+                alt="Royaume du Maroc" 
+                className="h-44 w-auto object-contain drop-shadow-2xl" 
               />
             </motion.div>
 
@@ -124,7 +124,7 @@ export default function LoginView({ onLoginSuccess }) {
         <div className="flex justify-center">
           <motion.div 
             className="w-full max-w-[450px] glass-panel rounded-3xl p-9 text-white shadow-2xl hover:border-[#C59B27]/40 transition-all duration-500"
-            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                initial={{ opacity: 0, y: 30, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.6, delay: 0.3, ease: 'easeOut' }}
           >
@@ -135,11 +135,15 @@ export default function LoginView({ onLoginSuccess }) {
               animate="visible"
             >
               <motion.div 
-                className="w-14 h-14 rounded-full bg-[#C59B27]/15 border border-[#C59B27]/40 text-[#D7B14A] flex items-center justify-center mb-3 shadow-[0_0_20px_rgba(197,160,89,0.25)]"
+                className="w-20 h-20 rounded-2xl overflow-hidden bg-white p-1.5 border-2 border-[#C59B27] shadow-[0_0_30px_rgba(197,160,89,0.35)] mb-3 flex items-center justify-center"
                 variants={itemVariants}
-                whileHover={{ scale: 1.1, boxShadow: '0 0 30px rgba(197,160,89,0.4)' }}
+                whileHover={{ scale: 1.05 }}
               >
-                <Shield className="w-7 h-7" />
+                <img 
+                  src="/assets/park_auto_logo.jpg" 
+                  alt="Logo PARK AUTO MEF" 
+                  className="w-full h-full object-contain" 
+                />
               </motion.div>
               <motion.h2 variants={itemVariants} className="text-2xl font-extrabold font-outfit text-white">
                 Espace Connexion
@@ -242,11 +246,6 @@ export default function LoginView({ onLoginSuccess }) {
                 <Landmark className="w-4 h-4 text-[#D7B14A]" />
                 <span>Authentification SSO MEF</span>
               </motion.button>
-
-              <motion.div variants={itemVariants} className="flex items-center justify-center gap-2 text-[11px] text-emerald-400 mt-2">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Session chiffrée SSL / TLS — Connexion surveillée</span>
-              </motion.div>
             </motion.form>
           </motion.div>
         </div>

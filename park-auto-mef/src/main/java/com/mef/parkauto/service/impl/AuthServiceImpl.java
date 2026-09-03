@@ -105,7 +105,10 @@ public class AuthServiceImpl implements AuthService {
             Utilisateur user = utilisateurRepository.findByEmail(email)
                     .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé"));
 
-            if (jwtService.isTokenValid(token, user)) {
+            // Seul un token de type "refresh" (non révoqué, compte actif) est accepté ici
+            if (jwtService.isRefreshTokenValid(token, user)) {
+                // Rotation : l'ancien refresh token est révoqué (usage unique)
+                jwtService.revoke(token);
                 String accessToken = jwtService.generateAccessToken(user);
                 String newRefreshToken = jwtService.generateRefreshToken(user);
                 UtilisateurResponse userResponse = utilisateurMapper.toResponse(user);
@@ -117,6 +120,22 @@ public class AuthServiceImpl implements AuthService {
         
         log.warn("Tentative de rafraîchissement avec un token invalide");
         throw new UnauthorizedException("Token de rafraîchissement invalide ou expiré");
+    }
+
+    @Override
+    public void logout(String accessToken, String refreshToken) {
+        if (accessToken != null && !accessToken.isBlank()) {
+            jwtService.revoke(accessToken);
+        }
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            jwtService.revoke(refreshToken);
+        }
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof Utilisateur user) {
+            journalService.log(AppConstants.MODULE_AUTH, "LOGOUT", "Utilisateur", user.getId(),
+                    null, "Déconnexion — tokens révoqués", httpServletRequest.getRemoteAddr());
+        }
+        SecurityContextHolder.clearContext();
     }
 
     @Override

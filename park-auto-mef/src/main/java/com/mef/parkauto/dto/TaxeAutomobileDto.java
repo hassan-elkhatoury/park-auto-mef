@@ -17,5 +17,6 @@ public class TaxeAutomobileDto {
     private StatutTaxe statut;
     private LocalDate dateEcheance;
     private String referencePaiement;
+    private LocalDate datePaiement;
     private LocalDateTime dateCreation;
 }

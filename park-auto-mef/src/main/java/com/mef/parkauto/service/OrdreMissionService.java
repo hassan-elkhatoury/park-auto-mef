@@ -32,6 +32,9 @@ public class OrdreMissionService {
 
     private final AffectationRepository affectationRepository;
 
+    @org.springframework.beans.factory.annotation.Value("${app.jwt.secret}")
+    private String signingSecret;
+
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     @Transactional(readOnly = true)
@@ -177,19 +180,36 @@ public class OrdreMissionService {
             document.add(new Paragraph(" "));
             document.add(new Paragraph(" "));
 
-            // Signature block
-            PdfPTable tableSignature = new PdfPTable(2);
+            // Signature block + QR code d'authentification (CdC §9)
+            PdfPTable tableSignature = new PdfPTable(new float[]{2f, 1.2f, 2f});
             tableSignature.setWidthPercentage(100);
 
             PdfPCell cellLeft = new PdfPCell(new Phrase("Le Responsable du Parc Automobile\n\n\n\n[Signature et Cachet]", labelFont));
             cellLeft.setBorder(PdfPCell.NO_BORDER);
             cellLeft.setHorizontalAlignment(Element.ALIGN_CENTER);
+            cellLeft.setVerticalAlignment(Element.ALIGN_TOP);
+
+            // QR code : contenu signé (HMAC) permettant de vérifier l'authenticité de l'ordre de mission
+            String qrPayload = buildQrPayload(affectation, demande, vehicule, conducteur, isRestituee);
+            Image qrImage = Image.getInstance(generateQrCode(qrPayload, 140));
+            qrImage.scaleToFit(95, 95);
+            PdfPCell cellQr = new PdfPCell();
+            cellQr.setBorder(PdfPCell.NO_BORDER);
+            cellQr.setHorizontalAlignment(Element.ALIGN_CENTER);
+            cellQr.setVerticalAlignment(Element.ALIGN_TOP);
+            cellQr.addElement(qrImage);
+            Paragraph qrCaption = new Paragraph("Authentification\n" + affectation.getReference(),
+                    FontFactory.getFont(FontFactory.HELVETICA, 7, Color.GRAY));
+            qrCaption.setAlignment(Element.ALIGN_CENTER);
+            cellQr.addElement(qrCaption);
 
             PdfPCell cellRight = new PdfPCell(new Phrase("Le Conducteur / Bénéficiaire\n\n\n\n[Lu et Approuvé]", labelFont));
             cellRight.setBorder(PdfPCell.NO_BORDER);
             cellRight.setHorizontalAlignment(Element.ALIGN_CENTER);
+            cellRight.setVerticalAlignment(Element.ALIGN_TOP);
 
             tableSignature.addCell(cellLeft);
+            tableSignature.addCell(cellQr);
             tableSignature.addCell(cellRight);
 
             document.add(tableSignature);
@@ -200,6 +220,73 @@ public class OrdreMissionService {
         }
 
         return out.toByteArray();
+    }
+
+    /**
+     * Vérifie qu'un utilisateur est autorisé à consulter l'ordre de mission : les gestionnaires
+     * du parc, l'administration, la consultation et le responsable de service y accèdent librement ;
+     * un CONDUCTEUR n'accède qu'aux ordres de mission le concernant (conducteur désigné ou demandeur).
+     */
+    @Transactional(readOnly = true)
+    public void verifierAcces(Long affectationId, com.mef.parkauto.entity.Utilisateur utilisateur) {
+        if (utilisateur == null || utilisateur.getRole() == null) {
+            throw new org.springframework.security.access.AccessDeniedException("Utilisateur non authentifié.");
+        }
+        if (utilisateur.getRole().getNom() != com.mef.parkauto.entity.RoleType.CONDUCTEUR) return;
+
+        Affectation affectation = affectationRepository.findById(affectationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Affectation non trouvée : " + affectationId));
+        boolean estDemandeur = affectation.getDemandeDeplacement() != null
+                && affectation.getDemandeDeplacement().getDemandeur() != null
+                && affectation.getDemandeDeplacement().getDemandeur().getId().equals(utilisateur.getId());
+        boolean estConducteur = affectation.getConducteur() != null
+                && affectation.getConducteur().getUtilisateur() != null
+                && affectation.getConducteur().getUtilisateur().getId().equals(utilisateur.getId());
+        if (!estDemandeur && !estConducteur) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Vous ne pouvez consulter que les ordres de mission qui vous concernent.");
+        }
+    }
+
+    /**
+     * Contenu du QR code : identifiants de la mission + empreinte HMAC-SHA256 (clé = secret JWT)
+     * permettant à un agent de contrôle de vérifier l'intégrité du document via l'application.
+     */
+    private String buildQrPayload(Affectation affectation, DemandeDeplacement demande, Vehicule vehicule,
+                                  Conducteur conducteur, boolean restituee) {
+        String depart = demande.getDateHeureDepart() != null ? demande.getDateHeureDepart().format(DATE_FORMATTER) : "-";
+        String retour = demande.getDateHeureRetourEstimee() != null ? demande.getDateHeureRetourEstimee().format(DATE_FORMATTER) : "-";
+        String base = String.join("|",
+                "MEF-OM", affectation.getReference(), demande.getReference(),
+                vehicule.getImmatriculation(),
+                conducteur.getNom() + " " + conducteur.getPrenom(),
+                depart, retour, demande.getDestination() != null ? demande.getDestination() : "-",
+                restituee ? "CLOTURE" : "EN_COURS");
+        return base + "|SIG=" + hmac(base);
+    }
+
+    private String hmac(String data) {
+        try {
+            javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");
+            mac.init(new javax.crypto.spec.SecretKeySpec(
+                    signingSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8), "HmacSHA256"));
+            byte[] raw = mac.doFinal(data.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            return java.util.HexFormat.of().formatHex(raw).substring(0, 24).toUpperCase();
+        } catch (Exception e) {
+            return "NA";
+        }
+    }
+
+    private byte[] generateQrCode(String content, int size) throws Exception {
+        java.util.Map<com.google.zxing.EncodeHintType, Object> hints = new java.util.EnumMap<>(com.google.zxing.EncodeHintType.class);
+        hints.put(com.google.zxing.EncodeHintType.CHARACTER_SET, "UTF-8");
+        hints.put(com.google.zxing.EncodeHintType.ERROR_CORRECTION, com.google.zxing.qrcode.decoder.ErrorCorrectionLevel.M);
+        hints.put(com.google.zxing.EncodeHintType.MARGIN, 1);
+        com.google.zxing.common.BitMatrix matrix = new com.google.zxing.qrcode.QRCodeWriter()
+                .encode(content, com.google.zxing.BarcodeFormat.QR_CODE, size, size, hints);
+        ByteArrayOutputStream png = new ByteArrayOutputStream();
+        com.google.zxing.client.j2se.MatrixToImageWriter.writeToStream(matrix, "PNG", png);
+        return png.toByteArray();
     }
 
     private void addTableCell(PdfPTable table, String label, String value, Font labelFont, Font valueFont) {

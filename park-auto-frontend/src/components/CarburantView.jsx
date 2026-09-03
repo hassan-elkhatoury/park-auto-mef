@@ -65,12 +65,14 @@ export default function CarburantView() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      let loadErrors = [];
       const [pData, cData, vData, aData] = await Promise.all([
-        carburantService.getPleins().catch(() => []),
-        carburantService.getCartes().catch(() => []),
-        vehiculeService.getVehicules().catch(() => []),
-        carburantService.getAnomalies().catch(() => [])
+        carburantService.getPleins().catch((e) => { loadErrors.push(e); return []; }),
+        carburantService.getCartes().catch((e) => { loadErrors.push(e); return []; }),
+        vehiculeService.getVehicules().catch((e) => { loadErrors.push(e); return []; }),
+        carburantService.getAnomalies().catch((e) => { loadErrors.push(e); return []; })
       ]);
+      if (loadErrors.length > 0) toast.error(`Certaines données n'ont pas pu être chargées (${loadErrors.length} erreur(s)).`);
       setPleins(Array.isArray(pData) ? pData : (pData?.data || pData?.content || []));
       setCartes(Array.isArray(cData) ? cData : (cData?.data || cData?.content || []));
       const vList = Array.isArray(vData) ? vData : (vData?.content || vData?.data || []);

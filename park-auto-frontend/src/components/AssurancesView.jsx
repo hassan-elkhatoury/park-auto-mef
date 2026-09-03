@@ -62,13 +62,15 @@ export default function AssurancesView() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      let loadErrors = [];
       const [pData, sData, iData, vData, cData] = await Promise.all([
-        assuranceService.getAll().catch(() => []),
-        sinistreService.getAll().catch(() => []),
-        infractionService.getAll().catch(() => []),
-        vehiculeService.getVehicules().catch(() => []),
-        api.get('/conducteurs').catch(() => [])
+        assuranceService.getAll().catch((e) => { loadErrors.push(e); return []; }),
+        sinistreService.getAll().catch((e) => { loadErrors.push(e); return []; }),
+        infractionService.getAll().catch((e) => { loadErrors.push(e); return []; }),
+        vehiculeService.getVehicules().catch((e) => { loadErrors.push(e); return []; }),
+        api.get('/conducteurs').catch((e) => { loadErrors.push(e); return []; })
       ]);
+      if (loadErrors.length > 0) toast.error(`Certaines données n'ont pas pu être chargées (${loadErrors.length} erreur(s)).`);
       setPolices(Array.isArray(pData) ? pData : (pData?.content || pData?.data || []));
       setSinistres(Array.isArray(sData) ? sData : (sData?.content || sData?.data || []));
       setInfractions(Array.isArray(iData) ? iData : (iData?.content || iData?.data || []));

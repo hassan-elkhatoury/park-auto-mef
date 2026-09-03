@@ -18,10 +18,15 @@ const api = axios.create({
   }
 });
 
+// Endpoints d'authentification publics : aucun jeton ne doit être envoyé (login / refresh).
+// Les autres endpoints /auth/* (me, change-password, logout) exigent le jeton d'accès.
+const PUBLIC_AUTH_ENDPOINTS = ['/auth/login', '/auth/refresh'];
+
 // Request Interceptor: Attach JWT Token
 api.interceptors.request.use(
   (config) => {
-    if (config.url && config.url.includes('/auth/')) {
+    const isPublicAuth = config.url && PUBLIC_AUTH_ENDPOINTS.some((p) => config.url.includes(p));
+    if (isPublicAuth) {
       delete config.headers.Authorization;
     } else {
       const token = localStorage.getItem('token');
@@ -38,15 +43,38 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    // If JWT token expired or 401/403 unauthorized on authenticated endpoint, trigger login redirection
-    const isLoginRequest = error.config && error.config.url && error.config.url.includes('/auth/login');
+    // 401 (token expired / not authenticated) on an authenticated endpoint => trigger login redirection.
+    // 403 (authenticated but not authorized) => notify only, keep the session.
+    const url = error.config?.url || '';
+    // Un 401 sur login (identifiants erronés), change-password (ancien mot de passe erroné) ou logout
+    // ne doit pas être interprété comme une expiration de session.
+    const isCredentialCheck = url.includes('/auth/login') || url.includes('/auth/change-password') || url.includes('/auth/logout');
     const status = error?.response?.status;
-    if ((status === 401 || status === 403) && !isLoginRequest) {
+    if (status === 401 && !isCredentialCheck) {
       localStorage.clear();
       window.dispatchEvent(new Event('auth:expired'));
+    } else if (status === 403 && !isCredentialCheck) {
+      window.dispatchEvent(new CustomEvent('auth:forbidden', {
+        detail: error?.response?.data?.message || "Accès refusé : vous n'avez pas les droits nécessaires pour cette action."
+      }));
     }
     return Promise.reject(error.response ? error.response.data : error);
   }
 );
+
+/**
+ * Déconnexion : révoque les jetons côté serveur (access + refresh) puis purge la session locale.
+ * La purge locale est effectuée dans tous les cas, même si le serveur est injoignable.
+ */
+export const logoutSession = async () => {
+  const refreshToken = localStorage.getItem('refreshToken');
+  try {
+    await api.post('/auth/logout', refreshToken ? { refreshToken } : {});
+  } catch (e) {
+    // La révocation serveur a échoué (réseau, jeton déjà expiré) : la session locale est purgée malgré tout.
+  } finally {
+    localStorage.clear();
+  }
+};
 
 export default api;

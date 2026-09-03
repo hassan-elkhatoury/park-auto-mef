@@ -27,6 +27,8 @@ public class MaintenanceService {
     private final GarageAgreeRepository garageRepository;
     private final PieceRemplacementRepository pieceRepository;
     private final CarteCarburantRepository carteCarburantRepository;
+    private final ConducteurRepository conducteurRepository;
+    private final TaxeAutomobileRepository taxeRepository;
     private final BudgetService budgetService;
     private final JournalService journalService;
 
@@ -63,9 +65,15 @@ public class MaintenanceService {
                         .orElseThrow(() -> new ResourceNotFoundException("Intervention non trouvée avec l'id : " + request.getId()))
                 : new InterventionMaintenance();
 
+        // Véhicule sorti du parc : aucune intervention possible
+        StatutAdministratif sa = vehicule.getStatutAdministratif();
+        if (sa == StatutAdministratif.REFORME || sa == StatutAdministratif.VENDU || sa == StatutAdministratif.ARCHIVE) {
+            throw new BadRequestException("Impossible de planifier une intervention : le véhicule " + vehicule.getImmatriculation() + " est " + sa + ".");
+        }
+
         intervention.setVehicule(vehicule);
         if (request.getGarageAgreeId() != null) {
-            garageRepository.findById(request.getGarageAgreeId()).ifPresent(intervention::setGarageAgree);
+            intervention.setGarageAgree(chargerGarageAgreeActif(request.getGarageAgreeId()));
         }
         intervention.setTypeMaintenance(request.getTypeMaintenance() != null ? request.getTypeMaintenance() : TypeMaintenance.PREVENTIVE);
         intervention.setNatureOperation(request.getNatureOperation() != null ? request.getNatureOperation() : NatureMaintenance.REVISION_PERIODIQUE);
@@ -148,9 +156,15 @@ public class MaintenanceService {
         if (request.getPiecesRemplacees() != null) intervention.setPiecesRemplacees(request.getPiecesRemplacees());
         if (request.getPrestataire() != null) intervention.setPrestataire(request.getPrestataire());
         if (request.getGarageAgreeId() != null) {
-            garageRepository.findById(request.getGarageAgreeId()).ifPresent(intervention::setGarageAgree);
+            intervention.setGarageAgree(chargerGarageAgreeActif(request.getGarageAgreeId()));
         }
         if (request.getDescription() != null) intervention.setDescription(request.getDescription());
+        if (intervention.getStatut() == StatutMaintenance.TERMINEE) {
+            throw new BadRequestException("Cette intervention est déjà clôturée et verrouillée (CdC §24).");
+        }
+        if (intervention.getStatut() == StatutMaintenance.ANNULEE) {
+            throw new BadRequestException("Une intervention annulée ne peut pas être clôturée.");
+        }
         intervention.setStatut(StatutMaintenance.TERMINEE);
         intervention.setImmobilisation(false);
 
@@ -198,7 +212,35 @@ public class MaintenanceService {
 
     @Transactional
     public void deleteIntervention(Long id) {
-        maintenanceRepository.deleteById(id);
+        InterventionMaintenance i = maintenanceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Intervention non trouvée avec l'id : " + id));
+        if (i.getStatut() == StatutMaintenance.TERMINEE) {
+            throw new BadRequestException("Une intervention clôturée (imputée au budget) est verrouillée et ne peut pas être supprimée (CdC §24).");
+        }
+        Vehicule v = i.getVehicule();
+        maintenanceRepository.delete(i);
+        journalService.log("MAINTENANCE", "DELETE", "InterventionMaintenance", id, i.getStatut().name(),
+                "Suppression intervention " + i.getNatureOperation() + (v != null ? " sur " + v.getImmatriculation() : ""), null);
+        if (v != null && Boolean.TRUE.equals(i.getImmobilisation())
+                && (v.getStatutAdministratif() == StatutAdministratif.EN_MAINTENANCE || v.getStatutAdministratif() == StatutAdministratif.EN_ENTRETIEN)) {
+            v.setStatutAdministratif(StatutAdministratif.DISPONIBLE);
+            vehiculeRepository.save(v);
+        }
+    }
+
+    /**
+     * Un garage ne peut être retenu pour une intervention MEF que s'il est agréé par le MEF et actif (CdC §14).
+     */
+    private GarageAgree chargerGarageAgreeActif(Long garageId) {
+        GarageAgree g = garageRepository.findById(garageId)
+                .orElseThrow(() -> new ResourceNotFoundException("Garage non trouvé avec l'id : " + garageId));
+        if (!Boolean.TRUE.equals(g.getActif())) {
+            throw new BadRequestException("Le garage « " + g.getNomGarage() + " » est désactivé et ne peut pas être sélectionné.");
+        }
+        if (!Boolean.TRUE.equals(g.getAgreeMEF())) {
+            throw new BadRequestException("Le garage « " + g.getNomGarage() + " » n'est pas agréé par le MEF : seuls les garages agréés sont autorisés.");
+        }
+        return g;
     }
 
     @Transactional(readOnly = true)
@@ -271,6 +313,47 @@ public class MaintenanceService {
                 }
             }
 
+            // Alerte Garantie constructeur arrivant à expiration (CdC §21)
+            if (v.getDateFinGarantie() != null) {
+                long jours = ChronoUnit.DAYS.between(aujourdhui, v.getDateFinGarantie());
+                if (jours >= -7 && jours <= 60) {
+                    alertes.add(AlerteEcheanceDto.builder()
+                            .id("GARANTIE-" + v.getId())
+                            .vehiculeId(v.getId())
+                            .immatriculation(v.getImmatriculation())
+                            .marqueModele(v.getMarque() + " " + v.getModele())
+                            .direction(v.getDirection())
+                            .typeAlerte("GARANTIE")
+                            .titre(jours < 0 ? "Garantie Constructeur Expirée" : "Fin de Garantie Constructeur Proche")
+                            .message("Garantie constructeur jusqu'au " + v.getDateFinGarantie()
+                                    + " — planifier les interventions couvertes avant échéance.")
+                            .niveauSeverite(jours < 0 ? "INFO" : (jours <= 15 ? "ATTENTION" : "INFO"))
+                            .dateEcheance(v.getDateFinGarantie())
+                            .joursRestants((int) jours)
+                            .build());
+                }
+            }
+
+            // Alerte Véhicule immobilisé / en réparation prolongée (CdC §21)
+            StatutAdministratif sa = v.getStatutAdministratif();
+            if (sa == StatutAdministratif.IMMOBILISE || sa == StatutAdministratif.EN_REPARATION
+                    || sa == StatutAdministratif.EN_MAINTENANCE || sa == StatutAdministratif.ACCIDENTE) {
+                long joursImmob = v.getDateModification() != null
+                        ? ChronoUnit.DAYS.between(v.getDateModification().toLocalDate(), aujourdhui) : 0;
+                alertes.add(AlerteEcheanceDto.builder()
+                        .id("IMMOB-" + v.getId())
+                        .vehiculeId(v.getId())
+                        .immatriculation(v.getImmatriculation())
+                        .marqueModele(v.getMarque() + " " + v.getModele())
+                        .direction(v.getDirection())
+                        .typeAlerte("VEHICULE_IMMOBILISE")
+                        .titre("Véhicule Immobilisé (" + sa + ")")
+                        .message("Véhicule indisponible depuis " + joursImmob + " jour(s) — statut : " + sa)
+                        .niveauSeverite(joursImmob > 30 ? "CRITIQUE" : (joursImmob > 7 ? "ATTENTION" : "INFO"))
+                        .joursRestants((int) -joursImmob)
+                        .build());
+            }
+
             // Alerte Vignette
             if (v.getDateVignette() != null) {
                 long jours = ChronoUnit.DAYS.between(aujourdhui, v.getDateVignette());
@@ -311,6 +394,50 @@ public class MaintenanceService {
                             .joursRestants((int) jours)
                             .build());
                 }
+            }
+        }
+
+        // Alertes Permis de conduire arrivant à expiration (CdC §21)
+        for (Conducteur c : conducteurRepository.findAll()) {
+            if (c.getStatut() != StatutConducteur.ACTIF || c.getDateExpirationPermis() == null) continue;
+            long jours = ChronoUnit.DAYS.between(aujourdhui, c.getDateExpirationPermis());
+            if (jours <= 30) {
+                alertes.add(AlerteEcheanceDto.builder()
+                        .id("PERMIS-" + c.getId())
+                        .immatriculation(c.getMatricule())
+                        .marqueModele(c.getPrenom() + " " + c.getNom() + " (permis " + c.getCategoriePermis() + ")")
+                        .direction(c.getDirection())
+                        .typeAlerte("PERMIS_CONDUIRE")
+                        .titre(jours < 0 ? "Permis de Conduire Expiré !" : "Permis de Conduire Arrivant à Expiration")
+                        .message("Permis n° " + c.getNumeroPermis() + " — échéance le " + c.getDateExpirationPermis()
+                                + (jours < 0 ? " : le conducteur ne peut plus être affecté." : ""))
+                        .niveauSeverite(jours < 0 ? "CRITIQUE" : (jours <= 7 ? "ATTENTION" : "INFO"))
+                        .dateEcheance(c.getDateExpirationPermis())
+                        .joursRestants((int) jours)
+                        .build());
+            }
+        }
+
+        // Alertes Taxes / vignettes non payées (CdC §21)
+        for (TaxeAutomobile t : taxeRepository.findByStatutIn(List.of(StatutTaxe.A_PAYER, StatutTaxe.EN_RETARD))) {
+            if (t.getDateEcheance() == null) continue;
+            long jours = ChronoUnit.DAYS.between(aujourdhui, t.getDateEcheance());
+            if (jours <= 30) {
+                Vehicule tv = t.getVehicule();
+                alertes.add(AlerteEcheanceDto.builder()
+                        .id("TAXE-" + t.getId())
+                        .vehiculeId(tv != null ? tv.getId() : null)
+                        .immatriculation(tv != null ? tv.getImmatriculation() : "N/A")
+                        .marqueModele(tv != null ? tv.getMarque() + " " + tv.getModele() : null)
+                        .direction(tv != null ? tv.getDirection() : null)
+                        .typeAlerte("TAXE_NON_PAYEE")
+                        .titre(jours < 0 ? "Taxe Non Payée — En Retard !" : "Taxe à Régler Prochainement")
+                        .message(t.getType() + " " + t.getAnnee() + " — " + (t.getMontant() != null ? t.getMontant() + " MAD" : "montant non renseigné")
+                                + ", échéance le " + t.getDateEcheance())
+                        .niveauSeverite(jours < 0 ? "CRITIQUE" : (jours <= 7 ? "ATTENTION" : "INFO"))
+                        .dateEcheance(t.getDateEcheance())
+                        .joursRestants((int) jours)
+                        .build());
             }
         }
 

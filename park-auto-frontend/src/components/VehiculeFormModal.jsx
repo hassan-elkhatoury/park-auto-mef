@@ -22,6 +22,12 @@ const CAR_BRANDS_AND_MODELS = {
 const PLATE_LETTERS = ['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح', 'ط', 'ي'];
 const PLATE_REGIONS = Array.from({ length: 99 }, (_, i) => String(i + 1));
 
+// Validation: Moroccan plate "12345-أ-1" (Arabic or Latin series letter) and 17-char VIN (no I, O, Q)
+// Aligné sur VehiculeRequest (backend) : série normale « 12345-A-6 » / « 12345-أ-6 »,
+// plaque provisoire « WW-123456 », plaque administrative de l'État « M-123456 » / « ج-123456 ».
+const PLATE_REGEX = /^(?:[0-9]{1,6}\s?[-|]?\s?[A-Za-z\u0621-\u064A]{1,3}\s?[-|]?\s?[0-9]{1,2}|WW\s?-?\s?[0-9]{1,6}|[A-Za-z\u0621-\u064A]{1,2}\s?-?\s?[0-9]{1,6})$/;
+const VIN_REGEX = /^[A-HJ-NPR-Z0-9]{17}$/;
+
 // Split a "12345-أ-1" plate into its 3 editable parts
 const splitPlate = (immat) => {
   const p = (immat || '').split('-');
@@ -77,14 +83,9 @@ export default function VehiculeFormModal({ open, onClose, onSaved, vehicule }) 
         setFormData({ ...EMPTY_FORM, ...vehicule });
       } else {
         fetchNextInventaireNumber().then((autoInv) => {
-          const randomNum = Math.floor(10000 + Math.random() * 90000);
-          const autoPlate = `${randomNum}-أ-1`;
-          const autoChassis = `VF1${Math.random().toString(36).substring(2, 11).toUpperCase()}`;
           setFormData({
             ...EMPTY_FORM,
-            numeroInventaire: autoInv,
-            immatriculation: autoPlate,
-            numeroChassis: autoChassis
+            numeroInventaire: autoInv
           });
         });
       }
@@ -93,18 +94,30 @@ export default function VehiculeFormModal({ open, onClose, onSaved, vehicule }) 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const immatriculation = (formData.immatriculation || '').trim();
+    const numeroChassis = (formData.numeroChassis || '').trim().toUpperCase();
+    const numeroInventaire = (formData.numeroInventaire || '').trim();
+
+    if (!PLATE_REGEX.test(immatriculation)) {
+      toast.error('Immatriculation invalide. Format attendu : numéro (1 à 6 chiffres) — lettre de série — suffixe régional (1 à 99). Exemple : 12345-أ-1');
+      return;
+    }
+    if (!VIN_REGEX.test(numeroChassis)) {
+      toast.error('Numéro de châssis (VIN) invalide : 17 caractères alphanumériques requis, sans les lettres I, O et Q.');
+      return;
+    }
+    if (!numeroInventaire) {
+      toast.error("Le numéro d'inventaire MEF est obligatoire.");
+      return;
+    }
+
     try {
       const payload = {
         ...formData,
-        immatriculation: formData.immatriculation && formData.immatriculation.trim() !== '' && formData.immatriculation !== '--' 
-          ? formData.immatriculation 
-          : `${Math.floor(10000 + Math.random() * 90000)}-أ-1`,
-        numeroInventaire: formData.numeroInventaire && formData.numeroInventaire.trim() !== '' 
-          ? formData.numeroInventaire 
-          : `INV-2026-${Math.floor(100 + Math.random() * 900)}`,
-        numeroChassis: formData.numeroChassis && formData.numeroChassis.trim() !== '' 
-          ? formData.numeroChassis 
-          : `CH-${Math.random().toString(36).substring(2, 12).toUpperCase()}`,
+        immatriculation,
+        numeroInventaire,
+        numeroChassis,
         marque: formData.marque || 'Peugeot',
         modele: formData.modele || '508',
         typeCarburant: formData.typeCarburant || 'DIESEL',
@@ -237,9 +250,11 @@ export default function VehiculeFormModal({ open, onClose, onSaved, vehicule }) 
                     value={formData.numeroChassis}
                     onChange={(e) => setFormData({ ...formData, numeroChassis: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all"
-                    placeholder="VF1ABC123456789"
+                    placeholder="VF1ABC12345678901"
+                    maxLength={17}
                     required
                   />
+                  <span className="text-[10px] text-slate-400 mt-1 block">17 caractères (VIN), sans I, O ni Q</span>
                 </div>
 
                 <div>

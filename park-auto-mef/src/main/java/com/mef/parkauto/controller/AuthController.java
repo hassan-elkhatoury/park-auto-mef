@@ -43,7 +43,8 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    @Operation(summary = "Enregistre un nouvel utilisateur")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Enregistre un nouvel utilisateur (réservé à l'Administrateur)")
     public ResponseEntity<ApiResponse<UtilisateurResponse>> register(@Valid @RequestBody RegisterRequest request) {
         log.info("Requête d'inscription reçue pour l'email: {}", request.email());
         UtilisateurResponse response = authService.register(request);
@@ -57,6 +58,17 @@ public class AuthController {
         log.info("Requête de rafraîchissement de token reçue");
         LoginResponse response = authService.refreshToken(request);
         return ResponseEntity.ok(ApiResponse.success(response, "Tokens rafraîchis avec succès"));
+    }
+
+    @PostMapping("/logout")
+    @Operation(summary = "Déconnecte l'utilisateur et révoque ses tokens (access + refresh)")
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @org.springframework.web.bind.annotation.RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestBody(required = false) RefreshTokenRequest request) {
+        String accessToken = (authorization != null && authorization.startsWith("Bearer "))
+                ? authorization.substring(7) : null;
+        authService.logout(accessToken, request != null ? request.refreshToken() : null);
+        return ResponseEntity.ok(ApiResponse.success(null, "Déconnexion réussie"));
     }
 
     @GetMapping("/me")

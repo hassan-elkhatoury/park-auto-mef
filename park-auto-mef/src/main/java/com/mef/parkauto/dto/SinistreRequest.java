@@ -33,5 +33,6 @@ public class SinistreRequest {
     private LocalDate dateExpertise;
     private LocalDate dateCloture;
     private Boolean remorquageRequis;
+    private Boolean perteTotale;
     private String observations;
 }

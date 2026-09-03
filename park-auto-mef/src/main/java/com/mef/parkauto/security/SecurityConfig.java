@@ -45,10 +45,17 @@ public class SecurityConfig {
      * @throws Exception en cas d'erreur de configuration
      */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configure(http))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                .headers(headers -> headers
+                        .frameOptions(frame -> frame.sameOrigin())
+                        .contentTypeOptions(cto -> {})
+                        .referrerPolicy(rp -> rp.policy(org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                        .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000))
+                )
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
@@ -61,7 +68,10 @@ public class SecurityConfig {
                                 "/assets/**",
                                 "/favicon.ico",
                                 "/error",
-                                "/api/auth/**",
+                                "/actuator/health",
+                                "/actuator/health/**",
+                                "/api/auth/login",
+                                "/api/auth/refresh",
                                 "/swagger-ui/**",
                                 "/api-docs",
                                 "/api-docs/**",
@@ -95,6 +105,8 @@ public class SecurityConfig {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(customUserDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
+        // Migration transparente SHA-256 → BCrypt à la première connexion réussie
+        authProvider.setUserDetailsPasswordService(customUserDetailsService);
         return authProvider;
     }
 
@@ -111,13 +123,44 @@ public class SecurityConfig {
     }
 
     /**
-     * Encodeur de mots de passe SHA-256 avec sel.
+     * Encodeur de mots de passe : BCrypt (coût 12) par défaut, conformément aux exigences
+     * DGSSI de hachage adaptatif. Les anciens hachages SHA-256 salés (format {@code sel$hash},
+     * sans préfixe {@code {id}}) restent vérifiables et sont automatiquement ré-encodés en
+     * BCrypt lors de la prochaine authentification réussie
+     * (cf. {@link CustomUserDetailsService#updatePassword}).
      *
-     * @return l'encodeur SHA-256
+     * @return l'encodeur délégué
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new Sha256PasswordEncoder();
+        String defaultId = "bcrypt";
+        java.util.Map<String, PasswordEncoder> encoders = new java.util.HashMap<>();
+        encoders.put(defaultId, new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder(12));
+        encoders.put("sha256", new Sha256PasswordEncoder());
+        org.springframework.security.crypto.password.DelegatingPasswordEncoder delegating =
+                new org.springframework.security.crypto.password.DelegatingPasswordEncoder(defaultId, encoders);
+        // Hachages historiques sans préfixe {id} → vérifiés avec l'ancien algorithme SHA-256 salé
+        delegating.setDefaultPasswordEncoderForMatches(new Sha256PasswordEncoder());
+        return delegating;
+    }
+
+    /**
+     * Politique CORS explicite : seules les origines du frontend MEF déclarées dans
+     * {@code app.cors.allowed-origins} sont autorisées.
+     */
+    @Bean
+    public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource(
+            @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:80,http://localhost}") String allowedOrigins) {
+        org.springframework.web.cors.CorsConfiguration config = new org.springframework.web.cors.CorsConfiguration();
+        config.setAllowedOrigins(java.util.Arrays.stream(allowedOrigins.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList());
+        config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(java.util.List.of("Authorization", "Content-Type", "Accept", "X-Requested-With"));
+        config.setExposedHeaders(java.util.List.of("Content-Disposition"));
+        config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
+        org.springframework.web.cors.UrlBasedCorsConfigurationSource source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 
     @Bean

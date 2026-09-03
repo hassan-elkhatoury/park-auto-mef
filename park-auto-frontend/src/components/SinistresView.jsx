@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShieldAlert, ShieldCheck, AlertOctagon, Plus, Search, Filter, RefreshCw, 
   Trash2, Edit, Calendar, MapPin, User, Car, FileText, CheckCircle2, Clock, 
-  DollarSign, ArrowRight, X, AlertCircle, Building2, CheckCircle, Eye, Layers
+  DollarSign, ArrowRight, X, AlertCircle, Building2, CheckCircle, Eye, Layers, AlertTriangle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { sinistreService } from '../services/sinistreService';
@@ -63,12 +63,14 @@ export default function SinistresView() {
     numeroConstat: '',
     refPvPolice: '',
     remorquageRequis: false,
+    perteTotale: false,
     observations: ''
   });
 
   // Workflow update Form
   const [workflowForm, setWorkflowForm] = useState({
     statut: 'TRANSMIS',
+    perteTotale: false,
     referenceExpertise: '',
     montantDommages: '',
     montantFranchise: '',
@@ -83,13 +85,15 @@ export default function SinistresView() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      let loadErrors = [];
       const [sData, vData, cData, aData, gData] = await Promise.all([
-        sinistreService.getAll().catch(() => []),
-        vehiculeService.getVehicules().catch(() => []),
-        api.get('/conducteurs').catch(() => []),
-        assuranceService.getAll().catch(() => []),
-        garageService.getActifs().catch(() => [])
+        sinistreService.getAll().catch((e) => { loadErrors.push(e); return []; }),
+        vehiculeService.getVehicules().catch((e) => { loadErrors.push(e); return []; }),
+        api.get('/conducteurs').catch((e) => { loadErrors.push(e); return []; }),
+        assuranceService.getAll().catch((e) => { loadErrors.push(e); return []; }),
+        garageService.getActifs().catch((e) => { loadErrors.push(e); return []; })
       ]);
+      if (loadErrors.length > 0) toast.error(`Certaines données n'ont pas pu être chargées (${loadErrors.length} erreur(s)).`);
       const sList = Array.isArray(sData) ? sData : (sData?.data || sData?.content || []);
       setSinistres(Array.isArray(sList) ? sList : []);
       const vList = Array.isArray(vData) ? vData : (vData?.content || vData?.data || []);
@@ -137,6 +141,7 @@ export default function SinistresView() {
       numeroConstat: sinistre.numeroConstat || '',
       refPvPolice: sinistre.refPvPolice || '',
       remorquageRequis: Boolean(sinistre.remorquageRequis),
+      perteTotale: Boolean(sinistre.perteTotale),
       observations: sinistre.observations || ''
     });
     setActiveTab('declarer');
@@ -191,6 +196,7 @@ export default function SinistresView() {
         numeroConstat: '',
         refPvPolice: '',
         remorquageRequis: false,
+        perteTotale: false,
         observations: ''
       });
       setActiveTab('liste');
@@ -209,6 +215,7 @@ export default function SinistresView() {
       montantDommages: sinistre.montantDommages != null ? String(sinistre.montantDommages) : '6500',
       montantFranchise: sinistre.montantFranchise != null ? String(sinistre.montantFranchise) : '1500',
       montantRembourse: sinistre.montantRembourse != null ? String(sinistre.montantRembourse) : '5000',
+      perteTotale: Boolean(sinistre.perteTotale),
       observations: sinistre.observations || ''
     });
     setShowWorkflowModal(true);
@@ -225,12 +232,15 @@ export default function SinistresView() {
         montantDommages: workflowForm.montantDommages ? parseFloat(workflowForm.montantDommages) : 0,
         montantFranchise: workflowForm.montantFranchise ? parseFloat(workflowForm.montantFranchise) : 0,
         montantRembourse: workflowForm.montantRembourse ? parseFloat(workflowForm.montantRembourse) : 0,
+        perteTotale: Boolean(workflowForm.perteTotale),
         observations: workflowForm.observations
       };
       await sinistreService.modifier(selectedSinistreForWorkflow.id, payload);
       toast.success(
-        workflowForm.statut === 'CLOTURE' 
-          ? 'Dossier de sinistre clôturé ! Le véhicule est ré-homologué et remis à DISPONIBLE.' 
+        workflowForm.statut === 'CLOTURE'
+          ? (workflowForm.perteTotale
+              ? 'Dossier clôturé en perte totale : une procédure de réforme (RG07) a été ouverte automatiquement pour ce véhicule.'
+              : 'Dossier de sinistre clôturé ! Le véhicule est ré-homologué et remis à DISPONIBLE.')
           : 'Statut du sinistre mis à jour !'
       );
       setShowWorkflowModal(false);
@@ -319,6 +329,7 @@ export default function SinistresView() {
                 numeroConstat: '',
                 refPvPolice: '',
                 remorquageRequis: false,
+                perteTotale: false,
                 observations: ''
               });
               setActiveTab(activeTab === 'liste' ? 'declarer' : 'liste');
@@ -533,6 +544,19 @@ export default function SinistresView() {
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] font-mono"
                 />
               </div>
+
+              <label className="md:col-span-2 flex items-start gap-3 p-3.5 bg-rose-50/60 border border-rose-200 rounded-xl cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={Boolean(form.perteTotale)}
+                  onChange={(e) => setForm({ ...form, perteTotale: e.target.checked })}
+                  className="mt-0.5 w-4 h-4 accent-rose-600 cursor-pointer"
+                />
+                <span className="text-xs text-slate-700">
+                  <span className="font-extrabold text-rose-800 block">Perte totale présumée (véhicule irréparable)</span>
+                  <span className="text-slate-600">Si confirmée à la clôture du dossier, une procédure de réforme (RG07) sera ouverte automatiquement au lieu de remettre le véhicule en service.</span>
+                </span>
+              </label>
             </div>
 
             <div className="bg-amber-50 p-4 rounded-xl border border-amber-200/80 flex items-center gap-3">
@@ -1060,11 +1084,32 @@ export default function SinistresView() {
                     />
                   </div>
 
-                  {workflowForm.statut === 'CLOTURE' && (
+                  <label className="flex items-start gap-3 p-3.5 bg-rose-50/60 border border-rose-200 rounded-xl cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(workflowForm.perteTotale)}
+                      onChange={(e) => setWorkflowForm({ ...workflowForm, perteTotale: e.target.checked })}
+                      className="mt-0.5 w-4 h-4 accent-rose-600 cursor-pointer"
+                    />
+                    <span className="text-xs text-slate-700">
+                      <span className="font-extrabold text-rose-800 block">Véhicule déclaré en perte totale par l'expert</span>
+                      <span className="text-slate-600">À la clôture, le véhicule ne sera pas remis en service : une procédure de réforme (RG07) sera ouverte automatiquement et rattachée à ce sinistre.</span>
+                    </span>
+                  </label>
+
+                  {workflowForm.statut === 'CLOTURE' && !workflowForm.perteTotale && (
                     <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200 text-xs text-emerald-900 flex items-center gap-2.5">
                       <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
                       <span>
                         La clôture remettra automatiquement le véhicule au statut <strong className="text-emerald-800">DISPONIBLE</strong> et imputera la franchise sur le budget de la Direction.
+                      </span>
+                    </div>
+                  )}
+                  {workflowForm.statut === 'CLOTURE' && workflowForm.perteTotale && (
+                    <div className="bg-rose-50 p-4 rounded-xl border border-rose-200 text-xs text-rose-900 flex items-center gap-2.5">
+                      <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
+                      <span>
+                        Perte totale : à la clôture, le véhicule passera au statut <strong>EN COURS DE RÉFORME</strong> et un dossier de réforme sera créé dans l'onglet « Réforme &amp; Déclassement » (PV Commission et PV Domaines à joindre).
                       </span>
                     </div>
                   )}

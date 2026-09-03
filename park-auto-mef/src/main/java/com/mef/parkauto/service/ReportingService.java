@@ -28,6 +28,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
@@ -276,6 +278,15 @@ public class ReportingService {
 
         double tauxImmob = totalV > 0 ? Math.round((immobV * 100.0 / totalV) * 10.0) / 10.0 : 0.0;
 
+        long affectesV = vehicules.stream().filter(v -> "AFFECTE".equalsIgnoreCase(v.getStatutAdministratif())).count();
+        long disponiblesV = vehicules.stream().filter(v -> "DISPONIBLE".equalsIgnoreCase(v.getStatutAdministratif())).count();
+        long reformesV = vehicules.stream().filter(v ->
+                "REFORME".equalsIgnoreCase(v.getStatutAdministratif()) ||
+                "VENDU".equalsIgnoreCase(v.getStatutAdministratif()) ||
+                "ARCHIVE".equalsIgnoreCase(v.getStatutAdministratif())).count();
+        long enServiceV = totalV - reformesV;
+        double tauxUtilisation = enServiceV > 0 ? Math.round((affectesV * 100.0 / enServiceV) * 10.0) / 10.0 : 0.0;
+
         BigDecimal totalAcq = vehicules.stream().map(v -> v.getCoutAcquisition() != null ? v.getCoutAcquisition() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal totalCarb = vehicules.stream().map(v -> v.getCoutCarburantTotal() != null ? v.getCoutCarburantTotal() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal totalMaint = vehicules.stream().map(v -> v.getCoutMaintenanceTotal() != null ? v.getCoutMaintenanceTotal() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -298,6 +309,10 @@ public class ReportingService {
                 .totalVehicules(totalV)
                 .vehiculesEnMaintenance(immobV)
                 .tauxImmobilisation(tauxImmob)
+                .vehiculesAffectes(affectesV)
+                .vehiculesDisponibles(disponiblesV)
+                .vehiculesReformes(reformesV)
+                .tauxUtilisationParc(tauxUtilisation)
                 .coutTotalAcquisition(totalAcq)
                 .coutTotalCarburant(totalCarb)
                 .totalCarburant(totalCarb)
@@ -581,6 +596,95 @@ public class ReportingService {
         } catch (Exception e) {
             log.error("Erreur génération Excel : {}", e.getMessage(), e);
             throw new RuntimeException("Erreur lors de la génération du fichier Excel : " + e.getMessage(), e);
+        }
+    }
+
+    // ==========================================
+    // 6b. EXPORTATION CSV STANDARDISÉE (SID MEF)
+    // ==========================================
+
+    @Transactional(readOnly = true)
+    public byte[] generateCsvReport() {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream();
+             OutputStreamWriter writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
+            
+            // UTF-8 BOM pour compatibilité Excel
+            writer.write('\uFEFF');
+
+            writer.write("=== RAPPORT TCO ET FLOTTE AUTOMOBILE MEF ===\n");
+            writer.write("Genere le;" + new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date()) + "\n\n");
+
+            // Section 1 : TCO par Véhicule
+            writer.write("--- 1. DETAIL DU COUT GLOBAL D'EXPLOITATION (TCO) PAR VEHICULE ---\n");
+            writer.write("Immatriculation;Marque & Modele;Direction MEF;Carburant;Kilometrage;Statut;Acquisition (MAD);Carburant Total (MAD);Maintenance Total (MAD);Assurance Total (MAD);TCO Total (MAD);MAD/km;Conso Moyenne (L/100km)\n");
+            
+            List<TcoVehiculeDto> vehicules = getTcoParVehicule();
+            for (TcoVehiculeDto v : vehicules) {
+                writer.write(String.format(Locale.FRENCH, "%s;%s;%s;%s;%d;%s;%.2f;%.2f;%.2f;%.2f;%.2f;%s;%s\n",
+                        v.getImmatriculation() != null ? v.getImmatriculation() : "",
+                        v.getMarqueModele() != null ? v.getMarqueModele().replace(";", ",") : "",
+                        v.getDirection() != null ? v.getDirection().replace(";", ",") : "",
+                        v.getTypeCarburant() != null ? v.getTypeCarburant() : "",
+                        v.getKilometrageActuel() != null ? v.getKilometrageActuel() : 0L,
+                        v.getStatutAdministratif() != null ? v.getStatutAdministratif() : "DISPONIBLE",
+                        v.getCoutAcquisition() != null ? v.getCoutAcquisition().doubleValue() : 0.0,
+                        v.getCoutCarburantTotal() != null ? v.getCoutCarburantTotal().doubleValue() : 0.0,
+                        v.getCoutMaintenanceTotal() != null ? v.getCoutMaintenanceTotal().doubleValue() : 0.0,
+                        v.getCoutAssuranceTotal() != null ? v.getCoutAssuranceTotal().doubleValue() : 0.0,
+                        v.getTcoTotal() != null ? v.getTcoTotal().doubleValue() : 0.0,
+                        v.getCoutKilometriqueMadKm() != null ? String.format(Locale.FRENCH, "%.4f", v.getCoutKilometriqueMadKm()) : "N/A",
+                        v.getConsommationMoyenne() != null ? String.format(Locale.FRENCH, "%.2f", v.getConsommationMoyenne()) : "N/A"
+                ));
+            }
+
+            // Section 2 : TCO par Direction
+            writer.write("\n--- 2. CONSOLIDATION DU TCO PAR DIRECTION MEF ---\n");
+            writer.write("Direction MEF;Nombre Vehicules;Acquisition Total (MAD);Carburant Total (MAD);Maintenance Total (MAD);TCO Total (MAD);TCO Moyen par Vehicule (MAD);Cout Moyen au Km (MAD/km)\n");
+            List<TcoDirectionDto> directions = getTcoParDirection();
+            for (TcoDirectionDto d : directions) {
+                writer.write(String.format(Locale.FRENCH, "%s;%d;%.2f;%.2f;%.2f;%.2f;%.2f;%s\n",
+                        d.getDirection() != null ? d.getDirection().replace(";", ",") : "",
+                        d.getNombreVehicules(),
+                        d.getTotalAcquisition() != null ? d.getTotalAcquisition().doubleValue() : 0.0,
+                        d.getTotalCarburant() != null ? d.getTotalCarburant().doubleValue() : 0.0,
+                        d.getTotalMaintenance() != null ? d.getTotalMaintenance().doubleValue() : 0.0,
+                        d.getTcoTotal() != null ? d.getTcoTotal().doubleValue() : 0.0,
+                        d.getTcoMoyenParVehicule() != null ? d.getTcoMoyenParVehicule().doubleValue() : 0.0,
+                        d.getCoutMoyenKm() != null ? String.format(Locale.FRENCH, "%.4f", d.getCoutMoyenKm()) : "N/A"
+                ));
+            }
+
+            // Section 3 : Suivi Budgétaire
+            writer.write("\n--- 3. SUIVI BUDGETAIRE ANALYTIQUE ---\n");
+            writer.write("Annee;Direction MEF;Service;Centre Cout;Nature Depense;Budget Alloue (MAD);Budget Engage (MAD);Budget Realise (MAD);Solde Disponible (MAD);Taux Consommation\n");
+            List<BudgetDirection> budgets = budgetRepository.findAll();
+            for (BudgetDirection b : budgets) {
+                BigDecimal alloue = b.getMontantAlloue() != null ? b.getMontantAlloue() : BigDecimal.ZERO;
+                BigDecimal engage = b.getMontantEngage() != null ? b.getMontantEngage() : BigDecimal.ZERO;
+                BigDecimal realise = b.getMontantRealise() != null ? b.getMontantRealise() : BigDecimal.ZERO;
+                BigDecimal disponible = b.getMontantDisponible() != null ? b.getMontantDisponible() : BigDecimal.ZERO;
+                BigDecimal consomme = engage.max(realise);
+                double taux = alloue.compareTo(BigDecimal.ZERO) > 0 ? consomme.divide(alloue, 4, RoundingMode.HALF_UP).doubleValue() * 100 : 0.0;
+
+                writer.write(String.format(Locale.FRENCH, "%d;%s;%s;%s;%s;%.2f;%.2f;%.2f;%.2f;%.1f %%\n",
+                        b.getAnnee() != null ? b.getAnnee() : 2026,
+                        b.getDirection() != null ? b.getDirection().replace(";", ",") : "",
+                        b.getService() != null ? b.getService().replace(";", ",") : "-",
+                        b.getCentreCout() != null ? b.getCentreCout().replace(";", ",") : "-",
+                        b.getNatureDepense() != null ? b.getNatureDepense().name() : "AUTRES",
+                        alloue.doubleValue(),
+                        engage.doubleValue(),
+                        realise.doubleValue(),
+                        disponible.doubleValue(),
+                        taux
+                ));
+            }
+
+            writer.flush();
+            return out.toByteArray();
+        } catch (Exception e) {
+            log.error("Erreur génération CSV : {}", e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de la génération du fichier CSV : " + e.getMessage(), e);
         }
     }
 

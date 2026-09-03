@@ -138,6 +138,37 @@ export default function RapportsView() {
     }
   };
 
+  const handleExportCsv = async () => {
+    try {
+      setDownloadingFormat('csv');
+      const blob = await reportingService.exportCsv();
+      if (blob && blob.type && blob.type.includes('json')) {
+        const text = await blob.text();
+        let errMsg = 'Erreur lors de l\'export CSV';
+        try {
+          const parsed = JSON.parse(text);
+          errMsg = parsed.message || parsed.error || errMsg;
+        } catch (_) {}
+        throw new Error(errMsg);
+      }
+      const fileBlob = blob instanceof Blob ? blob : new Blob([blob], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(fileBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Rapport_TCO_MEF_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Données CSV normalisées (SID MEF) exportées avec succès');
+    } catch (err) {
+      console.error('Erreur export CSV:', err);
+      toast.error(err.message || 'Erreur lors de l\'export CSV');
+    } finally {
+      setDownloadingFormat(null);
+    }
+  };
+
   // Filtered vehicles
   const filteredVehicules = useMemo(() => {
     return tcoVehicules.filter(v => {
@@ -231,6 +262,15 @@ export default function RapportsView() {
           >
             <FileSpreadsheet className="w-4 h-4" />
             <span>{downloadingFormat === 'excel' ? 'Génération...' : 'Exporter Excel (.xlsx)'}</span>
+          </button>
+
+          <button
+            onClick={handleExportCsv}
+            disabled={downloadingFormat === 'csv'}
+            className="border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50 shadow-sm"
+          >
+            <Download className="w-4 h-4 text-slate-600" />
+            <span>{downloadingFormat === 'csv' ? 'Génération...' : 'Exporter CSV (SID)'}</span>
           </button>
 
           <button

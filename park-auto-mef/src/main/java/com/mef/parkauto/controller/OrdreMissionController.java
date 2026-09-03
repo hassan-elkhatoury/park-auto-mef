@@ -1,5 +1,6 @@
 package com.mef.parkauto.controller;
 
+import com.mef.parkauto.entity.Utilisateur;
 import com.mef.parkauto.service.OrdreMissionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -8,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,8 +26,13 @@ public class OrdreMissionController {
     private final OrdreMissionService ordreMissionService;
 
     @GetMapping("/{affectationId}/pdf")
-    @Operation(summary = "Générer et afficher le document PDF officiel de l'Ordre de Mission")
-    public ResponseEntity<byte[]> getOrdreMissionPdf(@PathVariable Long affectationId) {
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_SERVICE', 'CONSULTATION', 'CONDUCTEUR')")
+    @Operation(summary = "Générer et afficher le document PDF officiel de l'Ordre de Mission (QR code d'authentification inclus)")
+    public ResponseEntity<byte[]> getOrdreMissionPdf(@PathVariable Long affectationId, Authentication authentication) {
+        // Un conducteur ne peut consulter que les ordres de mission qui le concernent
+        Utilisateur utilisateur = authentication != null && authentication.getPrincipal() instanceof Utilisateur u ? u : null;
+        ordreMissionService.verifierAcces(affectationId, utilisateur);
+
         byte[] pdfBytes = ordreMissionService.generateOrdreMissionPdf(affectationId);
 
         HttpHeaders headers = new HttpHeaders();

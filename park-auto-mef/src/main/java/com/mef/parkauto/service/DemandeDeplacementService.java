@@ -124,6 +124,22 @@ public class DemandeDeplacementService {
         if (demande.getStatut() == StatutDemande.APPROUVEE_AFFECTEE || demande.getStatut() == StatutDemande.EN_COURS) {
             throw new IllegalStateException("Une demande déjà affectée ou en cours ne peut être annulée sans traiter l'affectation.");
         }
+        if (demande.getStatut() == StatutDemande.TERMINEE || demande.getStatut() == StatutDemande.ANNULEE) {
+            throw new IllegalStateException("Cette demande est déjà " + demande.getStatut() + ".");
+        }
+
+        // Contrôle de propriété : seul le demandeur, son Responsable de Service, les gestionnaires du parc
+        // ou l'administrateur peuvent annuler une demande.
+        Utilisateur courant = getCurrentUtilisateur();
+        boolean estDemandeur = demande.getDemandeur() != null && courant != null
+                && demande.getDemandeur().getId().equals(courant.getId());
+        boolean roleAutorise = courant != null && courant.getRole() != null && courant.getRole().getNom() != null
+                && java.util.Set.of("ADMIN", "RESPONSABLE_SERVICE", "GESTIONNAIRE_CENTRAL", "GESTIONNAIRE_LOCAL")
+                        .contains(courant.getRole().getNom().name());
+        if (!estDemandeur && !roleAutorise) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Vous ne pouvez annuler que vos propres demandes de déplacement.");
+        }
 
         demande.setStatut(StatutDemande.ANNULEE);
         demandeRepository.save(demande);

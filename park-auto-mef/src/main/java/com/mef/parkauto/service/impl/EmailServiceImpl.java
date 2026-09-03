@@ -249,10 +249,62 @@ public class EmailServiceImpl implements EmailService {
     }
 
     // =====================================================================
+    // Sprint 8 — Alerte générique (CdC §21)
+    // =====================================================================
+
+    @Override
+    @Async
+    public void sendAlerteGenerique(String toEmail, String nom, String prenom, String titre,
+            java.util.Map<String, String> lignes, String severite) {
+        try {
+            String couleur = "CRITIQUE".equalsIgnoreCase(severite) ? "#ef4444"
+                    : ("ATTENTION".equalsIgnoreCase(severite) ? "#f59e0b" : "#2563eb");
+            StringBuilder rows = new StringBuilder();
+            boolean alt = false;
+            for (java.util.Map.Entry<String, String> e : lignes.entrySet()) {
+                rows.append("<tr").append(alt ? " style=\"background:#f8fafc;\"" : "").append(">")
+                    .append("<td style=\"padding:10px;font-weight:600;\">").append(escape(e.getKey())).append("</td>")
+                    .append("<td style=\"padding:10px;\">").append(escape(e.getValue())).append("</td></tr>");
+                alt = !alt;
+            }
+            String html = """
+                <!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="font-family:'Segoe UI',Arial,sans-serif;background:#f4f6f9;padding:20px;">
+                <div style="%s">
+                  <div style="%s">
+                    <h1 style="%s">Park Auto MEF</h1>
+                    <p style="%s">%s</p>
+                  </div>
+                  <div style="padding:30px;">
+                    <p>Bonjour <strong>%s %s</strong>,</p>
+                    <p><span style="background:%s;color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;">%s</span></p>
+                    <table style="width:100%%;border-collapse:collapse;margin:16px 0;">%s</table>
+                    <p>Cordialement,<br><strong>Système Park Auto MEF — Notifications Automatiques</strong></p>
+                  </div>
+                  %s
+                </div></body></html>
+                """.formatted(CARD_STYLE, HEADER_STYLE, TITLE_STYLE, SUB_STYLE, escape(titre),
+                              escape(prenom), escape(nom), couleur, severite != null ? severite : "INFO",
+                              rows, FOOTER_HTML);
+            sendHtml(toEmail, "MEF Park Auto — " + titre, html);
+        } catch (Exception e) {
+            log.error("Échec envoi alerte '{}' à {} : {}", titre, toEmail, e.getMessage());
+        }
+    }
+
+    private static String escape(String s) {
+        if (s == null) return "";
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
+    }
+
+    // =====================================================================
     // Utilitaire privé
     // =====================================================================
 
     private void sendHtml(String toEmail, String subject, String htmlBody) throws Exception {
+        if (toEmail == null || toEmail.isBlank()) {
+            log.debug("Envoi e-mail ignoré : destinataire vide (sujet : {})", subject);
+            return;
+        }
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
         helper.setFrom(fromEmail);

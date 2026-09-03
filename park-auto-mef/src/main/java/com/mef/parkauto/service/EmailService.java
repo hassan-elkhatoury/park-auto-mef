@@ -25,4 +25,17 @@ public interface EmailService {
 
     void sendVisiteTechniqueAlert(String toEmail, String nom, String prenom,
             String immatriculation, String marqueModele, java.time.LocalDate dateProchaine);
+
+    /**
+     * Alerte générique (permis expirant, taxe impayée, garantie, véhicule immobilisé, surconsommation…).
+     *
+     * @param toEmail   destinataire
+     * @param nom       nom du destinataire
+     * @param prenom    prénom du destinataire
+     * @param titre     titre de l'alerte
+     * @param lignes    paires libellé/valeur affichées dans le tableau récapitulatif
+     * @param severite  CRITIQUE | ATTENTION | INFO
+     */
+    void sendAlerteGenerique(String toEmail, String nom, String prenom, String titre,
+            java.util.Map<String, String> lignes, String severite);
 }

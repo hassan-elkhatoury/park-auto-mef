@@ -25,6 +25,9 @@ import RapportsView from './components/RapportsView';
 import AssurancesView from './components/AssurancesView';
 import VisitesTaxesReformeView from './components/VisitesTaxesReformeView';
 import BudgetView from './components/BudgetView';
+import ProfileView from './components/ProfileView';
+import ChangePasswordView from './components/ChangePasswordView';
+import api, { logoutSession } from './services/api';
 
 const isJwtValid = (token) => {
   if (!token || typeof token !== 'string') return false;
@@ -86,29 +89,74 @@ export default function App() {
     return () => window.removeEventListener('auth:expired', handleAuthExpired);
   }, [navigate]);
 
-  // Fetch pending notification count
+  useEffect(() => {
+    const handleAuthForbidden = (e) => {
+      toast.error(e?.detail || 'Accès refusé');
+    };
+
+    window.addEventListener('auth:forbidden', handleAuthForbidden);
+    return () => window.removeEventListener('auth:forbidden', handleAuthForbidden);
+  }, []);
+
+  // Fetch pending notification count (role-aware)
   useEffect(() => {
     if (!user) return;
-    const fetchNotifications = async () => {
+    const roleName = typeof user?.role === 'string' ? user.role : (user?.role?.nom || user?.role?.name || 'ADMIN');
+
+    const safeFetch = async (url) => {
       try {
-        const { default: api } = await import('./services/api');
-        const res = await api.get('/demandes');
-        const demandes = Array.isArray(res?.data) ? res.data : (res?.data?.content || []);
-        const pending = demandes.filter(d => d.statut === 'EN_ATTENTE_VALIDATION' || d.statut === 'VALIDEE_SERVICE').length;
-        setNotificationCount(pending);
-      } catch (e) {
-        // Silently fail — notification badge just won't show
-      }
+        const res = await api.get(url);
+        const data = res?.data;
+        if (Array.isArray(data)) return data;
+        if (data?.content && Array.isArray(data.content)) return data.content;
+        if (data?.data && Array.isArray(data.data)) return data.data;
+        return [];
+      } catch { return []; }
     };
+
+    const fetchNotifications = async () => {
+      let count = 0;
+
+      // Demandes — all roles
+      const demandes = await safeFetch('/demandes');
+      if (roleName === 'CONDUCTEUR') {
+        count += demandes.filter(d => ['EN_ATTENTE_VALIDATION', 'VALIDEE_SERVICE', 'EN_COURS'].includes(d.statut)).length;
+      } else if (roleName === 'RESPONSABLE_SERVICE') {
+        count += demandes.filter(d => d.statut === 'EN_ATTENTE_VALIDATION').length;
+      } else if (roleName !== 'CONSULTATION') {
+        count += demandes.filter(d => ['EN_ATTENTE_VALIDATION', 'VALIDEE_SERVICE'].includes(d.statut)).length;
+      }
+
+      // Pannes — managers + conducteur
+      if (['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_SERVICE', 'CONDUCTEUR'].includes(roleName)) {
+        const pannes = await safeFetch('/pannes');
+        count += pannes.filter(p => ['DECLAREE', 'EN_DIAGNOSTIC', 'EN_REPARATION'].includes(p.statut)).length;
+      }
+
+      // Maintenance — managers + finance
+      if (['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE'].includes(roleName)) {
+        const maint = await safeFetch('/maintenance/interventions');
+        count += maint.filter(m => ['PROGRAMMEE', 'EN_COURS'].includes(m.statut)).length;
+      }
+
+      // Sinistres — managers + finance
+      if (['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER'].includes(roleName)) {
+        const sinistres = await safeFetch('/sinistres');
+        count += sinistres.filter(s => ['DECLARE', 'EN_EXPERTISE', 'EN_COURS_D_EXPERTISE', 'TRANSMIS'].includes(s.statut)).length;
+      }
+
+      setNotificationCount(count);
+    };
+
     fetchNotifications();
-    // Refresh on navigation changes
     const onRefresh = () => fetchNotifications();
     window.addEventListener('parkauto:refresh', onRefresh);
     return () => window.removeEventListener('parkauto:refresh', onRefresh);
   }, [user, location.pathname]);
 
-  const handleLogout = () => {
-    localStorage.clear();
+  const handleLogout = async () => {
+    // Révocation serveur des jetons (access + refresh) avant purge de la session locale
+    await logoutSession();
     setUser(null);
   };
 
@@ -176,6 +224,8 @@ export default function App() {
             <Route path="/budget" element={<ProtectedRoute user={user} allowedRoles={BUDGET_ROLES}><BudgetView /></ProtectedRoute>} />
             <Route path="/utilisateurs" element={<ProtectedRoute user={user} allowedRoles={ADMIN_ROLES}><UtilisateursView /></ProtectedRoute>} />
             <Route path="/audit" element={<ProtectedRoute user={user} allowedRoles={ADMIN_ROLES}><AuditView /></ProtectedRoute>} />
+            <Route path="/profil" element={<ProfileView user={user} onUserUpdate={(u) => setUser(u)} />} />
+            <Route path="/profil/mot-de-passe" element={<ChangePasswordView user={user} onUserUpdate={(u) => setUser(u)} />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>

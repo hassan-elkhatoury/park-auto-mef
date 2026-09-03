@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -39,12 +40,14 @@ public class PanneController {
     }
 
     @PostMapping({"", "/", "/declarer"})
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_SERVICE', 'CONDUCTEUR')")
     @Operation(summary = "Déclarer une nouvelle panne (RG02 : bascule automatique à EN_REPARATION)")
     public ResponseEntity<PanneDto> declarer(@Valid @RequestBody PanneRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(panneService.declarerPanne(request));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL')")
     @Operation(summary = "Modifier une panne")
     public ResponseEntity<PanneDto> modifier(@PathVariable Long id, @Valid @RequestBody PanneRequest request) {
         request.setId(id);
@@ -52,12 +55,14 @@ public class PanneController {
     }
 
     @PutMapping("/{id}/cloturer")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL')")
     @Operation(summary = "Clôturer une réparation curative (RG04 : contrôle kilométrage croissant & remise à DISPONIBLE)")
     public ResponseEntity<PanneDto> cloturer(@PathVariable Long id, @Valid @RequestBody CloturePanneRequest request) {
         return ResponseEntity.ok(panneService.cloturerReparation(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL')")
     @Operation(summary = "Supprimer un dossier de panne")
     public ResponseEntity<Void> supprimer(@PathVariable Long id) {
         panneService.supprimerPanne(id);

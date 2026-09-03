@@ -12,18 +12,32 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record VehiculeRequest(
+        /**
+         * Immatriculation marocaine : « 12345-أ-6 » / « 12345-A-6 » (série lettre arabe ou latine),
+         * plaques provisoires « WW-123456 » ou plaques administratives de l'État (ex. « M-123456 », « ج 123456 »).
+         */
         @NotBlank(message = "L'immatriculation est obligatoire")
         @Size(max = 50, message = "L'immatriculation ne doit pas dépasser 50 caractères")
+        @jakarta.validation.constraints.Pattern(
+                regexp = "^(?:[0-9]{1,6}\\s?[-|]?\\s?[A-Za-z\\u0621-\\u064A]{1,3}\\s?[-|]?\\s?[0-9]{1,2}"
+                        + "|WW\\s?-?\\s?[0-9]{1,6}"
+                        + "|[A-Za-z\\u0621-\\u064A]{1,2}\\s?-?\\s?[0-9]{1,6})$",
+                message = "Format d'immatriculation invalide (attendu : 12345-أ-6, 12345-A-6, WW-123456 ou M-123456)")
         String immatriculation,
 
-        String ancienneImmatriculation,
+        @Size(max = 50) String ancienneImmatriculation,
 
         @NotBlank(message = "Le numéro d'inventaire est obligatoire")
         @Size(max = 50, message = "Le numéro d'inventaire ne doit pas dépasser 50 caractères")
+        @jakarta.validation.constraints.Pattern(regexp = "^[A-Za-z0-9/_-]{3,50}$",
+                message = "Le numéro d'inventaire ne doit contenir que des lettres, chiffres, '-', '_' ou '/'")
         String numeroInventaire,
 
+        /** Numéro de châssis (VIN) ISO 3779 : 17 caractères alphanumériques sans I, O ni Q. */
         @NotBlank(message = "Le numéro de châssis est obligatoire")
         @Size(max = 50, message = "Le numéro de châssis ne doit pas dépasser 50 caractères")
+        @jakarta.validation.constraints.Pattern(regexp = "^[A-HJ-NPR-Za-hj-npr-z0-9]{17}$",
+                message = "Le numéro de châssis (VIN) doit comporter exactement 17 caractères alphanumériques, sans les lettres I, O et Q")
         String numeroChassis,
 
         String numeroMoteur,

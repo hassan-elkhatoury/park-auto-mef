@@ -21,6 +21,11 @@ export const reformeService = {
     const res = await api.post(`/reformes/${id}/valider`);
     return res?.data || res;
   },
+  /** RG07 — transition contrôlée par la machine à états serveur (INITIE → EN_COURS_DE_REFORME → VALIDE → REFORME → VENDU). */
+  changerStatut: async (id, statut) => {
+    const res = await api.post(`/reformes/${id}/statut/${statut}`);
+    return res?.data || res;
+  },
   delete: async (id) => {
     const res = await api.delete(`/reformes/${id}`);
     return res?.data || res;

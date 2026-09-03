@@ -19,7 +19,8 @@ public class TaxeAutomobile extends BaseEntity {
     @Column(precision=10, scale=2) private BigDecimal montant;
     
     @Enumerated(EnumType.STRING) @Column(nullable=false, length=20)
-    private StatutTaxe statut = StatutTaxe.EN_RETARD;
+    private StatutTaxe statut = StatutTaxe.A_PAYER;
+    private LocalDate datePaiement;
     
     private LocalDate dateEcheance;
     @Column(length=100) private String referencePaiement;

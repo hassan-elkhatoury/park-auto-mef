@@ -37,11 +37,32 @@ public class JournalServiceImpl implements JournalService {
             username = authentication.getName();
         }
 
+        // Résolution automatique de l'adresse IP si non renseignée
+        if (ipAddress == null || ipAddress.isBlank()) {
+            try {
+                org.springframework.web.context.request.ServletRequestAttributes attrs = 
+                        (org.springframework.web.context.request.ServletRequestAttributes) 
+                        org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+                if (attrs != null && attrs.getRequest() != null) {
+                    jakarta.servlet.http.HttpServletRequest req = attrs.getRequest();
+                    String xForwardedFor = req.getHeader("X-Forwarded-For");
+                    if (xForwardedFor != null && !xForwardedFor.isBlank()) {
+                        ipAddress = xForwardedFor.split(",")[0].trim();
+                    } else {
+                        ipAddress = req.getRemoteAddr();
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+        if (ipAddress == null || ipAddress.isBlank()) {
+            ipAddress = "127.0.0.1";
+        }
+
         JournalAction journalEntry = new JournalAction();
         journalEntry.setUsername(username);
         journalEntry.setTimestamp(LocalDateTime.now());
-        journalEntry.setModule(module);
-        journalEntry.setAction(action);
+        journalEntry.setModule(module != null ? module.toUpperCase().trim() : "SYSTEM");
+        journalEntry.setAction(action != null ? action.toUpperCase().trim() : "ACTION");
         journalEntry.setEntityName(entityName);
         journalEntry.setEntityId(entityId);
         journalEntry.setOldValue(oldValue);

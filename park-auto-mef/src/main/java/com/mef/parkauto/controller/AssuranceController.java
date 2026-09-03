@@ -6,6 +6,7 @@ import com.mef.parkauto.service.AssuranceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -38,17 +39,20 @@ public class AssuranceController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE_CENTRAL', 'RESPONSABLE_FINANCIER')")
     public ResponseEntity<AssuranceDto> creer(@RequestBody AssuranceRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(assuranceService.creerOuModifier(request));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE_CENTRAL', 'RESPONSABLE_FINANCIER')")
     public ResponseEntity<AssuranceDto> modifier(@PathVariable Long id, @RequestBody AssuranceRequest request) {
         request.setId(id);
         return ResponseEntity.ok(assuranceService.creerOuModifier(request));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE_CENTRAL', 'RESPONSABLE_FINANCIER')")
     public ResponseEntity<Void> supprimer(@PathVariable Long id) {
         assuranceService.supprimer(id);
         return ResponseEntity.noContent().build();

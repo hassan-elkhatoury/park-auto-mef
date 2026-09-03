@@ -30,6 +30,7 @@ public class SinistreService {
     private final UtilisateurRepository utilisateurRepository;
     private final BudgetService budgetService;
     private final JournalService journalService;
+    private final ReformeVehiculeRepository reformeRepository;
 
     @Transactional(readOnly = true)
     public List<SinistreDto> getAllSinistres() {
@@ -73,7 +74,7 @@ public class SinistreService {
             assuranceRepository.findById(request.getAssuranceId()).ifPresent(sinistre::setAssurance);
         }
         if (request.getGarageAgreeId() != null) {
-            garageRepository.findById(request.getGarageAgreeId()).ifPresent(sinistre::setGarageAgree);
+            sinistre.setGarageAgree(chargerGarageAgreeActif(request.getGarageAgreeId()));
         }
 
         sinistre.setDateAccident(request.getDateAccident());
@@ -90,6 +91,7 @@ public class SinistreService {
         sinistre.setRefPvPolice(request.getRefPvPolice());
         sinistre.setDateExpertise(request.getDateExpertise());
         sinistre.setRemorquageRequis(Boolean.TRUE.equals(request.getRemorquageRequis()));
+        sinistre.setPerteTotale(Boolean.TRUE.equals(request.getPerteTotale()));
         sinistre.setObservations(request.getObservations());
 
         // RG03 : Verrouillage strict du véhicule pour sinistre grave
@@ -137,7 +139,7 @@ public class SinistreService {
         }
         if (request.getConducteurId() != null) conducteurRepository.findById(request.getConducteurId()).ifPresent(sinistre::setConducteur);
         if (request.getAssuranceId() != null) assuranceRepository.findById(request.getAssuranceId()).ifPresent(sinistre::setAssurance);
-        if (request.getGarageAgreeId() != null) garageRepository.findById(request.getGarageAgreeId()).ifPresent(sinistre::setGarageAgree);
+        if (request.getGarageAgreeId() != null) sinistre.setGarageAgree(chargerGarageAgreeActif(request.getGarageAgreeId()));
 
         if (request.getDateAccident() != null) sinistre.setDateAccident(request.getDateAccident());
         if (request.getLieuAccident() != null) sinistre.setLieuAccident(request.getLieuAccident());
@@ -153,6 +155,7 @@ public class SinistreService {
         if (request.getDateExpertise() != null) sinistre.setDateExpertise(request.getDateExpertise());
         if (request.getDateCloture() != null) sinistre.setDateCloture(request.getDateCloture());
         if (request.getRemorquageRequis() != null) sinistre.setRemorquageRequis(request.getRemorquageRequis());
+        if (request.getPerteTotale() != null) sinistre.setPerteTotale(request.getPerteTotale());
         if (request.getDescription() != null) sinistre.setDescription(request.getDescription());
         if (request.getObservations() != null) sinistre.setObservations(request.getObservations());
 
@@ -163,7 +166,10 @@ public class SinistreService {
             if (sinistre.getDateCloture() == null) {
                 sinistre.setDateCloture(LocalDate.now());
             }
-            if (vehicule != null && vehicule.getStatutAdministratif() == StatutAdministratif.ACCIDENTE) {
+            if (Boolean.TRUE.equals(sinistre.getPerteTotale()) && vehicule != null) {
+                // RG07 : perte totale → le véhicule ne revient pas en service, une procédure de réforme est ouverte
+                ouvrirReformePourPerteTotale(sinistre, vehicule);
+            } else if (vehicule != null && vehicule.getStatutAdministratif() == StatutAdministratif.ACCIDENTE) {
                 vehicule.setStatutAdministratif(StatutAdministratif.DISPONIBLE);
                 vehiculeRepository.save(vehicule);
                 log.info("RG03 — Dossier sinistre clôturé pour le véhicule {}. Véhicule remis à DISPONIBLE.", vehicule.getImmatriculation());
@@ -184,9 +190,55 @@ public class SinistreService {
 
     @Transactional
     public void supprimer(Long id) {
-        if (!sinistreRepository.existsById(id)) throw new ResourceNotFoundException("Sinistre non trouvé : " + id);
-        sinistreRepository.deleteById(id);
-        journalService.log("SINISTRE", "DELETE", "Sinistre", id, null, null, null);
+        Sinistre s = sinistreRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Sinistre non trouvé : " + id));
+        if (s.getStatut() == StatutSinistre.CLOTURE || s.getStatut() == StatutSinistre.CLOS
+                || s.getStatut() == StatutSinistre.INDEMNISE) {
+            throw new BadRequestException("Un dossier sinistre clôturé ou indemnisé est verrouillé et ne peut pas être supprimé (CdC §24).");
+        }
+        if (reformeRepository.findBySinistreId(id).isPresent()) {
+            throw new BadRequestException("Ce sinistre est rattaché à une procédure de réforme et ne peut pas être supprimé.");
+        }
+        sinistreRepository.delete(s);
+        journalService.log("SINISTRE", "DELETE", "Sinistre", id, s.getStatut().name(),
+                "Suppression du sinistre " + s.getNatureAccident() + " du " + s.getDateAccident(), null);
+    }
+
+    private GarageAgree chargerGarageAgreeActif(Long garageId) {
+        GarageAgree g = garageRepository.findById(garageId)
+                .orElseThrow(() -> new ResourceNotFoundException("Garage non trouvé avec l'id : " + garageId));
+        if (!Boolean.TRUE.equals(g.getActif()) || !Boolean.TRUE.equals(g.getAgreeMEF())) {
+            throw new BadRequestException("Le garage « " + g.getNomGarage() + " » n'est pas agréé MEF ou est désactivé : sélection refusée.");
+        }
+        return g;
+    }
+
+    /**
+     * RG07 — Ouvre automatiquement une procédure de réforme (statut INITIE) rattachée au sinistre
+     * de perte totale, si aucune n'existe déjà. Le véhicule passe EN_COURS_DE_REFORME.
+     */
+    private void ouvrirReformePourPerteTotale(Sinistre sinistre, Vehicule vehicule) {
+        if (reformeRepository.findBySinistreId(sinistre.getId()).isPresent()) return;
+        boolean dejaEnReforme = vehicule.getStatutAdministratif() == StatutAdministratif.EN_COURS_DE_REFORME
+                || vehicule.getStatutAdministratif() == StatutAdministratif.REFORME
+                || vehicule.getStatutAdministratif() == StatutAdministratif.VENDU;
+        if (dejaEnReforme) return;
+
+        ReformeVehicule reforme = new ReformeVehicule();
+        reforme.setVehicule(vehicule);
+        reforme.setSinistre(sinistre);
+        reforme.setStatut(StatutReforme.INITIE);
+        reforme.setDateDecision(null);
+        reforme.setMotifReforme("Perte totale suite au sinistre " + sinistre.getNatureAccident()
+                + " du " + sinistre.getDateAccident()
+                + (sinistre.getNumeroConstat() != null ? " (constat " + sinistre.getNumeroConstat() + ")" : ""));
+        reformeRepository.save(reforme);
+
+        vehicule.setStatutAdministratif(StatutAdministratif.EN_COURS_DE_REFORME);
+        vehiculeRepository.save(vehicule);
+        journalService.log("REFORME", "CREATE_AUTO", "ReformeVehicule", reforme.getId(), null,
+                "Ouverture automatique suite à perte totale (sinistre " + sinistre.getId() + ")", null);
+        log.info("RG07 — Perte totale : procédure de réforme ouverte pour le véhicule {}.", vehicule.getImmatriculation());
     }
 
     private SinistreDto mapToDto(Sinistre s) {
@@ -229,6 +281,8 @@ public class SinistreService {
                 .dateExpertise(s.getDateExpertise())
                 .dateCloture(s.getDateCloture())
                 .remorquageRequis(s.getRemorquageRequis())
+                .perteTotale(s.getPerteTotale())
+                .reformeId(reformeRepository.findBySinistreId(s.getId()).map(ReformeVehicule::getId).orElse(null))
                 .observations(s.getObservations())
                 .dateCreation(s.getDateCreation())
                 .build();
