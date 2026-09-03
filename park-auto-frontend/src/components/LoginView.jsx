@@ -182,7 +182,7 @@ export default function LoginView({ onLoginSuccess }) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-4 py-3 bg-[#091B36]/80 border border-white/15 rounded-xl text-white text-sm outline-none focus:border-[#D7B14A] focus:ring-2 focus:ring-[#C59B27]/30 transition-all placeholder:text-slate-500"
-                  placeholder="admin@mef.gov.ma"
+                  placeholder="prenom.nom@mef.gov.ma"
                   required
                 />
               </motion.div>
