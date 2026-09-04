@@ -4,10 +4,11 @@ import {
   Send, CheckCircle, XCircle, Clock, Calendar, MapPin, Users,
   Plus, Search, X, SlidersHorizontal,
   ChevronRight, Clock8, ClipboardCheck, Ban,
-  UserCheck, ArrowUpDown, RefreshCw, Eye
+  UserCheck, ArrowUpDown, RefreshCw, RotateCw, Eye
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../services/api';
+import MefSelect from './ui/MefSelect';
 
 const STATUT_OPTIONS = [
   { id: 'TOUTES', label: 'Toutes les Demandes', color: 'slate' },
@@ -237,12 +238,22 @@ export default function DemandesView({ onOpenAffectationModal }) {
             {stats.total} demande{stats.total !== 1 ? 's' : ''} enregistrée{stats.total !== 1 ? 's' : ''}
           </p>
         </div>
-        <button
-          onClick={() => setIsNewModalOpen(true)}
-          className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-md hover:brightness-105 transition-all cursor-pointer shrink-0"
-        >
-          <Plus className="w-4 h-4" /> Nouvelle Demande
-        </button>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={fetchDemandes}
+            className="bg-white border border-slate-300 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-2 shadow-sm hover:bg-slate-50 cursor-pointer shrink-0"
+          >
+            <RotateCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <span>Actualiser</span>
+          </button>
+          <button
+            onClick={() => setIsNewModalOpen(true)}
+            className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-md hover:brightness-105 transition-all cursor-pointer shrink-0"
+          >
+            <Plus className="w-4 h-4" /> Nouvelle Demande
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -298,7 +309,7 @@ export default function DemandesView({ onOpenAffectationModal }) {
           <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-slate-100">
             <div className="flex items-center gap-2">
               <MapPin className="w-3.5 h-3.5 text-slate-400" />
-              <select
+              <MefSelect
                 value={destinationFilter}
                 onChange={e => setDestinationFilter(e.target.value)}
                 className="bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-[#C59B27]/30"
@@ -307,7 +318,7 @@ export default function DemandesView({ onOpenAffectationModal }) {
                 {destinations.filter(d => d !== 'TOUTES').map(d => (
                   <option key={d} value={d}>{d}</option>
                 ))}
-              </select>
+              </MefSelect>
             </div>
             <div className="flex items-center gap-2 text-xs text-slate-500">
               <ArrowUpDown className="w-3.5 h-3.5" />
@@ -472,20 +483,6 @@ export default function DemandesView({ onOpenAffectationModal }) {
           )}
         </div>
       </div>
-
-      {filteredDemandes.length > 0 && (
-        <div className="text-center text-[10px] text-slate-400 font-medium pb-2">
-          {filteredDemandes.length} demande{filteredDemandes.length !== 1 ? 's' : ''} affichée{filteredDemandes.length !== 1 ? 's' : ''}
-          {demandes.length !== filteredDemandes.length && ` sur ${demandes.length} totale${demandes.length !== 1 ? 's' : ''}`}
-        </div>
-      )}
-
-      {filteredDemandes.length > 0 && (
-        <div className="text-center text-[10px] text-slate-400 font-medium pb-2">
-          {filteredDemandes.length} demande{filteredDemandes.length !== 1 ? 's' : ''} affichée{filteredDemandes.length !== 1 ? 's' : ''}
-          {demandes.length !== filteredDemandes.length && ` sur ${demandes.length} totale${demandes.length !== 1 ? 's' : ''}`}
-        </div>
-      )}
 
       {/* Modal New Request */}
       {isNewModalOpen && (

@@ -15,6 +15,7 @@ import { documentService } from '../services/documentService';
 import { MoroccanPlate } from '../utils/vehicule';
 import ConfirmModal from './ConfirmModal';
 import GedDocumentsPanel from './GedDocumentsPanel';
+import MefSelect from './ui/MefSelect';
 
 const readCurrentUser = () => {
   try {
@@ -439,7 +440,7 @@ export default function SinistresView() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Véhicule Accidenté *</label>
-                <select
+                <MefSelect
                   required
                   value={form.vehiculeId}
                   onChange={(e) => handleSelectVehicule(e.target.value)}
@@ -449,12 +450,12 @@ export default function SinistresView() {
                   {vehicules.map((v) => (
                     <option key={v.id} value={v.id}>{v.immatriculation} - {v.marque} {v.modele}</option>
                   ))}
-                </select>
+                </MefSelect>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Conducteur au Moment du Sinistre</label>
-                <select
+                <MefSelect
                   value={form.conducteurId}
                   onChange={(e) => setForm({ ...form, conducteurId: e.target.value })}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all cursor-pointer font-medium"
@@ -463,7 +464,7 @@ export default function SinistresView() {
                   {conducteurs.map((c) => (
                     <option key={c.id} value={c.id}>{c.nom} {c.prenom} ({c.matricule})</option>
                   ))}
-                </select>
+                </MefSelect>
               </div>
 
               <div>
@@ -479,7 +480,7 @@ export default function SinistresView() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Nature de l'Accident</label>
-                <select
+                <MefSelect
                   value={form.natureAccident}
                   onChange={(e) => setForm({ ...form, natureAccident: e.target.value })}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all cursor-pointer font-medium"
@@ -489,7 +490,7 @@ export default function SinistresView() {
                   <option value="VOL">Vol</option>
                   <option value="VANDALISME">Vandalisme</option>
                   <option value="AUTRE">Autre</option>
-                </select>
+                </MefSelect>
               </div>
 
               <div className="md:col-span-2">
@@ -643,7 +644,7 @@ export default function SinistresView() {
 
             <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
               <Filter className="w-3.5 h-3.5 text-slate-400" />
-              <select
+              <MefSelect
                 value={statutFilter}
                 onChange={(e) => setStatutFilter(e.target.value)}
                 className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#0A1E3F] cursor-pointer"
@@ -654,9 +655,9 @@ export default function SinistresView() {
                 <option value="EN_COURS_D_EXPERTISE">3. En Expertise</option>
                 <option value="INDEMNISE">4. Indemnisé</option>
                 <option value="CLOTURE">5. Clôturé</option>
-              </select>
+              </MefSelect>
 
-              <select
+              <MefSelect
                 value={natureFilter}
                 onChange={(e) => setNatureFilter(e.target.value)}
                 className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#0A1E3F] cursor-pointer"
@@ -666,9 +667,9 @@ export default function SinistresView() {
                 <option value="INCENDIE">Incendie</option>
                 <option value="VOL">Vol</option>
                 <option value="VANDALISME">Vandalisme</option>
-              </select>
+              </MefSelect>
 
-              <select
+              <MefSelect
                 value={vehiculeFilter}
                 onChange={(e) => setVehiculeFilter(e.target.value)}
                 className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#0A1E3F] cursor-pointer max-w-[160px]"
@@ -677,7 +678,7 @@ export default function SinistresView() {
                 {vehicules.map(v => (
                   <option key={v.id} value={String(v.id)}>{v.immatriculation} - {v.marque}</option>
                 ))}
-              </select>
+              </MefSelect>
 
               <span className="text-[11px] font-extrabold text-[#0A1E3F] bg-[#EBF3FA] border border-blue-100 px-2.5 py-1.5 rounded-full whitespace-nowrap">
                 {filteredSinistres.length} sinistres
@@ -1061,7 +1062,7 @@ export default function SinistresView() {
                 <div className="p-6 overflow-y-auto space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1.5">Statut du Dossier d'Assurance *</label>
-                    <select
+                    <MefSelect
                       value={workflowForm.statut}
                       onChange={(e) => setWorkflowForm({ ...workflowForm, statut: e.target.value })}
                       className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all cursor-pointer font-bold"
@@ -1071,7 +1072,7 @@ export default function SinistresView() {
                       <option value="EN_COURS_D_EXPERTISE">3. En Cours d'Expertise Automobile</option>
                       <option value="INDEMNISE">4. Indemnisé par l'Assureur</option>
                       <option value="CLOTURE">5. Clôturé & Véhicule Homologué (Remise à DISPONIBLE)</option>
-                    </select>
+                    </MefSelect>
                   </div>
 
                   <div>

@@ -57,6 +57,13 @@ public class Utilisateur extends BaseEntity implements UserDetails {
     @Column(length = 20)
     private String telephone;
 
+    /**
+     * Portrait prédéfini ({@code /assets/portraits/...}) ou URL API d'un fichier
+     * uploadé ({@code /api/auth/photos/{id}}). Jamais une data URL.
+     */
+    @Column(length = 1024)
+    private String photoUrl;
+
     // --- Champs prévus pour l'autorisation par structure (sprints futurs) ---
 
     @Column(length = 100)

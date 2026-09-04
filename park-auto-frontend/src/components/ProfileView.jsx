@@ -2,14 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   User, Mail, Phone, Building2, MapPin, Briefcase, Shield, Hash, 
   Calendar, Lock, Loader2, CheckCircle2, Landmark, Sparkles, ArrowRight,
-  Camera, Upload, Image as ImageIcon, Trash2, X, Check, RefreshCw
+  Camera, Upload, Image as ImageIcon, Trash2, X, Check, RefreshCw, Pencil
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import api from '../services/api';
+import api, { getApiErrorMessage } from '../services/api';
 import { 
-  getUserAvatar, saveUserAvatar, resetUserAvatar, 
-  processImageFile, PRESET_AVATARS 
+  getUserAvatar, saveUserAvatar, persistUserAvatar,
+  processImageFile, PRESET_AVATARS, DEFAULT_AVATAR
 } from '../services/avatarService';
 
 // Moroccan 8-pointed star badge icon (inline SVG)
@@ -55,7 +55,7 @@ function InfoRow({ icon: Icon, label, value, iconColor = 'text-[#C59B27]' }) {
 }
 
 // ── Modal de modification d'avatar ──
-function AvatarModal({ user, currentAvatar, onClose, onAvatarSaved }) {
+function AvatarModal({ user, currentAvatar, onClose, onAvatarSaved, onUserUpdate }) {
   const fileInputRef = useRef(null);
   const [selectedAvatar, setSelectedAvatar] = useState(currentAvatar);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -77,19 +77,48 @@ function AvatarModal({ user, currentAvatar, onClose, onAvatarSaved }) {
     }
   };
 
-  const handleSave = () => {
-    saveUserAvatar(user, selectedAvatar);
-    onAvatarSaved(selectedAvatar);
-    toast.success('Photo de profil mise à jour avec succès !');
-    onClose();
+  const applyPersistedUser = (userData, fallbackUrl) => {
+    if (!userData?.email && userData?.id == null) {
+      throw new Error("Le serveur n'a pas enregistré la photo de profil.");
+    }
+    const storedPhoto = String(userData.photoUrl || fallbackUrl || DEFAULT_AVATAR).split('?')[0];
+    const nextUser = { ...userData, photoUrl: storedPhoto };
+    localStorage.setItem('user', JSON.stringify(nextUser));
+    if (onUserUpdate) onUserUpdate(nextUser);
+    const displayUrl = getUserAvatar(nextUser);
+    saveUserAvatar(nextUser, displayUrl);
+    onAvatarSaved(displayUrl);
   };
 
-  const handleReset = () => {
-    resetUserAvatar(user);
-    setSelectedAvatar('/assets/avatar_admin.jpg');
-    onAvatarSaved('/assets/avatar_admin.jpg');
-    toast.success('Photo réinitialisée au portrait par défaut.');
-    onClose();
+  const handleSave = async () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    try {
+      const userData = await persistUserAvatar(selectedAvatar);
+      applyPersistedUser(userData, selectedAvatar);
+      toast.success('Photo de profil mise à jour avec succès !');
+      onClose();
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Impossible d'enregistrer la photo de profil."));
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleReset = async () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    try {
+      const userData = await persistUserAvatar(DEFAULT_AVATAR);
+      setSelectedAvatar(DEFAULT_AVATAR);
+      applyPersistedUser(userData, DEFAULT_AVATAR);
+      toast.success('Photo réinitialisée au portrait par défaut.');
+      onClose();
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Impossible de réinitialiser la photo.'));
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -124,7 +153,7 @@ function AvatarModal({ user, currentAvatar, onClose, onAvatarSaved }) {
           
           {/* Current Preview in Center */}
           <div className="flex flex-col items-center justify-center gap-3">
-            <div className="w-32 h-32 rounded-2xl overflow-hidden ring-4 ring-[#0A1E3F]/10 border-2 border-[#C59B27] shadow-xl bg-white relative">
+            <div className="w-32 h-32 rounded-full overflow-hidden bg-white relative shadow-xl ring-[3px] ring-[#0A1E3F] ring-offset-2 ring-offset-[#C59B27]">
               <img 
                 src={selectedAvatar} 
                 alt="Aperçu avatar" 
@@ -166,7 +195,7 @@ function AvatarModal({ user, currentAvatar, onClose, onAvatarSaved }) {
               <Sparkles className="w-3.5 h-3.5 text-[#C59B27]" />
               <span>Ou choisir un portrait officiel MEF :</span>
             </p>
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
+            <div className="grid grid-cols-4 sm:grid-cols-7 gap-3">
               {PRESET_AVATARS.map((p) => {
                 const isSelected = selectedAvatar === p.url;
                 return (
@@ -174,17 +203,17 @@ function AvatarModal({ user, currentAvatar, onClose, onAvatarSaved }) {
                     key={p.id}
                     type="button"
                     onClick={() => setSelectedAvatar(p.url)}
-                    className={`relative rounded-xl overflow-hidden aspect-square border-2 transition-all p-0.5 cursor-pointer group ${
+                    className={`relative rounded-full overflow-hidden aspect-square transition-all cursor-pointer ${
                       isSelected 
-                        ? 'border-[#C59B27] ring-2 ring-[#C59B27]/40 scale-105 shadow-md' 
-                        : 'border-[#E2E8F0] hover:border-[#C59B27]/60'
+                        ? 'ring-[3px] ring-[#0A1E3F] ring-offset-2 ring-offset-[#C59B27] scale-105 shadow-md' 
+                        : 'ring-2 ring-slate-200 hover:ring-[#C59B27]/70'
                     }`}
                     title={p.label}
                   >
                     <img 
                       src={p.url} 
                       alt={p.label} 
-                      className="w-full h-full object-cover rounded-lg"
+                      className="w-full h-full object-cover"
                     />
                     {isSelected && (
                       <div className="absolute inset-0 bg-[#0A1E3F]/40 flex items-center justify-center">
@@ -242,7 +271,66 @@ export default function ProfileView({ user: propUser, onUserUpdate }) {
   const [loading, setLoading] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState(() => getUserAvatar(propUser));
   const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ prenom: '', nom: '', telephone: '' });
+  const [editBaseline, setEditBaseline] = useState(null);
   const navigate = useNavigate();
+
+  const startEdit = () => {
+    const next = {
+      prenom: user?.prenom || '',
+      nom: user?.nom || '',
+      telephone: user?.telephone || '',
+    };
+    setForm(next);
+    setEditBaseline(next);
+    setEditing(true);
+  };
+
+  const cancelEdit = () => {
+    setEditing(false);
+    setForm({ prenom: '', nom: '', telephone: '' });
+    setEditBaseline(null);
+  };
+
+  const isProfileDirty = !!(editBaseline && (
+    form.prenom.trim() !== (editBaseline.prenom || '').trim()
+    || form.nom.trim() !== (editBaseline.nom || '').trim()
+    || form.telephone.trim() !== (editBaseline.telephone || '').trim()
+  ));
+
+  const saveProfile = async (e) => {
+    e?.preventDefault?.();
+    if (!isProfileDirty || saving) return;
+    const prenom = form.prenom.trim();
+    const nom = form.nom.trim();
+    if (prenom.length < 2 || nom.length < 2) {
+      toast.error('Le prénom et le nom doivent contenir au moins 2 caractères.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await api.put('/auth/me', {
+        prenom,
+        nom,
+        telephone: form.telephone.trim(),
+      });
+      const userData = res?.data || res?.utilisateur || res;
+      if (userData && userData.email) {
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+        if (onUserUpdate) onUserUpdate(userData);
+      }
+      toast.success('Informations personnelles mises à jour.');
+      setEditing(false);
+      setEditBaseline(null);
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Impossible d’enregistrer le profil.'));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // Écouter les mises à jour dynamiques d'avatar partout dans l'app
   useEffect(() => {
@@ -304,6 +392,10 @@ export default function ProfileView({ user: propUser, onUserUpdate }) {
           currentAvatar={avatarUrl}
           onClose={() => setShowAvatarModal(false)}
           onAvatarSaved={(newUrl) => setAvatarUrl(newUrl)}
+          onUserUpdate={(updated) => {
+            setUser(updated);
+            if (onUserUpdate) onUserUpdate(updated);
+          }}
         />
       )}
 
@@ -370,19 +462,19 @@ export default function ProfileView({ user: propUser, onUserUpdate }) {
               className="relative inline-block flex-shrink-0 cursor-pointer group"
               title="Cliquer pour modifier votre photo de profil"
             >
-              <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl overflow-hidden ring-4 ring-white shadow-2xl border-2 border-[#C59B27]/50 bg-white relative transition-all group-hover:border-[#C59B27]">
+              <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-full overflow-hidden bg-white relative shadow-2xl ring-[3px] ring-[#0A1E3F] ring-offset-2 ring-offset-[#C59B27] transition-transform group-hover:scale-[1.02]">
                 <img
                   src={avatarUrl}
                   alt="Profile"
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   onError={(e) => {
                     e.target.style.display = 'none';
-                    e.target.parentElement.innerHTML = `<div class="w-full h-full gold-gradient-bg text-[#071530] text-3xl font-black flex items-center justify-center">${initials}</div>`;
+                    e.target.parentElement.innerHTML = `<div class="w-full h-full gold-gradient-bg text-[#071530] text-3xl font-black flex items-center justify-center rounded-full">${initials}</div>`;
                   }}
                 />
 
                 {/* Hover overlay with Camera */}
-                <div className="absolute inset-0 bg-[#0A1E3F]/65 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white gap-1 p-2 text-center">
+                <div className="absolute inset-0 rounded-full bg-[#0A1E3F]/65 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white gap-1 p-2 text-center">
                   <Camera className="w-6 h-6 text-[#D7B14A]" />
                   <span className="text-[10px] font-black uppercase tracking-wider text-[#D7B14A]">Modifier</span>
                 </div>
@@ -390,7 +482,7 @@ export default function ProfileView({ user: propUser, onUserUpdate }) {
 
               {/* Verified Emblem / Camera action badge */}
               <div 
-                className="absolute -bottom-1 -right-1 w-8 h-8 rounded-xl bg-[#0A1E3F] border-2 border-white flex items-center justify-center text-[#D7B14A] shadow-lg group-hover:bg-[#C59B27] group-hover:text-[#071530] transition-colors"
+                className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-[#0A1E3F] border-2 border-white flex items-center justify-center text-[#D7B14A] shadow-lg group-hover:bg-[#C59B27] group-hover:text-[#071530] transition-colors"
                 title="Modifier la photo"
               >
                 <Camera className="w-4 h-4" />
@@ -478,25 +570,103 @@ export default function ProfileView({ user: propUser, onUserUpdate }) {
 
         {/* 1. Informations Personnelles */}
         <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-[#E2E8F0] p-6">
-          <div className="flex items-center gap-3 pb-4 mb-2 border-b border-[#F1F5F9]">
-            <div className="w-9 h-9 rounded-xl bg-[#0A1E3F] flex items-center justify-center shadow-sm">
-              <User className="w-4 h-4 text-[#D7B14A]" />
+          <div className="flex items-center justify-between gap-3 pb-4 mb-2 border-b border-[#F1F5F9]">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-[#0A1E3F] flex items-center justify-center shadow-sm">
+                <User className="w-4 h-4 text-[#D7B14A]" />
+              </div>
+              <div>
+                <h2 className="text-sm font-black text-[#0A1E3F] font-['Outfit'] uppercase tracking-wide">
+                  Informations Personnelles
+                </h2>
+                <p className="text-[11px] text-slate-400">Coordonnées et identification agent</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-sm font-black text-[#0A1E3F] font-['Outfit'] uppercase tracking-wide">
-                Informations Personnelles
-              </h2>
-              <p className="text-[11px] text-slate-400">Coordonnées et identification agent</p>
+            {!editing && (
+              <button
+                type="button"
+                onClick={startEdit}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-[#0A1E3F] hover:border-[#C59B27]/50 shrink-0"
+              >
+                <Pencil className="w-3.5 h-3.5 text-[#C59B27]" />
+                Modifier
+              </button>
+            )}
+          </div>
+
+          {editing ? (
+            <form onSubmit={saveProfile} className="space-y-3 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Prénom</span>
+                  <input
+                    type="text"
+                    value={form.prenom}
+                    onChange={(e) => setForm((f) => ({ ...f, prenom: e.target.value }))}
+                    className="mt-1 w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-[#0A1E3F] outline-none focus:border-[#C59B27] focus:ring-2 focus:ring-[#C59B27]/20"
+                    autoComplete="given-name"
+                    required
+                    minLength={2}
+                    maxLength={100}
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Nom</span>
+                  <input
+                    type="text"
+                    value={form.nom}
+                    onChange={(e) => setForm((f) => ({ ...f, nom: e.target.value }))}
+                    className="mt-1 w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-[#0A1E3F] outline-none focus:border-[#C59B27] focus:ring-2 focus:ring-[#C59B27]/20"
+                    autoComplete="family-name"
+                    required
+                    minLength={2}
+                    maxLength={100}
+                  />
+                </label>
+              </div>
+              <label className="block">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Téléphone professionnel</span>
+                <input
+                  type="tel"
+                  value={form.telephone}
+                  onChange={(e) => setForm((f) => ({ ...f, telephone: e.target.value }))}
+                  placeholder="06 12 34 56 78"
+                  className="mt-1 w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-[#0A1E3F] outline-none focus:border-[#C59B27] focus:ring-2 focus:ring-[#C59B27]/20"
+                  autoComplete="tel"
+                  maxLength={20}
+                />
+              </label>
+              <p className="text-[11px] text-slate-400">
+                L’email, le matricule et l’habilitation sont gérés par l’administration.
+              </p>
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  disabled={saving}
+                  className="px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving || !isProfileDirty}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl gold-gradient-bg text-[#071530] text-xs font-black disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                  Enregistrer
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="space-y-0.5">
+              <InfoRow icon={User} label="Nom complet" value={`${user?.prenom || ''} ${user?.nom || ''}`} />
+              <InfoRow icon={Mail} label="Adresse email" value={user?.email} />
+              <InfoRow icon={Phone} label="Téléphone professionnel" value={user?.telephone || 'Non renseigné'} />
+              <InfoRow icon={Hash} label="Numéro de matricule" value={user?.matricule} />
+              {createdAt && <InfoRow icon={Calendar} label="Date d'enregistrement" value={createdAt} />}
             </div>
-          </div>
-          
-          <div className="space-y-0.5">
-            <InfoRow icon={User} label="Nom complet" value={`${user?.prenom || ''} ${user?.nom || ''}`} />
-            <InfoRow icon={Mail} label="Adresse email" value={user?.email} />
-            <InfoRow icon={Phone} label="Téléphone professionnel" value={user?.telephone || 'Non renseigné'} />
-            <InfoRow icon={Hash} label="Numéro de matricule" value={user?.matricule} />
-            {createdAt && <InfoRow icon={Calendar} label="Date d'enregistrement" value={createdAt} />}
-          </div>
+          )}
         </div>
 
         {/* 2. Structure Organisationnelle */}

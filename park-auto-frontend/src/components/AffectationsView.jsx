@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Key, Car, UserCheck, CheckCircle, RotateCcw, Printer, Eye, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../services/api';
+import MefSelect from './ui/MefSelect';
 
 export default function AffectationsView({ selectedDemandeForAffectation, onCloseDemandeSelection }) {
   const navigate = useNavigate();
@@ -175,8 +176,9 @@ export default function AffectationsView({ selectedDemandeForAffectation, onClos
 
   const handleOpenPdfOrdreMission = async (affectationId) => {
     try {
-      const blob = await api.get(`/ordres-de-mission/${affectationId}/pdf`, { responseType: 'blob' });
-      const blobUrl = URL.createObjectURL(blob);
+      const res = await api.get(`/ordres-de-mission/${affectationId}/pdf`, { responseType: 'blob' });
+      const file = res instanceof Blob ? res : new Blob([res], { type: 'application/pdf' });
+      const blobUrl = URL.createObjectURL(new Blob([file], { type: 'application/pdf' }));
       window.open(blobUrl, '_blank');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur lors de l\'ouverture du PDF');
@@ -356,7 +358,7 @@ export default function AffectationsView({ selectedDemandeForAffectation, onClos
                       Aucune demande en attente d'affectation (Validée par le service).
                     </p>
                   ) : (
-                    <select
+                    <MefSelect
                       value={affectationForm.demandeDeplacementId}
                       onChange={(e) => {
                         const dId = e.target.value;
@@ -375,7 +377,7 @@ export default function AffectationsView({ selectedDemandeForAffectation, onClos
                           {d.reference} — {d.motif} ({d.destination})
                         </option>
                       ))}
-                    </select>
+                    </MefSelect>
                   )}
                 </div>
 
@@ -386,7 +388,7 @@ export default function AffectationsView({ selectedDemandeForAffectation, onClos
                       Aucun véhicule au statut DISPONIBLE actuellement.
                     </p>
                   ) : (
-                    <select
+                    <MefSelect
                       value={affectationForm.vehiculeId}
                       onChange={(e) => setAffectationForm({ ...affectationForm, vehiculeId: e.target.value })}
                       className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all font-bold cursor-pointer"
@@ -396,7 +398,7 @@ export default function AffectationsView({ selectedDemandeForAffectation, onClos
                           {v.immatriculation} — {v.marque} {v.modele} ({v.typeCarburant}) [Km: {v.kilometrageActuel} km]
                         </option>
                       ))}
-                    </select>
+                    </MefSelect>
                   )}
                 </div>
 
@@ -407,7 +409,7 @@ export default function AffectationsView({ selectedDemandeForAffectation, onClos
                       Aucun conducteur disponible avec permis valide.
                     </p>
                   ) : (
-                    <select
+                    <MefSelect
                       value={affectationForm.conducteurId}
                       onChange={(e) => setAffectationForm({ ...affectationForm, conducteurId: e.target.value })}
                       className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all font-bold cursor-pointer"
@@ -417,7 +419,7 @@ export default function AffectationsView({ selectedDemandeForAffectation, onClos
                           {c.nom} {c.prenom} (Permis: {c.numeroPermis} - Cat. {c.categoriePermis})
                         </option>
                       ))}
-                    </select>
+                    </MefSelect>
                   )}
                 </div>
               </div>
@@ -493,7 +495,7 @@ export default function AffectationsView({ selectedDemandeForAffectation, onClos
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">Niveau Carburant au Retour</label>
-                  <select
+                  <MefSelect
                     value={restitutionForm.niveauCarburantRetour}
                     onChange={(e) => setRestitutionForm({ ...restitutionForm, niveauCarburantRetour: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all font-bold cursor-pointer"
@@ -503,7 +505,7 @@ export default function AffectationsView({ selectedDemandeForAffectation, onClos
                     <option value="1/2">1/2 Réservoir</option>
                     <option value="1/4">1/4 Réservoir</option>
                     <option value="Réserve">Réserve</option>
-                  </select>
+                  </MefSelect>
                 </div>
 
                 <div>

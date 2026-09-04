@@ -1,31 +1,72 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, Car, Send, Key, UserCheck, Shield, ChevronRight, Fuel, 
-  Wrench, BarChart3, Settings, Users, ShieldCheck, ClipboardCheck, TrendingUp,
+import {
+  LayoutDashboard, Car, Send, Key, UserCheck, Shield, ChevronRight, Fuel,
+  Wrench, BarChart3, Users, ShieldCheck, ClipboardCheck, TrendingUp,
   AlertTriangle, ShieldAlert, Building2
 } from 'lucide-react';
 
-const menuItems = [
-  { id: 'dashboard', path: '/dashboard', label: 'Tableau de Bord', sub: 'Pilotage', icon: LayoutDashboard, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONDUCTEUR', 'CONSULTATION'] },
-  { id: 'vehicules', path: '/vehicules', label: 'Flotte Automobile', sub: 'Gestion du Parc', icon: Car, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONDUCTEUR', 'CONSULTATION'] },
-  { id: 'demandes', path: '/demandes', label: 'Demandes & Missions', sub: 'Réservations', icon: Send, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONDUCTEUR', 'CONSULTATION'] },
-  { id: 'affectations', path: '/affectations', label: 'Affectations & Restitutions', sub: 'Missions', icon: Key, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_SERVICE', 'CONSULTATION'] },
-  { id: 'conducteurs', path: '/conducteurs', label: 'Conducteurs & Chauffeurs', sub: 'Gestion du Personnel', icon: UserCheck, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_SERVICE', 'CONSULTATION'] },
-  { id: 'carburant', path: '/carburant', label: 'Carburant & Cartes', sub: 'Consommation L/100km', icon: Fuel, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONDUCTEUR', 'CONSULTATION'] },
-  { id: 'maintenance', path: '/maintenance', label: 'Entretien & Alertes 90%', sub: 'Révisions Périodiques', icon: Wrench, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONSULTATION'] },
-  { id: 'pannes', path: '/pannes', label: 'Pannes & Dépannage', sub: 'Remorquage & Ateliers', icon: AlertTriangle, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_SERVICE', 'CONDUCTEUR', 'CONSULTATION'] },
-  { id: 'sinistres', path: '/sinistres', label: 'Sinistres & Accidents', sub: 'Workflow Assurances', icon: ShieldAlert, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONDUCTEUR', 'CONSULTATION'] },
-  { id: 'garages', path: '/garages', label: 'Garages & Pièces MEF', sub: 'Prestataires Conventionnés', icon: Building2, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONSULTATION'] },
-  { id: 'rapports', path: '/rapports', label: 'Reporting Exécutif (TCO)', sub: 'Analyses & Exports', icon: BarChart3, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONSULTATION'] },
-  { id: 'assurances', path: '/assurances', label: 'Polices d’Assurance', sub: 'Contrats & Garanties', icon: ShieldCheck, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONSULTATION'] },
-  { id: 'visites-reforme', path: '/visites-reforme', label: 'Visites & Réforme', sub: 'VT & Taxes & Réforme', icon: ClipboardCheck, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONSULTATION'] },
-  { id: 'budget', path: '/budget', label: 'Budget & Prévisions', sub: 'Suivi Budgétaire', icon: TrendingUp, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE'] },
-  { id: 'utilisateurs', path: '/utilisateurs', label: 'Gestion des Utilisateurs', sub: 'Comptes & Accès', icon: Users, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL'] },
-  { id: 'audit', path: '/audit', label: "Journal d'Audit", sub: 'Sécurité & Traçabilité', icon: Shield, roles: ['ADMIN', 'GESTIONNAIRE_CENTRAL'] },
+const ALL = ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONDUCTEUR', 'CONSULTATION'];
+const MANAGERS = ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_SERVICE', 'CONSULTATION'];
+const OPS = ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE', 'CONSULTATION'];
+const FINANCE = ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_FINANCIER', 'RESPONSABLE_SERVICE'];
+const ADMINS = ['ADMIN', 'GESTIONNAIRE_CENTRAL'];
+
+const MENU_SECTIONS = [
+  {
+    id: 'accueil',
+    label: 'Pilotage',
+    items: [
+      { id: 'dashboard', path: '/dashboard', label: 'Tableau de bord', icon: LayoutDashboard, roles: ALL },
+    ],
+  },
+  {
+    id: 'missions',
+    label: 'Parc & missions',
+    items: [
+      { id: 'vehicules', path: '/vehicules', label: 'Véhicules', icon: Car, roles: ALL },
+      { id: 'conducteurs', path: '/conducteurs', label: 'Conducteurs', icon: UserCheck, roles: MANAGERS },
+      { id: 'demandes', path: '/demandes', label: 'Demandes', icon: Send, roles: ALL },
+      { id: 'affectations', path: '/affectations', label: 'Affectations', icon: Key, roles: MANAGERS },
+    ],
+  },
+  {
+    id: 'exploitation',
+    label: 'Exploitation',
+    items: [
+      { id: 'carburant', path: '/carburant', label: 'Carburant', icon: Fuel, roles: ALL },
+      { id: 'maintenance', path: '/maintenance', label: 'Maintenance', icon: Wrench, roles: OPS },
+      { id: 'pannes', path: '/pannes', label: 'Pannes', icon: AlertTriangle, roles: ALL },
+      { id: 'garages', path: '/garages', label: 'Garages agréés', icon: Building2, roles: OPS },
+    ],
+  },
+  {
+    id: 'risques',
+    label: 'Risques & conformité',
+    items: [
+      { id: 'sinistres', path: '/sinistres', label: 'Sinistres', icon: ShieldAlert, roles: ALL },
+      { id: 'assurances', path: '/assurances', label: 'Assurances', icon: ShieldCheck, roles: OPS },
+      { id: 'visites-reforme', path: '/visites-reforme', label: 'Visites & réforme', icon: ClipboardCheck, roles: OPS },
+    ],
+  },
+  {
+    id: 'finance',
+    label: 'Finance',
+    items: [
+      { id: 'budget', path: '/budget', label: 'Budget', icon: TrendingUp, roles: FINANCE },
+      { id: 'rapports', path: '/rapports', label: 'Rapports TCO', icon: BarChart3, roles: OPS },
+    ],
+  },
+  {
+    id: 'admin',
+    label: 'Administration',
+    items: [
+      { id: 'utilisateurs', path: '/utilisateurs', label: 'Utilisateurs', icon: Users, roles: ADMINS },
+      { id: 'audit', path: '/audit', label: 'Journal d’audit', icon: Shield, roles: ADMINS },
+    ],
+  },
 ];
 
-// Moroccan 8-pointed star emblem fallback for the sidebar header
 function StarEmblem() {
   return (
     <svg className="w-11 h-11 flex-shrink-0" viewBox="0 0 100 100" fill="none" aria-hidden="true">
@@ -37,23 +78,29 @@ function StarEmblem() {
   );
 }
 
+const isItemActive = (pathname, path) =>
+  pathname === path || pathname.startsWith(`${path}/`);
+
 export default function Sidebar({ user, collapsed }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [logoError, setLogoError] = useState(false);
 
   const roleName = typeof user?.role === 'string' ? user.role : (user?.role?.nom || user?.role?.name || 'CONSULTATION');
-  const visibleMenuItems = menuItems.filter((item) => item.roles.includes(roleName));
+  const sections = MENU_SECTIONS
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => item.roles.includes(roleName)),
+    }))
+    .filter((section) => section.items.length > 0);
 
   return (
     <aside className={`${
-      collapsed ? 'w-[78px]' : 'w-[278px]'
+      collapsed ? 'w-[78px]' : 'w-[260px]'
     } bg-[#091B36] text-white flex flex-col flex-shrink-0 transition-all duration-300 relative shadow-2xl z-40 border-r border-[#C59B27]/25 overflow-hidden`}>
 
-      {/* Top gold accent line */}
       <div className="absolute top-0 left-0 right-0 h-[3px] gold-gradient-bg" />
 
-      {/* Header: Coat of Arms + Bilingual Titles + Brand */}
       <div className={`px-5 pt-6 pb-4 border-b border-white/10 relative ${
         collapsed ? 'flex flex-col items-center text-center px-2' : ''
       }`}>
@@ -73,56 +120,59 @@ export default function Sidebar({ user, collapsed }) {
               <span className="font-amiri text-[15px] text-gold font-bold leading-snug" dir="rtl">
                 وزارة الاقتصاد والمالية
               </span>
-
               <span className="text-[9px] text-slate-400 font-medium leading-tight mt-1">
                 Ministère de l'Économie et des Finances
               </span>
             </div>
           )}
         </div>
-
       </div>
 
-      {/* Menu Navigation */}
-      <nav className="flex-1 px-3 py-4 flex flex-col gap-1 overflow-y-auto sidebar-scroll">
-        {visibleMenuItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = location.pathname === item.path || (item.path === '/vehicules' && location.pathname.startsWith('/vehicules/')) || (item.path === '/demandes' && location.pathname.startsWith('/demandes/')) || (item.path === '/affectations' && location.pathname.startsWith('/affectations/')) || (item.path === '/conducteurs' && location.pathname.startsWith('/conducteurs/')) || (item.path === '/utilisateurs' && location.pathname.startsWith('/utilisateurs'));
-
-          return (
-            <button
-              key={item.id}
-              onClick={() => navigate(item.path)}
-              className={`group relative flex items-center rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
-                collapsed ? 'justify-center p-3' : 'px-3.5 py-2.5 gap-3'
-              } ${
-                isActive
-                  ? 'bg-[#C59B27] text-[#071530] font-extrabold shadow-lg shadow-[#C59B27]/25'
-                  : 'text-slate-300 hover:text-white hover:bg-white/10'
-              }`}
-              title={collapsed ? `${item.label} — ${item.sub}` : undefined}
-            >
-              <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                isActive ? 'bg-[#071530]/15 text-[#071530]' : 'text-slate-300 group-hover:text-[#D7B14A]'
-              }`}>
-                <Icon className="w-4.5 h-4.5" />
-              </div>
-
-              {!collapsed && (
-                <div className="flex flex-col text-left min-w-0 flex-1">
-                  <span className="truncate leading-tight">{item.label}</span>
-                  <span className={`text-[9px] font-medium ${isActive ? 'text-[#071530]/80' : 'text-slate-500'}`}>
-                    {item.sub}
-                  </span>
-                </div>
-              )}
-
-              {isActive && !collapsed && (
-                <ChevronRight className="w-4 h-4 text-[#071530] flex-shrink-0" />
-              )}
-            </button>
-          );
-        })}
+      <nav className="flex-1 px-3 py-3 flex flex-col overflow-y-auto sidebar-scroll">
+        {sections.map((section, sectionIndex) => (
+          <div key={section.id} className={sectionIndex > 0 ? 'mt-3' : ''}>
+            {collapsed ? (
+              <div className="mx-3 mb-1 border-t border-white/10" />
+            ) : (
+              <p className="px-3 mb-1 text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#C59B27]/80">
+                {section.label}
+              </p>
+            )}
+            <div className="flex flex-col gap-0.5">
+              {section.items.map((item) => {
+                const Icon = item.icon;
+                const isActive = isItemActive(location.pathname, item.path);
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => navigate(item.path)}
+                    className={`group relative flex items-center rounded-xl text-[12px] font-semibold transition-all duration-200 cursor-pointer ${
+                      collapsed ? 'justify-center p-2.5' : 'px-3 py-2 gap-2.5'
+                    } ${
+                      isActive
+                        ? 'bg-[#C59B27] text-[#071530] font-extrabold shadow-lg shadow-[#C59B27]/25'
+                        : 'text-slate-300 hover:text-white hover:bg-white/10'
+                    }`}
+                    title={item.label}
+                  >
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                      isActive ? 'bg-[#071530]/15 text-[#071530]' : 'text-slate-300 group-hover:text-[#D7B14A]'
+                    }`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    {!collapsed && (
+                      <span className="truncate leading-none flex-1 text-left">{item.label}</span>
+                    )}
+                    {isActive && !collapsed && (
+                      <ChevronRight className="w-3.5 h-3.5 text-[#071530] flex-shrink-0" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
     </aside>
   );

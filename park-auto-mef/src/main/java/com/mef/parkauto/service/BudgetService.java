@@ -123,6 +123,35 @@ public class BudgetService {
         return mapExerciceToDto(saved);
     }
 
+    @Transactional
+    public ExerciceBudgetaireDto modifierExercice(Integer annee, ExerciceBudgetaireRequest request, String username) {
+        ExerciceBudgetaire ex = exerciceRepository.findByAnnee(annee)
+                .orElseThrow(() -> new ResourceNotFoundException("Exercice non trouvé : " + annee));
+        if (ex.getStatut() == StatutExercice.CLOTURE) {
+            throw new BadRequestException("L'exercice " + annee + " est clôturé et verrouillé en lecture seule.");
+        }
+        if (request != null && request.getObservations() != null) {
+            ex.setObservations(request.getObservations());
+        }
+        ExerciceBudgetaire saved = exerciceRepository.save(ex);
+        journalService.log("BUDGET", "UPDATE_EXERCICE", "ExerciceBudgetaire", saved.getId(), username,
+                "Mise à jour de l'exercice " + annee, null);
+        return mapExerciceToDto(saved);
+    }
+
+    @Transactional
+    public void supprimerExercice(Integer annee, String username) {
+        ExerciceBudgetaire ex = exerciceRepository.findByAnnee(annee)
+                .orElseThrow(() -> new ResourceNotFoundException("Exercice non trouvé : " + annee));
+        if (ex.getStatut() == StatutExercice.CLOTURE) {
+            throw new BadRequestException("Impossible de supprimer un exercice clôturé.");
+        }
+        Long id = ex.getId();
+        exerciceRepository.delete(ex);
+        journalService.log("BUDGET", "DELETE_EXERCICE", "ExerciceBudgetaire", id, username,
+                "Suppression de l'exercice " + annee, null);
+    }
+
     public void verifierExerciceOuvert(Integer annee) {
         if (annee == null) return;
         Optional<ExerciceBudgetaire> opt = exerciceRepository.findByAnnee(annee);

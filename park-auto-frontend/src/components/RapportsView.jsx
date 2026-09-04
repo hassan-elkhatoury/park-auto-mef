@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FileBarChart, Download, FileSpreadsheet, FileText, TrendingUp, DollarSign, 
   Fuel, Wrench, Building2, Car, AlertTriangle, RefreshCw, Leaf, Shield, 
-  Layers, Gauge, Filter, Zap, Eye, Search, X, CheckCircle2, ChevronRight,
+  Layers, Gauge, Filter, Zap, Eye, Search, X, CheckCircle2, ChevronRight, ChevronDown,
   TrendingDown, PieChart as PieChartIcon, ArrowUpRight, BarChart2, ShieldAlert,
-  Info, Activity, FileCheck
+  Info, FileCheck
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { reportingService } from '../services/reportingService';
@@ -14,6 +14,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
   ResponsiveContainer, Cell, PieChart, Pie 
 } from 'recharts';
+import MefSelect from './ui/MefSelect';
 
 const PALETTE = ['#0F1D32', '#C5A059', '#2563EB', '#059669', '#D97706', '#DC2626', '#7C3AED', '#0891B2'];
 
@@ -25,6 +26,8 @@ export default function RapportsView() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('vehicules'); // 'vehicules' | 'directions' | 'motorisations' | 'analytics'
   const [downloadingFormat, setDownloadingFormat] = useState(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportMenuRef = useRef(null);
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -38,6 +41,17 @@ export default function RapportsView() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (!exportOpen) return;
+    const onClickOutside = (event) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target)) {
+        setExportOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, [exportOpen]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -234,9 +248,6 @@ export default function RapportsView() {
             <div className="flex items-center gap-3">
               <h1 className="text-xl font-black text-[#0A1E3F] tracking-wide uppercase flex items-center gap-2">
                 Tableaux de Bord & Reporting TCO
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1 normal-case tracking-normal">
-                  <Activity className="w-3 h-3" /> Calcul Automatique
-                </span>
               </h1>
             </div>
             <p className="text-xs text-slate-500 mt-1">
@@ -255,32 +266,54 @@ export default function RapportsView() {
             <RefreshCw className="w-4 h-4" />
           </button>
 
-          <button
-            onClick={handleExportExcel}
-            disabled={downloadingFormat === 'excel'}
-            className="border border-amber-200 bg-amber-50 text-amber-900 font-extrabold text-xs px-4 py-2.5 rounded-xl hover:bg-amber-100 transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50"
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>{downloadingFormat === 'excel' ? 'Génération...' : 'Exporter Excel (.xlsx)'}</span>
-          </button>
-
-          <button
-            onClick={handleExportCsv}
-            disabled={downloadingFormat === 'csv'}
-            className="border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50 shadow-sm"
-          >
-            <Download className="w-4 h-4 text-slate-600" />
-            <span>{downloadingFormat === 'csv' ? 'Génération...' : 'Exporter CSV (SID)'}</span>
-          </button>
-
-          <button
-            onClick={handleExportPdf}
-            disabled={downloadingFormat === 'pdf'}
-            className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-gold flex items-center gap-2 cursor-pointer hover:brightness-105 transition-all disabled:opacity-50"
-          >
-            <FileText className="w-4 h-4" />
-            <span>{downloadingFormat === 'pdf' ? 'Génération...' : 'Rapport Exécutif (.pdf)'}</span>
-          </button>
+          <div className="relative" ref={exportMenuRef}>
+            <button
+              type="button"
+              onClick={() => setExportOpen((open) => !open)}
+              disabled={Boolean(downloadingFormat)}
+              className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-gold flex items-center gap-2 cursor-pointer hover:brightness-105 transition-all disabled:opacity-50"
+            >
+              <Download className="w-4 h-4" />
+              <span>{downloadingFormat ? 'Génération…' : 'Exporter'}</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {exportOpen && !downloadingFormat && (
+              <div className="mef-select-menu absolute right-0 left-auto top-full mt-2 w-56" style={{ position: 'absolute', maxHeight: 'none' }}>
+                <div className="mef-select-list">
+                  <button
+                    type="button"
+                    onClick={() => { setExportOpen(false); handleExportExcel(); }}
+                    className="mef-select-option"
+                  >
+                    <span className="inline-flex items-center gap-2.5">
+                      <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                      Excel (.xlsx)
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setExportOpen(false); handleExportPdf(); }}
+                    className="mef-select-option"
+                  >
+                    <span className="inline-flex items-center gap-2.5">
+                      <FileText className="w-4 h-4 text-rose-600" />
+                      PDF — Rapport exécutif
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setExportOpen(false); handleExportCsv(); }}
+                    className="mef-select-option"
+                  >
+                    <span className="inline-flex items-center gap-2.5">
+                      <Download className="w-4 h-4 text-slate-500" />
+                      CSV (SID)
+                    </span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </motion.div>
 
@@ -445,7 +478,7 @@ export default function RapportsView() {
             )}
           </div>
 
-          <select
+          <MefSelect
             value={filterDirection}
             onChange={(e) => setFilterDirection(e.target.value)}
             className="bg-slate-50 border border-slate-200 text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#C59B27] cursor-pointer"
@@ -454,9 +487,9 @@ export default function RapportsView() {
             {uniqueDirections.map(d => (
               <option key={d} value={d}>{d}</option>
             ))}
-          </select>
+          </MefSelect>
 
-          <select
+          <MefSelect
             value={filterMotorisation}
             onChange={(e) => setFilterMotorisation(e.target.value)}
             className="bg-slate-50 border border-slate-200 text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#C59B27] cursor-pointer"
@@ -465,9 +498,9 @@ export default function RapportsView() {
             {uniqueMotorisations.map(m => (
               <option key={m} value={m}>{m}</option>
             ))}
-          </select>
+          </MefSelect>
 
-          <select
+          <MefSelect
             value={filterRentabilite}
             onChange={(e) => setFilterRentabilite(e.target.value)}
             className="bg-slate-50 border border-slate-200 text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#C59B27] cursor-pointer"
@@ -476,7 +509,7 @@ export default function RapportsView() {
             <option value="ECO">Économique (&lt; 1.5 MAD/km)</option>
             <option value="NORMAL">Normal (1.5 - 2.5 MAD/km)</option>
             <option value="HIGH">Coûteux (&gt; 2.5 MAD/km)</option>
-          </select>
+          </MefSelect>
         </div>
       )}
 

@@ -7,6 +7,7 @@ import api from '../services/api';
 import VehiculeFormModal from './VehiculeFormModal';
 import { getVehiclePhoto, getStatusStyle, MoroccanPlate, DIRECTIONS_MEF, directionShort, FUEL_LABELS } from '../utils/vehicule';
 import ConfirmModal from './ConfirmModal';
+import MefSelect from './ui/MefSelect';
 
 export default function VehiculesListView() {
   const navigate = useNavigate();
@@ -125,7 +126,7 @@ export default function VehiculesListView() {
 
           <div className="flex items-center gap-2 flex-wrap">
             <Filter className="w-4 h-4 text-slate-400" />
-            <select
+            <MefSelect
               value={directionFilter}
               onChange={(e) => setDirectionFilter(e.target.value)}
               className="px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold outline-none cursor-pointer max-w-[190px]"
@@ -134,9 +135,9 @@ export default function VehiculesListView() {
               {DIRECTIONS_MEF.map((d) => (
                 <option key={d.short} value={d.value}>{d.short} — {d.value}</option>
               ))}
-            </select>
+            </MefSelect>
 
-            <select
+            <MefSelect
               value={carburantFilter}
               onChange={(e) => setCarburantFilter(e.target.value)}
               className="px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold outline-none cursor-pointer"
@@ -145,9 +146,9 @@ export default function VehiculesListView() {
               {Object.entries(FUEL_LABELS).map(([key, label]) => (
                 <option key={key} value={key}>{label}</option>
               ))}
-            </select>
+            </MefSelect>
 
-            <select
+            <MefSelect
               value={statutFilter}
               onChange={(e) => setStatutFilter(e.target.value)}
               className="px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold outline-none cursor-pointer"
@@ -161,7 +162,7 @@ export default function VehiculesListView() {
               <option value="IMMOBILISE">Immobilisé</option>
               <option value="HORS_SERVICE">Hors Service</option>
               <option value="ARCHIVE">Archivé</option>
-            </select>
+            </MefSelect>
           </div>
 
           {canManage && (

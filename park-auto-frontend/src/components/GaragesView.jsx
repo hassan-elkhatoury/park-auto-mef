@@ -7,6 +7,7 @@ import {
 import toast from 'react-hot-toast';
 import { garageService } from '../services/garageService';
 import ConfirmModal from './ConfirmModal';
+import MefSelect from './ui/MefSelect';
 
 export default function GaragesView() {
   const [activeTab, setActiveTab] = useState('garages'); // 'garages' | 'pieces'
@@ -343,7 +344,7 @@ export default function GaragesView() {
         {activeTab === 'garages' ? (
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Filter className="w-3.5 h-3.5 text-slate-400" />
-            <select
+            <MefSelect
               value={villeFilter}
               onChange={(e) => setVilleFilter(e.target.value)}
               className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#0A1E3F]"
@@ -354,12 +355,12 @@ export default function GaragesView() {
               <option value="Fès">Fès</option>
               <option value="Tanger">Tanger</option>
               <option value="Marrakech">Marrakech</option>
-            </select>
+            </MefSelect>
           </div>
         ) : (
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Filter className="w-3.5 h-3.5 text-slate-400" />
-            <select
+            <MefSelect
               value={categorieFilter}
               onChange={(e) => setCategorieFilter(e.target.value)}
               className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#0A1E3F]"
@@ -371,7 +372,7 @@ export default function GaragesView() {
               <option value="Pneumatique">Pneumatique</option>
               <option value="Moteur">Moteur</option>
               <option value="Suspension">Suspension</option>
-            </select>
+            </MefSelect>
           </div>
         )}
       </div>
@@ -745,7 +746,7 @@ export default function GaragesView() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">Catégorie</label>
-                      <select
+                      <MefSelect
                         value={pieceForm.categorie}
                         onChange={(e) => setPieceForm({ ...pieceForm, categorie: e.target.value })}
                         className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] cursor-pointer font-medium"
@@ -757,7 +758,7 @@ export default function GaragesView() {
                         <option value="Moteur">Moteur</option>
                         <option value="Suspension">Suspension</option>
                         <option value="Autre">Autre</option>
-                      </select>
+                      </MefSelect>
                     </div>
 
                     <div>
@@ -784,7 +785,7 @@ export default function GaragesView() {
 
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">Garage Agréé</label>
-                      <select
+                      <MefSelect
                         value={pieceForm.garageId}
                         onChange={(e) => setPieceForm({ ...pieceForm, garageId: e.target.value })}
                         className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] cursor-pointer font-medium"
@@ -793,7 +794,7 @@ export default function GaragesView() {
                         {garages.map((g) => (
                           <option key={g.id} value={g.id}>{g.nomGarage} ({g.ville})</option>
                         ))}
-                      </select>
+                      </MefSelect>
                     </div>
                   </div>
                 </div>

@@ -66,13 +66,20 @@ public class OrdreMissionService {
                 valueFont = FontFactory.getFont(FontFactory.HELVETICA, 10, Color.DARK_GRAY);
             }
 
-            // 1. Logos
-            Image royaumeLogo = Image.getInstance(getClass().getResource("/static/assets/royaume_du_maroc_logo.png"));
-            royaumeLogo.scaleToFit(130, 130);
-            Image mefLogo = Image.getInstance(getClass().getResource("/static/assets/logo.png"));
-            mefLogo.scaleToFit(110, 110);
+            boolean isRestituee = affectation.getKilometrageRetour() != null || affectation.getDateFinReelle() != null;
 
-            PdfPTable logoTable = new PdfPTable(2);
+            // 1. Logos with QR d'authentification between them (CdC §9)
+            Image royaumeLogo = Image.getInstance(getClass().getResource("/static/assets/royaume_du_maroc_logo.png"));
+            royaumeLogo.scaleToFit(110, 110);
+            Image mefLogo = Image.getInstance(getClass().getResource("/static/assets/logo.png"));
+            mefLogo.scaleToFit(95, 95);
+
+            String qrPayload = buildQrPayload(affectation, demande, vehicule, conducteur, isRestituee);
+            Image qrImage = Image.getInstance(generateQrPng(qrPayload, 180));
+            qrImage.scaleToFit(88, 88);
+            qrImage.setAlignment(Element.ALIGN_CENTER);
+
+            PdfPTable logoTable = new PdfPTable(new float[]{2f, 1.4f, 2f});
             logoTable.setWidthPercentage(100);
             logoTable.setHorizontalAlignment(Element.ALIGN_CENTER);
 
@@ -81,6 +88,23 @@ public class OrdreMissionService {
             leftLogoCell.setHorizontalAlignment(Element.ALIGN_LEFT);
             leftLogoCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
             logoTable.addCell(leftLogoCell);
+
+            PdfPCell cellQr = new PdfPCell();
+            cellQr.setBorder(PdfPCell.NO_BORDER);
+            cellQr.setHorizontalAlignment(Element.ALIGN_CENTER);
+            cellQr.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            cellQr.setPadding(2);
+            Paragraph qrTitle = new Paragraph("QR D'AUTHENTIFICATION",
+                    FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7, new Color(15, 29, 50)));
+            qrTitle.setAlignment(Element.ALIGN_CENTER);
+            cellQr.addElement(qrTitle);
+            cellQr.addElement(qrImage);
+            Paragraph qrCaption = new Paragraph(
+                    "HMAC-SHA256  ·  " + affectation.getReference(),
+                    FontFactory.getFont(FontFactory.HELVETICA, 6, Color.DARK_GRAY));
+            qrCaption.setAlignment(Element.ALIGN_CENTER);
+            cellQr.addElement(qrCaption);
+            logoTable.addCell(cellQr);
 
             PdfPCell rightLogoCell = new PdfPCell(mefLogo, false);
             rightLogoCell.setBorder(PdfPCell.NO_BORDER);
@@ -145,7 +169,6 @@ public class OrdreMissionService {
             document.add(tableVehicule);
 
             // Table 3: Procès-Verbal de Restitution & Clôture (Dynamic section if vehicle has been returned)
-            boolean isRestituee = affectation.getKilometrageRetour() != null || affectation.getDateFinReelle() != null;
             if (isRestituee) {
                 document.newPage();
                 PdfPTable tableRestitution = new PdfPTable(2);
@@ -180,38 +203,21 @@ public class OrdreMissionService {
             document.add(new Paragraph(" "));
             document.add(new Paragraph(" "));
 
-            // Signature block + QR code d'authentification (CdC §9)
-            PdfPTable tableSignature = new PdfPTable(new float[]{2f, 1.2f, 2f});
+            PdfPTable tableSignature = new PdfPTable(2);
             tableSignature.setWidthPercentage(100);
 
-            PdfPCell cellLeft = new PdfPCell(new Phrase("Le Responsable du Parc Automobile\n\n\n\n[Signature et Cachet]", labelFont));
+            PdfPCell cellLeft = new PdfPCell(new Phrase("Le Responsable du Parc Automobile\n\n\n\n\n\n", labelFont));
             cellLeft.setBorder(PdfPCell.NO_BORDER);
             cellLeft.setHorizontalAlignment(Element.ALIGN_CENTER);
-            cellLeft.setVerticalAlignment(Element.ALIGN_TOP);
+            cellLeft.setMinimumHeight(90f);
 
-            // QR code : contenu signé (HMAC) permettant de vérifier l'authenticité de l'ordre de mission
-            String qrPayload = buildQrPayload(affectation, demande, vehicule, conducteur, isRestituee);
-            Image qrImage = Image.getInstance(generateQrCode(qrPayload, 140));
-            qrImage.scaleToFit(95, 95);
-            PdfPCell cellQr = new PdfPCell();
-            cellQr.setBorder(PdfPCell.NO_BORDER);
-            cellQr.setHorizontalAlignment(Element.ALIGN_CENTER);
-            cellQr.setVerticalAlignment(Element.ALIGN_TOP);
-            cellQr.addElement(qrImage);
-            Paragraph qrCaption = new Paragraph("Authentification\n" + affectation.getReference(),
-                    FontFactory.getFont(FontFactory.HELVETICA, 7, Color.GRAY));
-            qrCaption.setAlignment(Element.ALIGN_CENTER);
-            cellQr.addElement(qrCaption);
-
-            PdfPCell cellRight = new PdfPCell(new Phrase("Le Conducteur / Bénéficiaire\n\n\n\n[Lu et Approuvé]", labelFont));
+            PdfPCell cellRight = new PdfPCell(new Phrase("Le Conducteur / Bénéficiaire\n\n\n\n\n\n", labelFont));
             cellRight.setBorder(PdfPCell.NO_BORDER);
             cellRight.setHorizontalAlignment(Element.ALIGN_CENTER);
-            cellRight.setVerticalAlignment(Element.ALIGN_TOP);
+            cellRight.setMinimumHeight(90f);
 
             tableSignature.addCell(cellLeft);
-            tableSignature.addCell(cellQr);
             tableSignature.addCell(cellRight);
-
             document.add(tableSignature);
 
             document.close();
@@ -277,7 +283,22 @@ public class OrdreMissionService {
         }
     }
 
-    private byte[] generateQrCode(String content, int size) throws Exception {
+    @Transactional(readOnly = true)
+    public byte[] generateQrPngForAffectation(Long affectationId) {
+        Affectation affectation = affectationRepository.findById(affectationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Affectation non trouvée : " + affectationId));
+        boolean isRestituee = affectation.getKilometrageRetour() != null || affectation.getDateFinReelle() != null;
+        String qrPayload = buildQrPayload(
+                affectation, affectation.getDemandeDeplacement(),
+                affectation.getVehicule(), affectation.getConducteur(), isRestituee);
+        try {
+            return generateQrPng(qrPayload, 220);
+        } catch (Exception e) {
+            throw new RuntimeException("Erreur lors de la génération du QR code : " + e.getMessage(), e);
+        }
+    }
+
+    private byte[] generateQrPng(String content, int size) throws Exception {
         java.util.Map<com.google.zxing.EncodeHintType, Object> hints = new java.util.EnumMap<>(com.google.zxing.EncodeHintType.class);
         hints.put(com.google.zxing.EncodeHintType.CHARACTER_SET, "UTF-8");
         hints.put(com.google.zxing.EncodeHintType.ERROR_CORRECTION, com.google.zxing.qrcode.decoder.ErrorCorrectionLevel.M);

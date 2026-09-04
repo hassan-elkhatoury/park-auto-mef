@@ -70,6 +70,26 @@ public class BudgetController {
         return ResponseEntity.ok(ApiResponse.success(dto, "Exercice budgétaire " + annee + " réouvert avec succès"));
     }
 
+    @PutMapping("/api/budgets/exercices/{annee:\\d+}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESPONSABLE_FINANCIER')")
+    @Operation(summary = "Modifier les informations d'un exercice budgétaire")
+    public ResponseEntity<ApiResponse<ExerciceBudgetaireDto>> modifierExercice(
+            @PathVariable Integer annee, @RequestBody ExerciceBudgetaireRequest req, Authentication auth) {
+        String username = auth != null ? auth.getName() : "ADMIN";
+        ExerciceBudgetaireDto dto = budgetService.modifierExercice(annee, req, username);
+        return ResponseEntity.ok(ApiResponse.success(dto, "Exercice budgétaire " + annee + " mis à jour avec succès"));
+    }
+
+    @DeleteMapping("/api/budgets/exercices/{annee:\\d+}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESPONSABLE_FINANCIER')")
+    @Operation(summary = "Supprimer un exercice budgétaire")
+    public ResponseEntity<ApiResponse<Void>> supprimerExercice(
+            @PathVariable Integer annee, Authentication auth) {
+        String username = auth != null ? auth.getName() : "ADMIN";
+        budgetService.supprimerExercice(annee, username);
+        return ResponseEntity.ok(ApiResponse.success(null, "Exercice budgétaire " + annee + " supprimé avec succès"));
+    }
+
     // ==========================================
     // 2. ENGAGEMENTS FINANCIERS (RG01 & RG03)
     // ==========================================

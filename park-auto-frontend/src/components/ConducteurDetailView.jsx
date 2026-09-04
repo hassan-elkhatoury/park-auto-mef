@@ -8,6 +8,7 @@ import {
 import { toast } from 'react-hot-toast';
 import api from '../services/api';
 import ConfirmModal from './ConfirmModal';
+import MefSelect from './ui/MefSelect';
 
 function SpecItem({ icon: Icon, label, children }) {
   return (
@@ -323,13 +324,13 @@ export default function ConducteurDetailView() {
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Catégorie(s) du Permis *</label>
-                  <select value={formData.categoriePermis}
+                  <MefSelect value={formData.categoriePermis}
                     onChange={(e) => setFormData({ ...formData, categoriePermis: e.target.value })}
                     className={`${inputCls} font-bold`}>
                     <option value="B">Catégorie B (Tourisme)</option>
                     <option value="B, C">Catégories B, C (Poids Lourd)</option>
                     <option value="B, C, D">Catégories B, C, D (Transport Personnel)</option>
-                  </select>
+                  </MefSelect>
                 </div>
               </div>
 

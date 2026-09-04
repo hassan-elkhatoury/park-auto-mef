@@ -10,6 +10,7 @@ import api from '../services/api';
 import VehiculeFormModal from './VehiculeFormModal';
 import { getVehiclePhoto, getStatusStyle, MoroccanPlate, FUEL_LABELS } from '../utils/vehicule';
 import ConfirmModal from './ConfirmModal';
+import MefSelect from './ui/MefSelect';
 
 // One labelled spec line in the technical sheet
 function SpecItem({ icon: Icon, label, children }) {
@@ -378,7 +379,7 @@ export default function VehiculeDetailView() {
               <form onSubmit={handleStatusChangeSubmit} className="flex flex-col gap-4">
                 <div>
                   <label className="text-xs font-bold text-slate-700 block mb-1">Nouveau Statut Administratif</label>
-                  <select
+                  <MefSelect
                     value={statusFormData.nouveauStatutAdministratif}
                     onChange={(e) => setStatusFormData({ ...statusFormData, nouveauStatutAdministratif: e.target.value })}
                     className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs outline-none cursor-pointer"
@@ -392,12 +393,12 @@ export default function VehiculeDetailView() {
                     <option value="TRANSFERE">TRANSFERE</option>
                     <option value="REFORME">REFORME</option>
                     <option value="ARCHIVE">ARCHIVE (Soft Delete)</option>
-                  </select>
+                  </MefSelect>
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-slate-700 block mb-1">Nouveau État Technique</label>
-                  <select
+                  <MefSelect
                     value={statusFormData.nouveauEtatTechnique}
                     onChange={(e) => setStatusFormData({ ...statusFormData, nouveauEtatTechnique: e.target.value })}
                     className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs outline-none cursor-pointer"
@@ -409,7 +410,7 @@ export default function VehiculeDetailView() {
                     <option value="ACCIDENTE">ACCIDENTE</option>
                     <option value="EN_REPARATION">EN_REPARATION</option>
                     <option value="HORS_SERVICE">HORS_SERVICE</option>
-                  </select>
+                  </MefSelect>
                 </div>
 
                 <div>

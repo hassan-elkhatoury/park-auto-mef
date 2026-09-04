@@ -4,6 +4,7 @@ import { Plus, PenTool, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 import { DIRECTIONS_MEF } from '../utils/vehicule';
+import MefSelect from './ui/MefSelect';
 
 // Ministry fleet car brands and models dictionary
 const CAR_BRANDS_AND_MODELS = {
@@ -203,7 +204,7 @@ export default function VehiculeFormModal({ open, onClose, onSaved, vehicule }) 
                             required
                           />
                           <div className="w-[1px] h-6 bg-slate-200" />
-                          <select
+                          <MefSelect
                             value={plate.letter}
                             onChange={(e) => setPlate('letter', e.target.value)}
                             className="w-16 px-2 py-2.5 bg-transparent text-sm outline-none cursor-pointer text-center font-bold text-slate-900"
@@ -211,7 +212,7 @@ export default function VehiculeFormModal({ open, onClose, onSaved, vehicule }) 
                           >
                             {PLATE_LETTERS.map((l) => <option key={l} value={l}>{l}</option>)}
                             {!PLATE_LETTERS.includes(plate.letter) && <option value={plate.letter}>{plate.letter}</option>}
-                          </select>
+                          </MefSelect>
                           <div className="w-[1px] h-6 bg-slate-200" />
                           <span className="px-1.5 text-slate-400 font-bold text-xs select-none">|</span>
                           <input
@@ -259,7 +260,7 @@ export default function VehiculeFormModal({ open, onClose, onSaved, vehicule }) 
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">Marque *</label>
-                  <select
+                  <MefSelect
                     value={formData.marque || 'Peugeot'}
                     onChange={(e) => {
                       const selectedMarque = e.target.value;
@@ -275,12 +276,12 @@ export default function VehiculeFormModal({ open, onClose, onSaved, vehicule }) 
                     {formData.marque && !CAR_BRANDS_AND_MODELS[formData.marque] && (
                       <option value={formData.marque}>{formData.marque}</option>
                     )}
-                  </select>
+                  </MefSelect>
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">Modèle *</label>
-                  <select
+                  <MefSelect
                     value={formData.modele || ''}
                     onChange={(e) => setFormData({ ...formData, modele: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all cursor-pointer font-medium"
@@ -292,12 +293,12 @@ export default function VehiculeFormModal({ open, onClose, onSaved, vehicule }) 
                     {formData.modele && CAR_BRANDS_AND_MODELS[formData.marque] && !CAR_BRANDS_AND_MODELS[formData.marque].includes(formData.modele) && (
                       <option value={formData.modele}>{formData.modele}</option>
                     )}
-                  </select>
+                  </MefSelect>
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">Carburant *</label>
-                  <select
+                  <MefSelect
                     value={formData.typeCarburant}
                     onChange={(e) => setFormData({ ...formData, typeCarburant: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all cursor-pointer font-medium"
@@ -306,7 +307,7 @@ export default function VehiculeFormModal({ open, onClose, onSaved, vehicule }) 
                     <option value="ESSENCE">Essence</option>
                     <option value="HYBRIDE">Hybride</option>
                     <option value="ELECTRIQUE">Électrique</option>
-                  </select>
+                  </MefSelect>
                 </div>
 
                 <div>
@@ -322,7 +323,7 @@ export default function VehiculeFormModal({ open, onClose, onSaved, vehicule }) 
 
                 <div className="col-span-1 md:col-span-2">
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">Direction / Rattachement *</label>
-                  <select
+                  <MefSelect
                     value={formData.direction || 'Direction du Budget'}
                     onChange={(e) => setFormData({ ...formData, direction: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all cursor-pointer font-medium"
@@ -333,7 +334,7 @@ export default function VehiculeFormModal({ open, onClose, onSaved, vehicule }) 
                     {formData.direction && !DIRECTIONS_MEF.some((d) => d.value === formData.direction) && (
                       <option value={formData.direction}>{formData.direction}</option>
                     )}
-                  </select>
+                  </MefSelect>
                 </div>
               </div>
 

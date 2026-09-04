@@ -16,11 +16,20 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mef.parkauto.dto.auth.ChangePasswordRequest;
+import com.mef.parkauto.dto.auth.UpdatePhotoRequest;
+import com.mef.parkauto.dto.auth.UpdateProfilRequest;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Contrôleur REST pour l'authentification et la gestion de session.
@@ -79,11 +88,62 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(response, "Profil utilisateur récupéré"));
     }
 
+    @PutMapping("/me")
+    @Operation(summary = "Met à jour les informations personnelles de l'utilisateur connecté")
+    public ResponseEntity<ApiResponse<UtilisateurResponse>> updateCurrentUser(
+            @Valid @RequestBody UpdateProfilRequest request
+    ) {
+        log.info("Requête de mise à jour du profil de l'utilisateur connecté reçue");
+        UtilisateurResponse response = authService.updateCurrentProfile(request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Profil mis à jour avec succès"));
+    }
+
+    @PutMapping(value = "/me/photo", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Enregistre un portrait officiel MEF comme photo de profil")
+    public ResponseEntity<ApiResponse<UtilisateurResponse>> updateCurrentPhoto(
+            @Valid @RequestBody UpdatePhotoRequest request
+    ) {
+        log.info("Requête de mise à jour de la photo de profil (portrait) reçue");
+        UtilisateurResponse response = authService.updateCurrentPhoto(request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Photo de profil mise à jour"));
+    }
+
+    @PutMapping(value = "/me/photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Téléverse une photo de profil personnalisée")
+    public ResponseEntity<ApiResponse<UtilisateurResponse>> updateCurrentPhotoFile(
+            @RequestParam("file") MultipartFile file
+    ) {
+        log.info("Requête de téléversement de photo de profil reçue");
+        UtilisateurResponse response = authService.updateCurrentPhotoFile(file);
+        return ResponseEntity.ok(ApiResponse.success(response, "Photo de profil mise à jour"));
+    }
+
+    @GetMapping("/me/photo")
+    @Operation(summary = "Télécharge la photo uploadée de l'utilisateur connecté")
+    public ResponseEntity<Resource> getCurrentPhoto() {
+        UtilisateurResponse current = authService.getCurrentUser();
+        return servePhoto(authService.getPhotoFile(current.id()));
+    }
+
+    @GetMapping("/photos/{userId}")
+    @Operation(summary = "Télécharge la photo uploadée d'un utilisateur")
+    public ResponseEntity<Resource> getUserPhoto(@PathVariable Long userId) {
+        return servePhoto(authService.getPhotoFile(userId));
+    }
+
     @PostMapping("/change-password")
     @Operation(summary = "Modifie le mot de passe obligatoire au premier login")
     public ResponseEntity<ApiResponse<Void>> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         log.info("Requête de changement de mot de passe obligatoire reçue");
         authService.changerMotDePasse(request);
         return ResponseEntity.ok(ApiResponse.success(null, "Mot de passe modifié avec succès"));
+    }
+
+    private ResponseEntity<Resource> servePhoto(AuthService.PhotoFile photo) {
+        return ResponseEntity.ok()
+                .contentType(photo.mediaType())
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + photo.filename() + "\"")
+                .header(HttpHeaders.CACHE_CONTROL, "private, max-age=3600")
+                .body(photo.resource());
     }
 }

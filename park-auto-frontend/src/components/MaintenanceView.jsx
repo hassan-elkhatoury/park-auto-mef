@@ -10,6 +10,7 @@ import { vehiculeService } from '../services/vehiculeService';
 import { garageService } from '../services/garageService';
 import { MoroccanPlate } from '../utils/vehicule';
 import ConfirmModal from './ConfirmModal';
+import MefSelect from './ui/MefSelect';
 
 const readCurrentUser = () => {
   try {
@@ -543,7 +544,7 @@ export default function MaintenanceView() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <select
+              <MefSelect
                 value={filterType}
                 onChange={e => setFilterType(e.target.value)}
                 className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none cursor-pointer focus:ring-2 focus:ring-[#C59B27]"
@@ -552,9 +553,9 @@ export default function MaintenanceView() {
                 <option value="PREVENTIVE">Préventive</option>
                 <option value="CURATIVE">Curative</option>
                 <option value="REGLEMENTAIRE">Réglementaire</option>
-              </select>
+              </MefSelect>
 
-              <select
+              <MefSelect
                 value={filterStatut}
                 onChange={e => setFilterStatut(e.target.value)}
                 className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none cursor-pointer focus:ring-2 focus:ring-[#C59B27]"
@@ -564,9 +565,9 @@ export default function MaintenanceView() {
                 <option value="EN_COURS">En cours</option>
                 <option value="TERMINEE">Terminée</option>
                 <option value="ANNULEE">Annulée</option>
-              </select>
+              </MefSelect>
 
-              <select
+              <MefSelect
                 value={filterVehicule}
                 onChange={e => setFilterVehicule(e.target.value)}
                 className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none cursor-pointer focus:ring-2 focus:ring-[#C59B27] max-w-[200px]"
@@ -577,7 +578,7 @@ export default function MaintenanceView() {
                     {v.immatriculation} — {v.marque} {v.modele}
                   </option>
                 ))}
-              </select>
+              </MefSelect>
             </div>
           </motion.div>
 
@@ -830,7 +831,7 @@ export default function MaintenanceView() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="col-span-1 md:col-span-2">
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">Véhicule *</label>
-                      <select
+                      <MefSelect
                         required
                         value={form.vehiculeId}
                         onChange={(e) => setForm({ ...form, vehiculeId: e.target.value })}
@@ -840,24 +841,24 @@ export default function MaintenanceView() {
                         {vehicules.map((v) => (
                           <option key={v.id} value={v.id}>{v.immatriculation} - {v.marque} {v.modele}</option>
                         ))}
-                      </select>
+                      </MefSelect>
                     </div>
 
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">Type de Maintenance</label>
-                      <select
+                      <MefSelect
                         value={form.typeMaintenance}
                         onChange={(e) => setForm({ ...form, typeMaintenance: e.target.value })}
                         className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all cursor-pointer font-medium"
                       >
                         <option value="PREVENTIVE">Préventive</option>
                         <option value="CURATIVE">Curative</option>
-                      </select>
+                      </MefSelect>
                     </div>
 
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">Nature d'Opération</label>
-                      <select
+                      <MefSelect
                         value={form.natureOperation}
                         onChange={(e) => setForm({ ...form, natureOperation: e.target.value })}
                         className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all cursor-pointer font-medium"
@@ -869,7 +870,7 @@ export default function MaintenanceView() {
                         <option value="CLIMATISATION">Climatisation</option>
                         <option value="REVISION_PERIODIQUE">Révision Générale</option>
                         <option value="AUTRE">Autre</option>
-                      </select>
+                      </MefSelect>
                     </div>
 
                     <div>
@@ -895,7 +896,7 @@ export default function MaintenanceView() {
 
                     <div className="col-span-1 md:col-span-2">
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">Garage Agréé MEF</label>
-                      <select
+                      <MefSelect
                         value={form.garageAgreeId}
                         onChange={(e) => setForm({ ...form, garageAgreeId: e.target.value })}
                         className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all cursor-pointer font-medium"
@@ -904,7 +905,7 @@ export default function MaintenanceView() {
                         {garages.map((g) => (
                           <option key={g.id} value={g.id}>{g.nomGarage} ({g.ville})</option>
                         ))}
-                      </select>
+                      </MefSelect>
                     </div>
 
                     <div>

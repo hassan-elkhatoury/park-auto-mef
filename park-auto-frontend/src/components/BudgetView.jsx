@@ -16,6 +16,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
   ResponsiveContainer, Cell, PieChart, Pie 
 } from 'recharts';
+import MefSelect from './ui/MefSelect';
 
 const DIRECTIONS = [
   'Direction du Budget',
@@ -410,18 +411,55 @@ export default function BudgetView({ user: userProp }) {
     });
   };
 
-  const handleExerciceCreate = async (e) => {
+  const handleEditExercice = (ex) => {
+    setExerciceForm({
+      isEdit: true,
+      annee: ex.annee,
+      observations: ex.observations || ''
+    });
+    setShowExerciceModal(true);
+  };
+
+  const handleDeleteExercice = (ex) => {
+    setConfirmModal({
+      isOpen: true,
+      title: `Supprimer l'exercice ${ex.annee}`,
+      message: `Êtes-vous sûr de vouloir supprimer définitivement l'exercice fiscal ${ex.annee} ? Cette action est irréversible.`,
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          setConfirmModal(prev => ({ ...prev, loading: true }));
+          await budgetService.deleteExercice(ex.annee);
+          toast.success(`Exercice fiscal ${ex.annee} supprimé avec succès`);
+          setConfirmModal({ isOpen: false, title: '', message: '', variant: 'danger', onConfirm: () => {}, loading: false });
+          fetchData();
+        } catch (err) {
+          toast.error(getApiErrorMessage(err, 'Erreur lors de la suppression de l\'exercice'));
+          setConfirmModal(prev => ({ ...prev, loading: false }));
+        }
+      }
+    });
+  };
+
+  const handleExerciceSubmit = async (e) => {
     e.preventDefault();
     try {
-      await budgetService.createExercice({
-        annee: Number(exerciceForm.annee),
-        observations: exerciceForm.observations
-      });
-      toast.success(`Exercice fiscal ${exerciceForm.annee} initialisé avec succès`);
+      if (exerciceForm.isEdit) {
+        await budgetService.updateExercice(Number(exerciceForm.annee), {
+          observations: exerciceForm.observations
+        });
+        toast.success(`Exercice fiscal ${exerciceForm.annee} mis à jour avec succès`);
+      } else {
+        await budgetService.createExercice({
+          annee: Number(exerciceForm.annee),
+          observations: exerciceForm.observations
+        });
+        toast.success(`Exercice fiscal ${exerciceForm.annee} initialisé avec succès`);
+      }
       setShowExerciceModal(false);
       fetchData();
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Erreur lors de la création de l\'exercice'));
+      toast.error(getApiErrorMessage(err, exerciceForm.isEdit ? 'Erreur lors de la modification de l\'exercice' : 'Erreur lors de la création de l\'exercice'));
     }
   };
 
@@ -517,6 +555,14 @@ export default function BudgetView({ user: userProp }) {
     return Object.values(map);
   }, [budgets]);
 
+  // Actual existing exercices for the dropdown
+  const availableAnnees = useMemo(() => {
+    const years = new Set(exercices.map(e => Number(e.annee)).filter(Boolean));
+    if (annee) years.add(Number(annee));
+    if (years.size === 0) years.add(new Date().getFullYear());
+    return Array.from(years).sort((a, b) => b - a);
+  }, [exercices, annee]);
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* 1. Header Banner */}
@@ -530,22 +576,11 @@ export default function BudgetView({ user: userProp }) {
             <DollarSign className="w-6 h-6" />
           </div>
           <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl font-black text-[#0A1E3F] tracking-wide uppercase flex items-center gap-2">
-                Suivi Budgétaire & Dépenses du Parc
-              </h1>
-              {isExerciceCloture ? (
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
-                  <Lock className="w-3 h-3" /> Exercice Clôturé
-                </span>
-              ) : (
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-                  <Unlock className="w-3 h-3" /> Exercice Ouvert
-                </span>
-              )}
-            </div>
+            <h1 className="text-xl font-black text-[#0A1E3F] tracking-wide uppercase flex items-center gap-2">
+              Suivi Budgétaire & Dépenses du Parc
+            </h1>
             <p className="text-xs text-slate-500 mt-1">
-              Dotations par direction, chaîne d'engagements financiers, seuils d'alertes 80%/95% et gestion des exercices annuels.
+              Dotations par direction, chaîne d'engagements financiers, seuils d'alertes 80% / 95% et gestion des exercices annuels.
             </p>
           </div>
         </div>
@@ -555,15 +590,15 @@ export default function BudgetView({ user: userProp }) {
           {/* Année Sélecteur */}
           <div className="flex items-center bg-slate-100 rounded-xl p-1 border border-slate-200">
             <Calendar className="w-4 h-4 text-slate-500 ml-2 mr-1" />
-            <select
+            <MefSelect
               value={annee}
               onChange={(e) => setAnnee(Number(e.target.value))}
               className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none pr-2 py-1 cursor-pointer"
             >
-              {[2024, 2025, 2026, 2027].map(y => (
+              {availableAnnees.map(y => (
                 <option key={y} value={y}>Exercice {y}</option>
               ))}
-            </select>
+            </MefSelect>
           </div>
 
           <button
@@ -573,40 +608,6 @@ export default function BudgetView({ user: userProp }) {
           >
             <RefreshCw className="w-4 h-4" />
           </button>
-
-          {canManageBudget && (
-          <button
-            onClick={() => handleOpenEngagementModal()}
-            disabled={isExerciceCloture}
-            className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-gold flex items-center gap-2 cursor-pointer hover:brightness-105 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <Plus className="w-4 h-4" />
-            Nouvel Engagement
-          </button>
-          )}
-
-          {canManageBudget && (
-          <button
-            onClick={() => {
-              setBudgetForm({
-                id: null,
-                annee: annee,
-                direction: DIRECTIONS[0],
-                service: 'Division du Parc Automobile',
-                centreCout: 'CC-PARC-01',
-                natureDepense: 'CARBURANT',
-                montantAlloue: '',
-                montantEngage: 0,
-                montantRealise: 0
-              });
-              setShowBudgetModal(true);
-            }}
-            className="border border-amber-200 bg-amber-50 text-amber-900 font-extrabold text-xs px-4 py-2.5 rounded-xl hover:bg-amber-100 transition-all cursor-pointer flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Nouvelle Dotation
-          </button>
-          )}
         </div>
       </motion.div>
 
@@ -691,42 +692,101 @@ export default function BudgetView({ user: userProp }) {
       >
         <div className="flex items-center gap-2 flex-wrap">
           {[
-            { key: 'directions', label: 'Dotations par Direction', icon: Building2, count: budgets.length },
-            { key: 'engagements', label: 'Engagements & Liquidations', icon: FileText, count: engagements.length },
-            { key: 'exercices', label: 'Exercices Fiscaux', icon: Calendar, count: exercices.length },
-            { key: 'alertes', label: 'Alertes Seuils (80% / 95%)', icon: AlertTriangle, count: alertes.length, alertBadge: alertes.length > 0 },
-            { key: 'previsions', label: 'Prévisions Carburant', icon: Fuel, count: previsions.length },
-            { key: 'synthese', label: 'Synthèse Graphique', icon: BarChart2 }
-          ].map(tab => {
+            { key: 'directions', label: 'Dotations', icon: Building2, count: budgets.length },
+            { key: 'engagements', label: 'Engagements', icon: FileText, count: engagements.length },
+            { key: 'exercices', label: 'Exercices', icon: Calendar, count: exercices.length },
+            { key: 'alertes', label: 'Alertes', icon: AlertTriangle, count: alertes.length },
+            { key: 'previsions', label: 'Prévisions', icon: Fuel, count: previsions.length },
+            { key: 'synthese', label: 'Synthèse', icon: BarChart2 }
+          ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.key;
             return (
               <button
                 key={tab.key}
+                type="button"
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                  isActive
-                    ? 'gold-gradient-bg text-[#0A1E3F]'
-                    : 'bg-white text-slate-600 hover:bg-slate-50'
+                className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+                  isActive ? 'gold-gradient-bg text-[#0A1E3F]' : 'bg-white text-slate-600 hover:bg-slate-50'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-amber-400' : 'text-slate-400'}`} />
-                <span>{tab.label}</span>
-                {tab.count !== undefined && (
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                    isActive 
-                      ? 'bg-white/20 text-white' 
-                      : tab.alertBadge 
-                        ? 'bg-rose-100 text-rose-700' 
-                        : 'bg-slate-100 text-slate-600'
-                  }`}>
-                    {tab.count}
-                  </span>
-                )}
+                <Icon className="w-4 h-4" />
+                {tab.label}{tab.count !== undefined ? ` (${tab.count})` : ''}
               </button>
             );
           })}
         </div>
+
+        {canManageBudget && activeTab === 'directions' && (
+          <button
+            type="button"
+            onClick={() => {
+              setBudgetForm({
+                id: null,
+                annee: annee,
+                direction: DIRECTIONS[0],
+                service: 'Division du Parc Automobile',
+                centreCout: 'CC-PARC-01',
+                natureDepense: 'CARBURANT',
+                montantAlloue: '',
+                montantEngage: 0,
+                montantRealise: 0
+              });
+              setShowBudgetModal(true);
+            }}
+            className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-4 py-2 rounded-xl shadow-gold hover:opacity-95 transition-all cursor-pointer flex items-center gap-1.5"
+          >
+            <Plus className="w-3.5 h-3.5" /> Nouvelle Dotation
+          </button>
+        )}
+        {canManageBudget && activeTab === 'engagements' && (
+          <button
+            type="button"
+            onClick={() => handleOpenEngagementModal()}
+            disabled={isExerciceCloture}
+            className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-4 py-2 rounded-xl shadow-gold hover:opacity-95 transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Plus className="w-3.5 h-3.5" /> Nouvel Engagement
+          </button>
+        )}
+        {canManageBudget && activeTab === 'exercices' && (
+          <button
+            type="button"
+            onClick={() => {
+              setExerciceForm({
+                isEdit: false,
+                annee: new Date().getFullYear() + 1,
+                observations: `Exercice fiscal ${new Date().getFullYear() + 1} initialisé pour la programmation triennale.`
+              });
+              setShowExerciceModal(true);
+            }}
+            className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-4 py-2 rounded-xl shadow-gold hover:opacity-95 transition-all cursor-pointer flex items-center gap-1.5"
+          >
+            <Plus className="w-3.5 h-3.5" /> Nouvel Exercice
+          </button>
+        )}
+        {canManageBudget && activeTab === 'previsions' && (
+          <button
+            type="button"
+            onClick={() => {
+              setPrevisionForm({
+                id: null,
+                direction: DIRECTIONS[0],
+                annee: annee,
+                mois: 1,
+                kmPrevus: '',
+                consoMoyenne: '7.5',
+                prixUnitairePrevus: '13.50',
+                quantiteReelle: 0,
+                montantReel: 0
+              });
+              setShowPrevisionModal(true);
+            }}
+            className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-4 py-2 rounded-xl shadow-gold hover:opacity-95 transition-all cursor-pointer flex items-center gap-1.5"
+          >
+            <Plus className="w-3.5 h-3.5" /> Nouvelle Prévision
+          </button>
+        )}
       </motion.div>
 
       {/* Global Search & Filters Toolbar */}
@@ -753,7 +813,7 @@ export default function BudgetView({ user: userProp }) {
               )}
             </div>
 
-            <select
+            <MefSelect
               value={filterDirection}
               onChange={(e) => setFilterDirection(e.target.value)}
               className="bg-white border border-slate-200 text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
@@ -762,9 +822,9 @@ export default function BudgetView({ user: userProp }) {
               {DIRECTIONS.map(d => (
                 <option key={d} value={d}>{d}</option>
               ))}
-            </select>
+            </MefSelect>
 
-            <select
+            <MefSelect
               value={filterNature}
               onChange={(e) => setFilterNature(e.target.value)}
               className="bg-white border border-slate-200 text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
@@ -773,7 +833,7 @@ export default function BudgetView({ user: userProp }) {
               {NATURES_DEPENSE.map(n => (
                 <option key={n.key} value={n.key}>{n.label}</option>
               ))}
-            </select>
+            </MefSelect>
           </div>
         </motion.div>
       )}
@@ -937,7 +997,7 @@ export default function BudgetView({ user: userProp }) {
                   Journal des Engagements Budgétaires ({filteredEngagements.length})
                 </span>
                 <div className="flex items-center gap-2">
-                  <select
+                  <MefSelect
                     value={filterStatutEng}
                     onChange={(e) => setFilterStatutEng(e.target.value)}
                     className="bg-white border border-slate-200 text-xs rounded-xl px-2.5 py-1 focus:outline-none cursor-pointer"
@@ -946,7 +1006,7 @@ export default function BudgetView({ user: userProp }) {
                     <option value="ENGAGE">Engagé (En cours)</option>
                     <option value="LIQUIDE">Liquidé (Payé)</option>
                     <option value="ANNULE">Annulé</option>
-                  </select>
+                  </MefSelect>
                 </div>
               </div>
 
@@ -1071,21 +1131,6 @@ export default function BudgetView({ user: userProp }) {
                     Clôture annuelle au 31 Décembre avec scellement comptable et bascule en lecture seule.
                   </p>
                 </div>
-                {canManageBudget && (
-                <button
-                  onClick={() => {
-                    setExerciceForm({
-                      annee: new Date().getFullYear() + 1,
-                      observations: `Exercice fiscal ${new Date().getFullYear() + 1} initialisé pour la programmation triennale.`
-                    });
-                    setShowExerciceModal(true);
-                  }}
-                  className="flex items-center gap-2 bg-[#0F1D32] hover:bg-[#1A2E4C] text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
-                >
-                  <Plus className="w-4 h-4 text-amber-400" />
-                  <span>Ouvrir Nouvel Exercice</span>
-                </button>
-                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1104,15 +1149,35 @@ export default function BudgetView({ user: userProp }) {
                       
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-2xl font-black text-slate-800">Exercice {ex.annee}</span>
-                        {isCloture ? (
-                          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
-                            <Lock className="w-3 h-3" /> Clôturé
-                          </span>
-                        ) : (
-                          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-                            <Unlock className="w-3 h-3" /> Ouvert
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {isCloture ? (
+                            <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
+                              <Lock className="w-3 h-3" /> Clôturé
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                              <Unlock className="w-3 h-3" /> Ouvert
+                            </span>
+                          )}
+                          {canManageBudget && (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleEditExercice(ex)}
+                                title="Modifier les observations de l'exercice"
+                                className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-all cursor-pointer"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteExercice(ex)}
+                                title="Supprimer cet exercice fiscal"
+                                className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg transition-all cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       <p className="text-xs text-slate-600 mb-4 min-h-[36px]">
@@ -1261,28 +1326,6 @@ export default function BudgetView({ user: userProp }) {
                     Modélisation des volumes (Litres) et montants prévisionnels par Direction et par mois.
                   </p>
                 </div>
-                {canManageBudget && (
-                <button
-                  onClick={() => {
-                    setPrevisionForm({
-                      id: null,
-                      direction: DIRECTIONS[0],
-                      annee: annee,
-                      mois: 1,
-                      kmPrevus: '',
-                      consoMoyenne: '7.5',
-                      prixUnitairePrevus: '13.50',
-                      quantiteReelle: 0,
-                      montantReel: 0
-                    });
-                    setShowPrevisionModal(true);
-                  }}
-                  className="flex items-center gap-2 bg-[#0F1D32] hover:bg-[#1A2E4C] text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
-                >
-                  <Plus className="w-4 h-4 text-amber-400" />
-                  <span>Nouvelle Prévision</span>
-                </button>
-                )}
               </div>
 
               {previsions.length === 0 ? (
@@ -1478,23 +1521,23 @@ export default function BudgetView({ user: userProp }) {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">Direction MEF *</label>
-                      <select
+                      <MefSelect
                         value={engagementForm.direction}
                         onChange={(e) => setEngagementForm({ ...engagementForm, direction: e.target.value })}
                         className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] cursor-pointer font-medium"
                       >
                         {DIRECTIONS.map(d => <option key={d} value={d}>{d}</option>)}
-                      </select>
+                      </MefSelect>
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">Nature de Dépense *</label>
-                      <select
+                      <MefSelect
                         value={engagementForm.natureDepense}
                         onChange={(e) => setEngagementForm({ ...engagementForm, natureDepense: e.target.value })}
                         className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] cursor-pointer font-medium"
                       >
                         {NATURES_DEPENSE.map(n => <option key={n.key} value={n.key}>{n.label}</option>)}
-                      </select>
+                      </MefSelect>
                     </div>
                   </div>
 
@@ -1631,23 +1674,23 @@ export default function BudgetView({ user: userProp }) {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">Direction MEF *</label>
-                      <select
+                      <MefSelect
                         value={budgetForm.direction}
                         onChange={(e) => setBudgetForm({ ...budgetForm, direction: e.target.value })}
                         className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] cursor-pointer font-medium"
                       >
                         {DIRECTIONS.map(d => <option key={d} value={d}>{d}</option>)}
-                      </select>
+                      </MefSelect>
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">Nature de Dépense *</label>
-                      <select
+                      <MefSelect
                         value={budgetForm.natureDepense}
                         onChange={(e) => setBudgetForm({ ...budgetForm, natureDepense: e.target.value })}
                         className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] cursor-pointer font-medium"
                       >
                         {NATURES_DEPENSE.map(n => <option key={n.key} value={n.key}>{n.label}</option>)}
-                      </select>
+                      </MefSelect>
                     </div>
                   </div>
 
@@ -1893,8 +1936,12 @@ export default function BudgetView({ user: userProp }) {
                     <Calendar className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="font-black text-sm uppercase tracking-wider text-white">Ouvrir un Nouvel Exercice Fiscal</h3>
-                    <p className="text-[11px] text-slate-300 font-normal">Initialisation du nouvel exercice et cadrage budgétaire</p>
+                    <h3 className="font-black text-sm uppercase tracking-wider text-white">
+                      {exerciceForm.isEdit ? `Modifier l'Exercice Fiscal ${exerciceForm.annee}` : 'Ouvrir un Nouvel Exercice Fiscal'}
+                    </h3>
+                    <p className="text-[11px] text-slate-300 font-normal">
+                      {exerciceForm.isEdit ? 'Mise à jour des observations et du cadrage budgétaire' : 'Initialisation du nouvel exercice et cadrage budgétaire'}
+                    </p>
                   </div>
                 </div>
                 <button 
@@ -1906,16 +1953,19 @@ export default function BudgetView({ user: userProp }) {
                 </button>
               </div>
 
-              <form onSubmit={handleExerciceCreate} className="flex flex-col flex-1 overflow-hidden">
+              <form onSubmit={handleExerciceSubmit} className="flex flex-col flex-1 overflow-hidden">
                 <div className="p-6 overflow-y-auto space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1.5">Année Fiscale *</label>
                     <input
                       type="number"
                       value={exerciceForm.annee}
+                      disabled={exerciceForm.isEdit}
                       onChange={(e) => setExerciceForm({ ...exerciceForm, annee: e.target.value })}
                       required
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] font-mono font-bold"
+                      className={`w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] font-mono font-bold ${
+                        exerciceForm.isEdit ? 'opacity-60 cursor-not-allowed bg-slate-100' : ''
+                      }`}
                     />
                   </div>
 
@@ -1945,7 +1995,7 @@ export default function BudgetView({ user: userProp }) {
                     className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-gold hover:brightness-105 transition-all flex items-center gap-2 cursor-pointer"
                   >
                     <Calendar className="w-3.5 h-3.5" />
-                    <span>Initialiser l'Exercice</span>
+                    <span>{exerciceForm.isEdit ? 'Enregistrer les modifications' : "Initialiser l'Exercice"}</span>
                   </button>
                 </div>
               </form>
@@ -1991,17 +2041,17 @@ export default function BudgetView({ user: userProp }) {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">Direction MEF *</label>
-                      <select
+                      <MefSelect
                         value={previsionForm.direction}
                         onChange={(e) => setPrevisionForm({ ...previsionForm, direction: e.target.value })}
                         className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] cursor-pointer font-medium"
                       >
                         {DIRECTIONS.map(d => <option key={d} value={d}>{d}</option>)}
-                      </select>
+                      </MefSelect>
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">Mois de Prévision *</label>
-                      <select
+                      <MefSelect
                         value={previsionForm.mois}
                         onChange={(e) => setPrevisionForm({ ...previsionForm, mois: Number(e.target.value) })}
                         className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] cursor-pointer font-medium"
@@ -2009,7 +2059,7 @@ export default function BudgetView({ user: userProp }) {
                         {MOIS_NOMS.map((m, idx) => (
                           <option key={idx + 1} value={idx + 1}>{m}</option>
                         ))}
-                      </select>
+                      </MefSelect>
                     </div>
                   </div>
 

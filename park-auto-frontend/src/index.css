@@ -543,6 +543,176 @@
               background-color var(--dur) var(--ease-premium);
 }
 
+/* Custom MEF select — replaces native OS dropdowns */
+.mef-select {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+  vertical-align: middle;
+}
+.mef-select--block { display: flex; width: 100%; }
+
+.mef-select-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid var(--card-line);
+  border-radius: var(--r-xl);
+  box-shadow: var(--elev-1);
+  color: var(--text-strong);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+}
+.mef-select-trigger:hover:not(:disabled) {
+  border-color: rgba(197, 155, 39, 0.45);
+  background: #FFFEFB;
+}
+.mef-select-trigger:focus-visible,
+.mef-select-trigger[aria-expanded="true"] {
+  border-color: var(--gold);
+  box-shadow: var(--ring-gold);
+  background: #fff;
+}
+.mef-select-trigger:disabled {
+  background: var(--surface-sunken);
+  color: var(--text-faint);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.mef-select-value {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mef-select-value--placeholder { color: var(--text-faint); font-weight: 600; }
+
+.mef-select-chevron {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--gold-deep);
+  transition: transform var(--dur) var(--ease-premium);
+}
+.mef-select-chevron--open { transform: rotate(180deg); }
+
+.mef-select-menu {
+  position: fixed;
+  z-index: 240;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 14px;
+  box-shadow: var(--elev-3), 0 0 0 1px rgba(197, 155, 39, 0.08);
+  animation: scale-in 0.16s var(--ease-expo);
+}
+
+.mef-select-search {
+  position: relative;
+  padding: 8px 8px 6px;
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--surface-muted);
+}
+.mef-select-search-icon {
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  width: 13px;
+  height: 13px;
+  transform: translateY(-50%);
+  color: var(--text-faint);
+  pointer-events: none;
+}
+.mef-select-search-input {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px 0 30px;
+  border: 1px solid var(--card-line);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.mef-select-search-input:focus {
+  border-color: var(--gold);
+  box-shadow: var(--ring-gold);
+}
+
+.mef-select-list {
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.mef-select-empty {
+  padding: 16px 10px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+
+.mef-select-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-body);
+  font-size: 12px;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+}
+.mef-select-option:hover,
+.mef-select-option.is-highlight {
+  background: #F8FAFC;
+  color: var(--navy-800);
+}
+.mef-select-option.is-selected {
+  background: #FCF8EC;
+  color: var(--navy-900);
+  box-shadow: inset 2px 0 0 var(--gold);
+}
+.mef-select-option:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.mef-select-check {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--gold-deep);
+}
+
+/* Hide native OS chrome if a raw <select> remains */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394700E' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+
 .ds-textarea { height: auto; padding: 10px 12px; line-height: 1.6; resize: vertical; }
 
 .ds-input::placeholder,

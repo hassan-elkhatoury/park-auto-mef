@@ -28,6 +28,9 @@ public class Sha256PasswordEncoder implements PasswordEncoder {
         if (rawPassword == null || encodedPassword == null) {
             return false;
         }
+        if (encodedPassword.startsWith("$2a$") || encodedPassword.startsWith("$2b$") || encodedPassword.startsWith("$2y$")) {
+            return new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder().matches(rawPassword, encodedPassword);
+        }
         int delimiterIndex = encodedPassword.indexOf('$');
         if (delimiterIndex == -1) {
             // Fallback for unsalted password if any exists

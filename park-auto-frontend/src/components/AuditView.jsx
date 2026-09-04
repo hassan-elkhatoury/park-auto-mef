@@ -3,11 +3,12 @@ import {
   ShieldCheck, RotateCw, Search, Clock, Plus, Pencil, Trash2, Eye, 
   Scale, FileText, CheckCircle2, XCircle, KeyRound, Lock, LogOut, 
   RotateCcw, Wrench, AlertTriangle, Coins, Receipt, Upload, Car, 
-  User, Fuel, Building2, Paperclip, ChevronRight, X, ExternalLink,
+  User, Fuel, Building2, Paperclip, ChevronRight, ChevronLeft, X, ExternalLink,
   Shield, CheckCheck, Landmark, Globe, Activity
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
+import MefSelect from './ui/MefSelect';
 
 const ACTION_CONFIG = {
   'CREATE':              { style: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: Plus, label: 'Création' },
@@ -49,6 +50,23 @@ const MODULE_CONFIG = {
   'UTILISATEUR':         { label: 'Utilisateurs', icon: User, color: 'text-slate-700 bg-slate-50 border-slate-200' },
 };
 
+const ACTION_FILTERS = [
+  ['ALL', 'Toutes les actions'],
+  ['CREATE', 'Création'],
+  ['UPDATE', 'Modification'],
+  ['DELETE', 'Suppression'],
+  ['LOGIN', 'Connexion'],
+  ['CHANGE_PASSWORD', 'Mot de passe'],
+  ['VALIDATION_N1', 'Validation N1'],
+  ['APPROBATION_N2', 'Approbation N2'],
+  ['RESTITUTION', 'Restitution'],
+  ['CLOTURE', 'Clôture'],
+  ['DECLARE', 'Déclaration'],
+  ['ENGAGEMENT', 'Engagement'],
+  ['LIQUIDATION', 'Liquidation'],
+  ['UPLOAD', 'GED Téléversement'],
+];
+
 export default function AuditView() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -60,9 +78,9 @@ export default function AuditView() {
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/journal?size=100');
+      const res = await api.get('/journal?size=1000');
       const page = res?.data || res;
-      setLogs(page?.content || []);
+      setLogs(page?.content || (Array.isArray(page) ? page : []));
     } catch (err) {
       console.error(err);
       toast.error('Erreur lors du chargement du journal d\'audit.');
@@ -96,9 +114,10 @@ export default function AuditView() {
   const totalLogs = logs.length;
   const uniqueModules = new Set(logs.map(l => l.module)).size;
   const uniqueUsers = new Set(logs.map(l => l.username)).size;
+  const scopedLogs = selectedModule === 'ALL' ? logs : logs.filter((l) => l.module === selectedModule);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 lg:p-6 w-full space-y-4">
 
       {/* ── Modal Détails d'Audit ── */}
       {activeLog && (
@@ -161,7 +180,7 @@ export default function AuditView() {
                 </div>
 
                 <div className="p-3.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl">
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Entité & Identifiant</p>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Entité Ciblée</p>
                   <p className="text-xs font-bold text-[#0A1E3F] mt-1">
                     {activeLog.entityName} {activeLog.entityId && <span className="text-[#C59B27]">#{activeLog.entityId}</span>}
                   </p>
@@ -209,7 +228,7 @@ export default function AuditView() {
       )}
 
       {/* ── Page Header ── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
         <div>
           <h1 className="text-2xl font-black text-[#0A1E3F] tracking-tight uppercase flex items-center gap-2.5 font-['Outfit']">
             <ShieldCheck className="w-7 h-7 text-[#C59B27]" />
@@ -268,81 +287,60 @@ export default function AuditView() {
         </div>
       </div>
 
-      {/* ── Module Filter Pills Bar ── */}
-      <div className="bg-white rounded-3xl border border-slate-200 p-4 space-y-3 shadow-xs">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-black text-[#0A1E3F] uppercase tracking-wider flex items-center gap-2">
-            <Activity className="w-3.5 h-3.5 text-[#C59B27]" />
-            Filtrer par Périmètre Métier :
-          </span>
-          <span className="text-xs font-bold text-slate-500">
-            {filteredLogs.length} écriture{filteredLogs.length !== 1 ? 's' : ''} trouvée{filteredLogs.length !== 1 ? 's' : ''}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-          {Object.entries(MODULE_CONFIG).map(([key, config]) => {
-            const isSelected = selectedModule === key;
-            const Icon = config.icon;
-            const count = key === 'ALL' ? logs.length : logs.filter(l => l.module === key).length;
-            if (key !== 'ALL' && count === 0) return null;
-
-            return (
-              <button
-                key={key}
-                onClick={() => setSelectedModule(key)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
-                  isSelected
-                    ? 'gold-gradient-bg text-[#071530] shadow-sm scale-102'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/70'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{config.label}</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-black/15 text-[#071530]' : 'bg-slate-200 text-slate-600'}`}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── Search and Action Bar ── */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
-        <div className="relative w-full sm:max-w-md">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher (utilisateur, action, véhicule, matricule, IP...)"
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-[#0A1E3F] placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-[#C59B27]/20 focus:border-[#C59B27] transition-all"
-          />
-        </div>
-
-        {/* Action filter selector */}
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <select
-            value={selectedAction}
-            onChange={(e) => setSelectedAction(e.target.value)}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none cursor-pointer w-full sm:w-auto"
-          >
-            <option value="ALL">Toutes les actions</option>
-            <option value="CREATE">Création</option>
-            <option value="UPDATE">Modification</option>
-            <option value="DELETE">Suppression</option>
-            <option value="LOGIN">Connexion</option>
-            <option value="CHANGE_PASSWORD">Mot de passe</option>
-            <option value="VALIDATION_N1">Validation N1</option>
-            <option value="APPROBATION_N2">Approbation N2</option>
-            <option value="RESTITUTION">Restitution</option>
-            <option value="CLOTURE">Clôture</option>
-            <option value="DECLARE">Déclaration</option>
-            <option value="ENGAGEMENT">Engagement</option>
-            <option value="LIQUIDATION">Liquidation</option>
-            <option value="UPLOAD">GED Téléversement</option>
-          </select>
+      <div className="bg-white rounded-2xl border border-slate-200 p-3.5 space-y-3 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="relative w-full sm:max-w-md">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Rechercher (utilisateur, action, véhicule, matricule, IP...)"
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-[#0A1E3F] placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-[#C59B27]/20 focus:border-[#C59B27] transition-all"
+            />
+          </div>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <MefSelect
+              value={selectedModule}
+              onChange={(e) => setSelectedModule(e.target.value)}
+              className="min-w-[13.5rem]"
+            >
+              {Object.entries(MODULE_CONFIG).map(([key, config]) => {
+                const count = key === 'ALL' ? logs.length : logs.filter((l) => l.module === key).length;
+                if (key !== 'ALL' && count === 0) return null;
+                return (
+                  <option key={key} value={key}>
+                    {config.label} ({count})
+                  </option>
+                );
+              })}
+            </MefSelect>
+            <MefSelect
+              value={selectedAction}
+              onChange={(e) => setSelectedAction(e.target.value)}
+              className="min-w-[12rem]"
+            >
+              {ACTION_FILTERS.map(([key, label]) => {
+                const count = key === 'ALL' ? scopedLogs.length : scopedLogs.filter((l) => l.action === key).length;
+                if (key !== 'ALL' && count === 0) return null;
+                return (
+                  <option key={key} value={key}>
+                    {label} ({count})
+                  </option>
+                );
+              })}
+            </MefSelect>
+            <button
+              type="button"
+              title="Réafficher tous les modules et toutes les actions"
+              disabled={selectedModule === 'ALL' && selectedAction === 'ALL'}
+              onClick={() => { setSelectedModule('ALL'); setSelectedAction('ALL'); }}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:border-[#C59B27]/50 hover:text-[#0A1E3F] disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-[#C59B27]" />
+              Réinitialiser
+            </button>
+          </div>
         </div>
       </div>
 
@@ -359,18 +357,17 @@ export default function AuditView() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="enterprise-table">
-              <thead>
+          <>
+          <div className="overflow-y-auto overflow-x-hidden max-h-[70vh] w-full relative">
+            <table className="enterprise-table w-full table-fixed">
+              <thead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs">
                 <tr>
-                  <th>Date & Heure</th>
-                  <th>Utilisateur</th>
-                  <th>Module</th>
-                  <th>Action</th>
-                  <th>Entité Ciblée</th>
-                  <th>Détails & Résumé</th>
-                  <th>Adresse IP</th>
-                  <th></th>
+                  <th className="w-[150px] sm:w-[175px]">Date & Heure</th>
+                  <th className="w-[110px] sm:w-[140px]">Utilisateur</th>
+                  <th className="w-[100px] sm:w-[130px] hidden md:table-cell">Module</th>
+                  <th className="w-[110px] sm:w-[135px]">Action</th>
+                  <th className="w-auto">Détails & Résumé</th>
+                  <th className="w-8 text-right"></th>
                 </tr>
               </thead>
               <tbody>
@@ -386,47 +383,35 @@ export default function AuditView() {
                       className="hover:bg-[#F8FAFC] cursor-pointer transition-colors group"
                       title="Cliquer pour afficher les détails complets de la trace"
                     >
-                      <td>
-                        <div className="flex items-center gap-2 font-mono text-xs text-slate-600 whitespace-nowrap">
-                          <Clock className="w-3.5 h-3.5 text-[#C59B27] flex-shrink-0" />
-                          <span>{new Date(l.timestamp).toLocaleString('fr-FR')}</span>
+                      <td className="whitespace-nowrap">
+                        <div className="flex items-center gap-2 font-mono text-xs text-slate-600">
+                          <Clock className="w-3.5 h-3.5 text-[#C59B27] shrink-0" />
+                          <span className="truncate">{new Date(l.timestamp).toLocaleString('fr-FR')}</span>
                         </div>
                       </td>
-                      <td>
-                        <span className="font-bold text-[#0A1E3F] text-xs flex items-center gap-1.5">
-                          <User className="w-3.5 h-3.5 text-slate-400" />
-                          {l.username}
+                      <td className="max-w-0">
+                        <span className="font-bold text-[#0A1E3F] text-xs flex items-center gap-1.5 truncate">
+                          <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate">{l.username}</span>
+                        </span>
+                      </td>
+                      <td className="hidden md:table-cell">
+                        <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold border inline-block truncate max-w-full ${modCfg.color || 'bg-slate-100 text-slate-700 border-slate-200'}`}>
+                          {modCfg.label || l.module}
                         </span>
                       </td>
                       <td>
-                        <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border ${modCfg.color || 'bg-slate-100 text-slate-700 border-slate-200'}`}>
-                          {l.module}
+                        <span className={`${cfg.style} px-2 py-0.5 rounded-md text-[11px] font-extrabold inline-flex items-center gap-1.5 border truncate max-w-full`}>
+                          <ActionIcon className="w-3 h-3 stroke-[2.5] shrink-0" />
+                          <span className="truncate">{cfg.label}</span>
                         </span>
                       </td>
-                      <td>
-                        <span className={`${cfg.style} px-2.5 py-1 rounded-full text-[11px] font-extrabold inline-flex items-center gap-1.5 border shadow-2xs`}>
-                          <ActionIcon className="w-3 h-3 stroke-[2.5]" />
-                          {cfg.label}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="flex items-center gap-1 text-xs">
-                          <span className="font-bold text-slate-800">{l.entityName}</span>
-                          {l.entityId && <span className="text-[#C59B27] font-semibold">#{l.entityId}</span>}
-                        </div>
-                      </td>
-                      <td className="max-w-xs truncate">
-                        <span className="text-xs text-slate-600 truncate block">
+                      <td className="max-w-0">
+                        <span className="text-xs text-slate-600 truncate block w-full" title={l.newValue || l.oldValue || ''}>
                           {l.newValue || l.oldValue || '—'}
                         </span>
                       </td>
-                      <td>
-                        <span className="font-mono text-xs text-slate-400 flex items-center gap-1">
-                          <Globe className="w-3 h-3 text-slate-300" />
-                          {l.ipAddress || '127.0.0.1'}
-                        </span>
-                      </td>
-                      <td className="text-right">
+                      <td className="text-right w-8">
                         <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#0A1E3F] group-hover:translate-x-0.5 transition-all inline-block" />
                       </td>
                     </tr>
@@ -435,6 +420,11 @@ export default function AuditView() {
               </tbody>
             </table>
           </div>
+          <div className="p-3.5 bg-slate-50 border-t border-slate-200 text-xs font-bold text-slate-600 flex items-center justify-between">
+            <span>{filteredLogs.length} écriture{filteredLogs.length > 1 ? 's' : ''} d'audit affichée{filteredLogs.length > 1 ? 's' : ''}</span>
+            <span className="text-slate-400 font-normal">Défilement continu • Cliquez sur une ligne pour voir l'entité ciblée et les snapshots</span>
+          </div>
+          </>
         )}
       </div>
 

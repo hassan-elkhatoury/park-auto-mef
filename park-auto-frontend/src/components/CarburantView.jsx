@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Fuel, CreditCard, AlertTriangle, Plus, Search, Filter, RefreshCw, MapPin, Gauge, X, Info, Eye, Trash2, Edit, CheckCircle2, Calendar, FileText, DollarSign, User } from 'lucide-react';
+import { Fuel, CreditCard, AlertTriangle, Plus, Search, Filter, RefreshCw, RotateCw, MapPin, Gauge, X, Info, Eye, Trash2, Edit, CheckCircle2, Calendar, FileText, DollarSign, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { carburantService } from '../services/carburantService';
 import { vehiculeService } from '../services/vehiculeService';
 import { MoroccanPlate, FUEL_LABELS } from '../utils/vehicule';
 import ConfirmModal from './ConfirmModal';
+import MefSelect from './ui/MefSelect';
 
 export default function CarburantView() {
   const [activeTab, setActiveTab] = useState('pleins'); // 'pleins', 'cartes', 'anomalies'
@@ -224,61 +225,72 @@ export default function CarburantView() {
             </p>
           </div>
         </div>
-        
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowCarteModal(true)}
-            className="border border-[#E2E8F0] text-[#0A1E3F] font-bold text-xs px-4 py-2.5 rounded-xl hover:bg-[#F4F6FB] transition-all cursor-pointer flex items-center gap-2"
-          >
-            <CreditCard className="w-4 h-4" />
-            Nouvelle Carte
-          </button>
-          <button
-            onClick={() => setShowPleinModal(true)}
-            className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-gold flex items-center gap-2 cursor-pointer hover:brightness-105 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            Saisir un Plein
-          </button>
-        </div>
+
+        <button
+          onClick={fetchData}
+          className="bg-white border border-slate-300 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-2 shadow-sm hover:bg-slate-50 cursor-pointer shrink-0"
+        >
+          <RotateCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          <span>Actualiser</span>
+        </button>
       </motion.div>
 
       {/* Navigation Tabs */}
       <motion.div 
-        className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-wrap items-center gap-3 shadow-sm"
+        className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-sm"
         initial={{ opacity: 0, y: -5 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <button
-          onClick={() => setActiveTab('pleins')}
-          className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === 'pleins' ? 'gold-gradient-bg text-[#0A1E3F]' : 'bg-white text-slate-600 hover:bg-slate-50'
-          }`}
-        >
-          <Fuel className="w-4 h-4" />
-          Historique des Pleins ({pleins.length})
-        </button>
-        
-        <button
-          onClick={() => setActiveTab('cartes')}
-          className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === 'cartes' ? 'gold-gradient-bg text-[#0A1E3F]' : 'bg-white text-slate-600 hover:bg-slate-50'
-          }`}
-        >
-          <CreditCard className="w-4 h-4" />
-          Cartes Carburant ({cartes.length})
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setActiveTab('pleins')}
+            className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'pleins' ? 'gold-gradient-bg text-[#0A1E3F]' : 'bg-white text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <Fuel className="w-4 h-4" />
+            Historique des Pleins ({pleins.length})
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('cartes')}
+            className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'cartes' ? 'gold-gradient-bg text-[#0A1E3F]' : 'bg-white text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <CreditCard className="w-4 h-4" />
+            Cartes Carburant ({cartes.length})
+          </button>
 
-        <button
-          onClick={() => setActiveTab('anomalies')}
-          className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === 'anomalies' ? 'gold-gradient-bg text-[#0A1E3F]' : 'bg-white text-slate-600 hover:bg-slate-50'
-          }`}
-        >
-          <AlertTriangle className="w-4 h-4" />
-          Anomalies de Surconsommation ({anomalies.length})
-        </button>
+          <button
+            onClick={() => setActiveTab('anomalies')}
+            className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'anomalies' ? 'gold-gradient-bg text-[#0A1E3F]' : 'bg-white text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <AlertTriangle className="w-4 h-4" />
+            Anomalies de Surconsommation ({anomalies.length})
+          </button>
+        </div>
+
+        {activeTab === 'pleins' && (
+          <button
+            onClick={() => setShowPleinModal(true)}
+            className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-4 py-2 rounded-xl shadow-gold hover:opacity-95 transition-all cursor-pointer flex items-center gap-1.5"
+          >
+            <Plus className="w-3.5 h-3.5" /> Saisir un Plein
+          </button>
+        )}
+
+        {activeTab === 'cartes' && (
+          <button
+            onClick={() => setShowCarteModal(true)}
+            className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-4 py-2 rounded-xl shadow-gold hover:opacity-95 transition-all cursor-pointer flex items-center gap-1.5"
+          >
+            <Plus className="w-3.5 h-3.5" /> Nouvelle Carte
+          </button>
+        )}
       </motion.div>
 
       {/* Tab 1: Historique des Pleins */}
@@ -305,7 +317,7 @@ export default function CarburantView() {
             {directionsList.length > 0 && (
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4 text-slate-400" />
-                <select
+                <MefSelect
                   value={directionFilter}
                   onChange={(e) => setDirectionFilter(e.target.value)}
                   className="px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold outline-none cursor-pointer"
@@ -314,7 +326,7 @@ export default function CarburantView() {
                   {directionsList.map(d => (
                     <option key={d} value={d}>{d}</option>
                   ))}
-                </select>
+                </MefSelect>
               </div>
             )}
           </div>
@@ -677,7 +689,7 @@ export default function CarburantView() {
                 <div className="p-6 overflow-y-auto space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1.5">Véhicule *</label>
-                    <select
+                    <MefSelect
                       required
                       value={pleinForm.vehiculeId}
                       onChange={(e) => {
@@ -701,7 +713,7 @@ export default function CarburantView() {
                           {v.immatriculation} - {v.marque} {v.modele} ({v.typeCarburant ? (FUEL_LABELS[v.typeCarburant] || v.typeCarburant) : 'Diesel'})
                         </option>
                       ))}
-                    </select>
+                    </MefSelect>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -759,7 +771,7 @@ export default function CarburantView() {
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1.5">Carte Carburant</label>
-                    <select
+                    <MefSelect
                       value={pleinForm.carteCarburantId}
                       onChange={(e) => setPleinForm({ ...pleinForm, carteCarburantId: e.target.value })}
                       className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all cursor-pointer"
@@ -773,7 +785,7 @@ export default function CarburantView() {
                             {c.numeroCarte} - {c.fournisseur} ({c.solde || 0} MAD) {c.vehiculeId ? '📌 Carte Attribuée' : '(Réserve)'}
                           </option>
                         ))}
-                    </select>
+                    </MefSelect>
                   </div>
 
                   <div>
@@ -860,7 +872,7 @@ export default function CarburantView() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">Fournisseur *</label>
-                      <select
+                      <MefSelect
                         value={carteForm.fournisseur}
                         onChange={(e) => setCarteForm({ ...carteForm, fournisseur: e.target.value })}
                         className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all cursor-pointer font-medium"
@@ -869,7 +881,7 @@ export default function CarburantView() {
                         <option value="Afriquia">Afriquia</option>
                         <option value="Shell">Shell</option>
                         <option value="Ola Energy">Ola Energy</option>
-                      </select>
+                      </MefSelect>
                     </div>
 
                     <div>
@@ -886,7 +898,7 @@ export default function CarburantView() {
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1.5">Affectation Véhicule</label>
-                    <select
+                    <MefSelect
                       value={carteForm.vehiculeId}
                       onChange={(e) => {
                         const vId = e.target.value;
@@ -903,12 +915,12 @@ export default function CarburantView() {
                       {vehicules.map(v => (
                         <option key={v.id} value={v.id}>{v.immatriculation} - {v.marque} {v.modele}</option>
                       ))}
-                    </select>
+                    </MefSelect>
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1.5">Service MEF / Direction Attribuée *</label>
-                    <select
+                    <MefSelect
                       value={carteForm.serviceAttribue || 'Service Logistique'}
                       onChange={(e) => setCarteForm({ ...carteForm, serviceAttribue: e.target.value })}
                       className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all cursor-pointer font-medium"
@@ -922,7 +934,7 @@ export default function CarburantView() {
                       <option value="Direction Générale des Impôts">Direction Générale des Impôts (DGI)</option>
                       <option value="Administration des Douanes">Administration des Douanes (ADII)</option>
                       <option value="Trésorerie Générale du Royaume">Trésorerie Générale du Royaume (TGR)</option>
-                    </select>
+                    </MefSelect>
                   </div>
                 </div>
 

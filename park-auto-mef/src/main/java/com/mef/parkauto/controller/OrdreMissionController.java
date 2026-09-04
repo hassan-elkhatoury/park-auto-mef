@@ -44,4 +44,16 @@ public class OrdreMissionController {
                 .headers(headers)
                 .body(pdfBytes);
     }
+
+    @GetMapping(value = "/{affectationId}/qr", produces = MediaType.IMAGE_PNG_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_SERVICE', 'CONSULTATION', 'CONDUCTEUR')")
+    @Operation(summary = "QR code HMAC-SHA256 de l'ordre de mission (contrôle d'authenticité)")
+    public ResponseEntity<byte[]> getOrdreMissionQr(@PathVariable Long affectationId, Authentication authentication) {
+        Utilisateur utilisateur = authentication != null && authentication.getPrincipal() instanceof Utilisateur u ? u : null;
+        ordreMissionService.verifierAcces(affectationId, utilisateur);
+        byte[] png = ordreMissionService.generateQrPngForAffectation(affectationId);
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_PNG)
+                .body(png);
+    }
 }

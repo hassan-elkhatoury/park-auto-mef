@@ -32,4 +32,8 @@ public class ReformeVehiculeDto {
     private List<StatutReforme> transitionsPossibles;
     /** Pièces GED rattachées (entité "reforme"). */
     private Integer nbDocumentsGED;
+    /** Référence saisie ou pièce GED PV_COMMISSION. */
+    private Boolean pvCommissionPresent;
+    /** Référence saisie ou pièce GED PV_DOMAINES. */
+    private Boolean pvDomainesPresent;
 }

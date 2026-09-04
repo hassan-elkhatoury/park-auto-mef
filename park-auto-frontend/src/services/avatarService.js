@@ -1,28 +1,47 @@
 /**
- * Service de gestion dynamique des photos de profil (Avatar).
- * Permet l'upload personnalisé, la compression automatique en WebP/JPEG,
- * la persistance locale par utilisateur et la synchronisation réactive entre Navbar & Profil.
+ * Service de gestion des photos de profil (Avatar).
+ * Source de vérité : `user.photoUrl` renvoyé par le backend (login / /auth/me).
+ * localStorage n'est qu'un cache d'affichage, vidé à la déconnexion.
  */
 
+import api from './api';
+
 const AVATAR_STORAGE_PREFIX = 'parkauto_avatar_';
+
+export const DEFAULT_AVATAR = '/assets/portraits/mef-administrateur.jpg';
 
 /**
  * Galerie de portraits officiels / institutionnels prédéfinis
  */
 export const PRESET_AVATARS = [
-  { id: 'admin', label: 'Cadre Supérieur', url: '/assets/avatar_admin.jpg' },
-  { id: 'pres1', label: 'Gestionnaire MEF', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=face' },
-  { id: 'pres2', label: 'Responsable Femme', url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&h=300&fit=crop&crop=face' },
-  { id: 'pres3', label: 'Conducteur / Agent', url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop&crop=face' },
-  { id: 'pres4', label: 'Ingénieur / Technique', url: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=300&h=300&fit=crop&crop=face' },
-  { id: 'pres5', label: 'Cadre Financier', url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=300&h=300&fit=crop&crop=face' },
+  { id: 'admin', label: 'Administrateur MEF', url: '/assets/portraits/mef-administrateur.jpg' },
+  { id: 'gestionnaire', label: 'Gestionnaire local', url: '/assets/portraits/mef-gestionnaire-local.jpg' },
+  { id: 'conducteur', label: 'Conducteur', url: '/assets/portraits/mef-conducteur.jpg' },
+  { id: 'cadre-f1', label: 'Cadre MEF', url: '/assets/portraits/mef-cadre-femme-1.png' },
+  { id: 'cadre-h1', label: 'Cadre MEF', url: '/assets/portraits/mef-cadre-homme-1.png' },
+  { id: 'cadre-f2', label: 'Cadre MEF', url: '/assets/portraits/mef-cadre-femme-2.png' },
+  { id: 'cadre-h2', label: 'Cadre MEF', url: '/assets/portraits/mef-cadre-homme-2.png' },
 ];
 
+const isUploadedPhotoUrl = (url) =>
+  typeof url === 'string' && url.startsWith('/api/auth/photos/');
+
+const withPhotoCacheBuster = (url, user) => {
+  if (!isUploadedPhotoUrl(url)) return url;
+  const version = user?.dateModification || user?.id || '';
+  if (!version) return url;
+  const sep = url.includes('?') ? '&' : '?';
+  return `${url}${sep}v=${encodeURIComponent(version)}`;
+};
+
 /**
- * Récupère l'URL de l'avatar actuel de l'utilisateur
+ * Récupère l'URL de l'avatar actuel de l'utilisateur.
+ * Priorité : photo serveur, puis cache local, puis portrait par défaut.
  */
 export const getUserAvatar = (user) => {
-  if (!user) return '/assets/avatar_admin.jpg';
+  if (!user) return DEFAULT_AVATAR;
+  const fromServer = String(user.photoUrl || user.avatarUrl || '').trim();
+  if (fromServer) return withPhotoCacheBuster(fromServer, user);
   const key = user.email || user.matricule || user.id || 'default';
   try {
     const saved = localStorage.getItem(AVATAR_STORAGE_PREFIX + key);
@@ -30,7 +49,7 @@ export const getUserAvatar = (user) => {
   } catch (e) {
     // Ignore localStorage error
   }
-  return user.photoUrl || user.avatarUrl || '/assets/avatar_admin.jpg';
+  return DEFAULT_AVATAR;
 };
 
 /**
@@ -79,8 +98,54 @@ export const processImageFile = (file, maxSize = 256, quality = 0.85) => {
   });
 };
 
+const dataUrlToJpegFile = (dataUrl) => {
+  const comma = dataUrl.indexOf(',');
+  const header = comma >= 0 ? dataUrl.slice(0, comma) : '';
+  const base64 = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+  const mime = /data:(.*?);/.exec(header)?.[1] || 'image/jpeg';
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new File([bytes], 'avatar.jpg', { type: mime });
+};
+
+const unwrapUser = (res) => {
+  if (!res || typeof res !== 'object') return null;
+  if (res.data?.email || res.data?.id != null || res.data?.photoUrl) return res.data;
+  if (res.data?.utilisateur?.email || res.data?.utilisateur?.id != null) return res.data.utilisateur;
+  if (res.utilisateur?.email || res.utilisateur?.id != null) return res.utilisateur;
+  if (res.email || res.id != null || res.photoUrl) return res;
+  return null;
+};
+
 /**
- * Enregistre un nouvel avatar pour l'utilisateur et émet un événement global
+ * Persiste la photo côté serveur (portrait prédéfini ou fichier uploadé).
+ * @returns {Promise<object>} utilisateur mis à jour (avec photoUrl)
+ */
+export const persistUserAvatar = async (avatarUrl) => {
+  let raw;
+  if (avatarUrl && avatarUrl.startsWith('data:')) {
+    const form = new FormData();
+    form.append('file', dataUrlToJpegFile(avatarUrl));
+    raw = await api.put('/auth/me/photo', form);
+  } else {
+    const normalized = String(avatarUrl || DEFAULT_AVATAR).trim().split('?')[0];
+    raw = isUploadedPhotoUrl(normalized)
+      ? await api.get('/auth/me')
+      : await api.put('/auth/me/photo', { photoUrl: normalized || DEFAULT_AVATAR });
+  }
+
+  const user = unwrapUser(raw);
+  if (!user || (user.email == null && user.id == null)) {
+    throw new Error("Le serveur n'a pas enregistré la photo de profil.");
+  }
+  return user;
+};
+
+/**
+ * Enregistre un nouvel avatar en cache local et émet un événement global
  */
 export const saveUserAvatar = (user, avatarUrl) => {
   if (!user) return;
@@ -91,14 +156,13 @@ export const saveUserAvatar = (user, avatarUrl) => {
     console.warn('Stockage local plein pour avatar:', e);
   }
 
-  // Notifier toute l'application (Navbar, Profile, etc.)
   window.dispatchEvent(new CustomEvent('parkauto:avatar-updated', {
     detail: { email: user.email, avatarUrl }
   }));
 };
 
 /**
- * Réinitialise l'avatar par défaut
+ * Réinitialise l'avatar par défaut (cache local uniquement)
  */
 export const resetUserAvatar = (user) => {
   if (!user) return;
@@ -108,6 +172,6 @@ export const resetUserAvatar = (user) => {
   } catch (e) {}
 
   window.dispatchEvent(new CustomEvent('parkauto:avatar-updated', {
-    detail: { email: user.email, avatarUrl: '/assets/avatar_admin.jpg' }
+    detail: { email: user.email, avatarUrl: DEFAULT_AVATAR }
   }));
 };

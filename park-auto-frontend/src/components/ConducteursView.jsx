@@ -4,6 +4,7 @@ import { Search, Plus, UserCheck, AlertTriangle, ShieldCheck, Phone, Mail, Edit,
 import { toast } from 'react-hot-toast';
 import api from '../services/api';
 import ConfirmModal from './ConfirmModal';
+import MefSelect from './ui/MefSelect';
 
 export default function ConducteursView() {
   const navigate = useNavigate();
@@ -427,7 +428,7 @@ export default function ConducteursView() {
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1.5">Catégorie(s) du Permis *</label>
-                    <select
+                    <MefSelect
                       value={formData.categoriePermis}
                       onChange={(e) => setFormData({ ...formData, categoriePermis: e.target.value })}
                       className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all font-bold cursor-pointer"
@@ -435,7 +436,7 @@ export default function ConducteursView() {
                       <option value="B">Catégorie B (Tourisme)</option>
                       <option value="B, C">Catégories B, C (Poids Lourd)</option>
                       <option value="B, C, D">Catégories B, C, D (Transport Personnel)</option>
-                    </select>
+                    </MefSelect>
                   </div>
                 </div>
 

@@ -17,6 +17,7 @@ public record UtilisateurResponse(
         UserStatus statut,
         RoleResponse role,
         boolean doitChangerMotDePasse,
+        String photoUrl,
         LocalDateTime dateCreation,
         LocalDateTime dateModification
 ) {

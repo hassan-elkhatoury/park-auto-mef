@@ -12,6 +12,7 @@ import { garageService } from '../services/garageService';
 import api from '../services/api';
 import { MoroccanPlate } from '../utils/vehicule';
 import ConfirmModal from './ConfirmModal';
+import MefSelect from './ui/MefSelect';
 
 const URGENCES = [
   { value: 'CRITIQUE', label: 'Critique (Immobilisant Immédiat)', short: 'Critique', color: 'bg-red-100 text-red-800 border-red-200' },
@@ -440,7 +441,7 @@ export default function PannesView() {
               {/* Véhicule */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Véhicule Concerné *</label>
-                <select
+                <MefSelect
                   required
                   value={form.vehiculeId}
                   onChange={(e) => handleSelectVehicule(e.target.value)}
@@ -452,13 +453,13 @@ export default function PannesView() {
                       {v.immatriculation} - {v.marque} {v.modele} ({v.direction || 'MEF'})
                     </option>
                   ))}
-                </select>
+                </MefSelect>
               </div>
 
               {/* Conducteur */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Conducteur / Déclarant</label>
-                <select
+                <MefSelect
                   value={form.conducteurId}
                   onChange={(e) => setForm({ ...form, conducteurId: e.target.value })}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all cursor-pointer font-medium"
@@ -469,7 +470,7 @@ export default function PannesView() {
                       {c.nom} {c.prenom} ({c.matricule})
                     </option>
                   ))}
-                </select>
+                </MefSelect>
               </div>
 
               {/* Date & Heure */}
@@ -537,7 +538,7 @@ export default function PannesView() {
               {/* Degré d'urgence */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Degré d'Urgence</label>
-                <select
+                <MefSelect
                   value={form.degreUrgence}
                   onChange={(e) => setForm({ ...form, degreUrgence: e.target.value })}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all cursor-pointer font-medium"
@@ -545,13 +546,13 @@ export default function PannesView() {
                   {URGENCES.map(u => (
                     <option key={u.value} value={u.value}>{u.label}</option>
                   ))}
-                </select>
+                </MefSelect>
               </div>
 
               {/* Garage Agréé Assigné */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Atelier / Garage Agréé MEF Assigné</label>
-                <select
+                <MefSelect
                   value={form.garageAgreeId}
                   onChange={(e) => setForm({ ...form, garageAgreeId: e.target.value })}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] focus:border-[#C59B27] transition-all cursor-pointer font-medium"
@@ -560,7 +561,7 @@ export default function PannesView() {
                   {garages.map((g) => (
                     <option key={g.id} value={g.id}>{g.nomGarage} ({g.ville})</option>
                   ))}
-                </select>
+                </MefSelect>
               </div>
 
               {/* Diagnostic Atelier */}
@@ -657,7 +658,7 @@ export default function PannesView() {
 
             <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
               <Filter className="w-3.5 h-3.5 text-slate-400" />
-              <select
+              <MefSelect
                 value={statutFilter}
                 onChange={(e) => setStatutFilter(e.target.value)}
                 className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#0A1E3F] cursor-pointer"
@@ -667,9 +668,9 @@ export default function PannesView() {
                 <option value="EN_DIAGNOSTIC">En Diagnostic</option>
                 <option value="EN_REPARATION">En Réparation</option>
                 <option value="REPAREE">Réparée (Clôturée)</option>
-              </select>
+              </MefSelect>
 
-              <select
+              <MefSelect
                 value={urgenceFilter}
                 onChange={(e) => setUrgenceFilter(e.target.value)}
                 className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#0A1E3F] cursor-pointer"
@@ -679,9 +680,9 @@ export default function PannesView() {
                 <option value="ELEVEE">Élevée</option>
                 <option value="MOYENNE">Moyenne</option>
                 <option value="FAIBLE">Faible</option>
-              </select>
+              </MefSelect>
 
-              <select
+              <MefSelect
                 value={vehiculeFilter}
                 onChange={(e) => setVehiculeFilter(e.target.value)}
                 className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#0A1E3F] cursor-pointer max-w-[160px]"
@@ -690,7 +691,7 @@ export default function PannesView() {
                 {vehicules.map(v => (
                   <option key={v.id} value={String(v.id)}>{v.immatriculation} - {v.marque}</option>
                 ))}
-              </select>
+              </MefSelect>
 
               <span className="text-[11px] font-extrabold text-[#0A1E3F] bg-[#EBF3FA] border border-blue-100 px-2.5 py-1.5 rounded-full whitespace-nowrap">
                 {filteredPannes.length} pannes

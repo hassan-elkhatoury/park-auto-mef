@@ -7,6 +7,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -71,7 +72,10 @@ public class SecurityConfig {
                                 "/actuator/health",
                                 "/actuator/health/**",
                                 "/api/auth/login",
-                                "/api/auth/refresh",
+                                "/api/auth/refresh"
+                        ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/auth/photos/**").permitAll()
+                        .requestMatchers(
                                 "/swagger-ui/**",
                                 "/api-docs",
                                 "/api-docs/**",
@@ -105,8 +109,6 @@ public class SecurityConfig {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(customUserDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
-        // Migration transparente SHA-256 → BCrypt à la première connexion réussie
-        authProvider.setUserDetailsPasswordService(customUserDetailsService);
         return authProvider;
     }
 
@@ -123,25 +125,14 @@ public class SecurityConfig {
     }
 
     /**
-     * Encodeur de mots de passe : BCrypt (coût 12) par défaut, conformément aux exigences
-     * DGSSI de hachage adaptatif. Les anciens hachages SHA-256 salés (format {@code sel$hash},
-     * sans préfixe {@code {id}}) restent vérifiables et sont automatiquement ré-encodés en
-     * BCrypt lors de la prochaine authentification réussie
-     * (cf. {@link CustomUserDetailsService#updatePassword}).
+     * Encodeur de mots de passe : SHA-256 avec sel aléatoire (16 octets),
+     * conformément aux spécifications du projet.
      *
-     * @return l'encodeur délégué
+     * @return l'encodeur SHA-256
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
-        String defaultId = "bcrypt";
-        java.util.Map<String, PasswordEncoder> encoders = new java.util.HashMap<>();
-        encoders.put(defaultId, new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder(12));
-        encoders.put("sha256", new Sha256PasswordEncoder());
-        org.springframework.security.crypto.password.DelegatingPasswordEncoder delegating =
-                new org.springframework.security.crypto.password.DelegatingPasswordEncoder(defaultId, encoders);
-        // Hachages historiques sans préfixe {id} → vérifiés avec l'ancien algorithme SHA-256 salé
-        delegating.setDefaultPasswordEncoderForMatches(new Sha256PasswordEncoder());
-        return delegating;
+        return new Sha256PasswordEncoder();
     }
 
     /**

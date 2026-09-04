@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../services/api';
+import MefSelect from './ui/MefSelect';
 
 function SpecItem({ icon: Icon, label, children }) {
   return (
@@ -32,6 +33,7 @@ export default function AffectationDetailView() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
+  const [qrUrl, setQrUrl] = useState(null);
   const [isRestitutionOpen, setIsRestitutionOpen] = useState(false);
   const [restitutionForm, setRestitutionForm] = useState({
     kilometrageRetour: '',
@@ -56,6 +58,25 @@ export default function AffectationDetailView() {
   useEffect(() => {
     fetchAffectation();
   }, [fetchAffectation]);
+
+  useEffect(() => {
+    if (!id) return undefined;
+    let objectUrl;
+    let cancelled = false;
+    api.get(`/ordres-de-mission/${id}/qr`, { responseType: 'blob' })
+      .then((res) => {
+        const file = res instanceof Blob ? res : new Blob([res], { type: 'image/png' });
+        objectUrl = URL.createObjectURL(file);
+        if (!cancelled) setQrUrl(objectUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setQrUrl(null);
+      });
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [id]);
 
   const handleOpenRestitution = () => {
     setRestitutionForm({
@@ -91,11 +112,12 @@ export default function AffectationDetailView() {
 
   const handleOpenPdfOrdreMission = async () => {
     try {
-      const blob = await api.get(`/ordres-de-mission/${affectation.id}/pdf`, { responseType: 'blob' });
-      const blobUrl = URL.createObjectURL(blob);
+      const res = await api.get(`/ordres-de-mission/${affectation.id}/pdf`, { responseType: 'blob' });
+      const file = res instanceof Blob ? res : new Blob([res], { type: 'application/pdf' });
+      const blobUrl = URL.createObjectURL(new Blob([file], { type: 'application/pdf' }));
       window.open(blobUrl, '_blank');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Erreur lors de l\'ouverture du PDF');
+      toast.error(err.response?.data?.message || err.message || 'Erreur lors de l\'ouverture du PDF');
     }
   };
 
@@ -178,7 +200,14 @@ export default function AffectationDetailView() {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 shrink-0">
+            <div className="flex flex-wrap items-start gap-3 shrink-0">
+              {qrUrl && (
+                <div className="bg-white border border-[#C59B27]/40 rounded-xl p-2 text-center shadow-sm">
+                  <img src={qrUrl} alt="QR d'authentification HMAC-SHA256" className="w-28 h-28 mx-auto" />
+                  <p className="text-[9px] font-extrabold text-[#0A1E3F] uppercase tracking-wide mt-1">QR HMAC-SHA256</p>
+                  <p className="text-[9px] font-bold text-slate-500">{affectation.reference}</p>
+                </div>
+              )}
               <button
                 onClick={handleOpenPdfOrdreMission}
                 className="bg-[#0A1E3F] hover:bg-[#122B55] text-[#D7B14A] font-extrabold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-sm transition-all cursor-pointer"
@@ -303,7 +332,7 @@ export default function AffectationDetailView() {
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Niveau Carburant au Retour</label>
-                <select
+                <MefSelect
                   value={restitutionForm.niveauCarburantRetour}
                   onChange={(e) => setRestitutionForm({ ...restitutionForm, niveauCarburantRetour: e.target.value })}
                   className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-bold"
@@ -313,7 +342,7 @@ export default function AffectationDetailView() {
                   <option value="1/2">1/2 Réservoir</option>
                   <option value="1/4">1/4 Réservoir</option>
                   <option value="Réserve">Réserve</option>
-                </select>
+                </MefSelect>
               </div>
 
               <div>

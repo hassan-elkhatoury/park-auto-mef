@@ -18,6 +18,15 @@ public class ReformeVehiculeController {
     private final ReformeVehiculeService reformeService;
 
     @GetMapping public ResponseEntity<List<ReformeVehiculeDto>> getAll() { return ResponseEntity.ok(reformeService.getAll()); }
+    @GetMapping("/{id}/pv-commission")
+    public ResponseEntity<byte[]> getPvCommissionPdf(@PathVariable Long id) {
+        byte[] pdf = reformeService.generatePvCommissionPdf(id);
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=\"PV_Commission_Reforme_" + id + ".pdf\"")
+                .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+                .body(pdf);
+    }
     @GetMapping("/{id}") public ResponseEntity<ReformeVehiculeDto> getById(@PathVariable Long id) { return ResponseEntity.ok(reformeService.getById(id)); }
     @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE_CENTRAL')")
     @PostMapping public ResponseEntity<ReformeVehiculeDto> creer(@RequestBody ReformeVehiculeRequest req) { return ResponseEntity.status(HttpStatus.CREATED).body(reformeService.creerOuModifier(req)); }

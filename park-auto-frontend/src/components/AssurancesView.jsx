@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  ShieldCheck, ShieldAlert, AlertTriangle, Plus, Search, Filter, RefreshCw, 
-  FileText, CheckCircle2, Clock, X, Info, Eye, Trash2, Edit, Car, Calendar, 
-  DollarSign, User, AlertOctagon, MapPin, Building, Shield
+  ShieldCheck, Plus, Search, Filter, RefreshCw, 
+  FileText, CheckCircle2, Clock, X, Eye, Trash2, Edit, 
+  MapPin
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { assuranceService } from '../services/assuranceService';
@@ -15,6 +16,7 @@ import { documentService } from '../services/documentService';
 import { MoroccanPlate } from '../utils/vehicule';
 import ConfirmModal from './ConfirmModal';
 import GedDocumentsPanel from './GedDocumentsPanel';
+import MefSelect from './ui/MefSelect';
 
 const readCurrentUser = () => {
   try {
@@ -27,17 +29,17 @@ const readCurrentUser = () => {
 
 const COMPAGNIES = ['AXA', 'RMA', 'WAFA', 'SAHAM', 'ATLANTA', 'AUTRE'];
 const GARANTIES = ['TOUS_RISQUES', 'TIERS', 'VOL', 'INCENDIE'];
-const NATURES_ACCIDENT = ['COLLISION', 'INCENDIE', 'VOL', 'VANDALISME', 'AUTRE'];
+const SINISTRES_OUVERTS = ['DECLARE', 'EN_EXPERTISE', 'EN_COURS_D_EXPERTISE', 'TRANSMIS'];
 
 export default function AssurancesView() {
+  const navigate = useNavigate();
   const user = readCurrentUser();
   const roleName = typeof user?.role === 'string' ? user.role : (user?.role?.nom || user?.role?.name || 'CONSULTATION');
   const canUploadGed = ['ADMIN', 'GESTIONNAIRE_CENTRAL', 'GESTIONNAIRE_LOCAL', 'RESPONSABLE_SERVICE', 'RESPONSABLE_FINANCIER'].includes(roleName);
   const canDeleteGed = ['ADMIN', 'GESTIONNAIRE_CENTRAL'].includes(roleName);
   const [pendingPoliceFiles, setPendingPoliceFiles] = useState([]);
-  const [pendingSinistreFiles, setPendingSinistreFiles] = useState([]);
   const [pendingInfractionFiles, setPendingInfractionFiles] = useState([]);
-  const [activeTab, setActiveTab] = useState('polices'); // 'polices', 'sinistres', 'infractions'
+  const [activeTab, setActiveTab] = useState('polices'); // 'polices' | 'infractions'
   const [polices, setPolices] = useState([]);
   const [sinistres, setSinistres] = useState([]);
   const [infractions, setInfractions] = useState([]);
@@ -51,7 +53,6 @@ export default function AssurancesView() {
 
   // Modals
   const [showPoliceModal, setShowPoliceModal] = useState(false);
-  const [showSinistreModal, setShowSinistreModal] = useState(false);
   const [showInfractionModal, setShowInfractionModal] = useState(false);
 
   const [selectedItemDetail, setSelectedItemDetail] = useState(null);
@@ -61,11 +62,6 @@ export default function AssurancesView() {
   const [policeForm, setPoliceForm] = useState({
     id: null, vehiculeId: '', numeroPolice: '', compagnie: 'AXA', typeGarantie: 'TOUS_RISQUES',
     dateDebut: '', dateFin: '', montantPrime: '', franchise: '', statut: 'ACTIVE', documents: '', observations: ''
-  });
-
-  const [sinistreForm, setSinistreForm] = useState({
-    id: null, vehiculeId: '', conducteurId: '', assuranceId: '', dateAccident: '',
-    lieuAccident: '', description: '', tiersImpliques: '', natureAccident: 'COLLISION', montantDommages: '', statut: 'DECLARE', referenceExpertise: ''
   });
 
   const [infractionForm, setInfractionForm] = useState({
@@ -138,37 +134,6 @@ export default function AssurancesView() {
     }
   };
 
-  // Sinistre Handler
-  const handleSinistreSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const payload = {
-        ...sinistreForm,
-        vehiculeId: Number(sinistreForm.vehiculeId),
-        conducteurId: sinistreForm.conducteurId ? Number(sinistreForm.conducteurId) : null,
-        assuranceId: sinistreForm.assuranceId ? Number(sinistreForm.assuranceId) : null,
-        montantDommages: sinistreForm.montantDommages ? parseFloat(sinistreForm.montantDommages) : 0
-      };
-      const saved = sinistreForm.id
-        ? await sinistreService.modifier(sinistreForm.id, payload)
-        : await sinistreService.declarer(payload);
-      const entityId = sinistreForm.id || saved?.id;
-      if (entityId && pendingSinistreFiles.length) {
-        try {
-          await documentService.uploadMany(pendingSinistreFiles, 'sinistre', entityId, 'CONSTAT');
-        } catch (uploadErr) {
-          toast.error(getApiErrorMessage(uploadErr, 'Sinistre enregistré, mais le dépôt GED a échoué.'));
-        }
-      }
-      toast.success(sinistreForm.id ? 'Sinistre mis à jour avec succès' : 'Sinistre déclaré — le véhicule est passé en statut ACCIDENTÉ');
-      setShowSinistreModal(false);
-      resetSinistreForm();
-      fetchData();
-    } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Erreur lors de l\'enregistrement du sinistre'));
-    }
-  };
-
   // Infraction Handler
   const handleInfractionSubmit = async (e) => {
     e.preventDefault();
@@ -204,7 +169,6 @@ export default function AssurancesView() {
     setDeleteModal(prev => ({ ...prev, loading: true }));
     try {
       if (type === 'police') await assuranceService.delete(item.id);
-      else if (type === 'sinistre') await sinistreService.delete(item.id);
       else if (type === 'infraction') await infractionService.delete(item.id);
       toast.success('Élément supprimé avec succès');
       setDeleteModal({ isOpen: false, item: null, type: '', loading: false });
@@ -226,10 +190,6 @@ export default function AssurancesView() {
     setPendingPoliceFiles([]);
     setPoliceForm({ id: null, vehiculeId: '', numeroPolice: generateAutoNumeroPolice('AXA'), compagnie: 'AXA', typeGarantie: 'TOUS_RISQUES', dateDebut: '', dateFin: '', montantPrime: '', franchise: '', statut: 'ACTIVE', documents: '', observations: '' });
   };
-  const resetSinistreForm = () => {
-    setPendingSinistreFiles([]);
-    setSinistreForm({ id: null, vehiculeId: '', conducteurId: '', assuranceId: '', dateAccident: '', lieuAccident: '', description: '', tiersImpliques: '', natureAccident: 'COLLISION', montantDommages: '', statut: 'DECLARE', referenceExpertise: '' });
-  };
   const resetInfractionForm = () => {
     setPendingInfractionFiles([]);
     setInfractionForm({ id: null, vehiculeId: '', conducteurId: '', dateInfraction: '', lieuInfraction: '', typeInfraction: '', montantAmende: '', statut: 'EN_ATTENTE', referenceContravention: '', observations: '' });
@@ -241,11 +201,6 @@ export default function AssurancesView() {
     const matchSearch = !searchTerm || (p.numeroPolice && p.numeroPolice.toLowerCase().includes(q)) || (p.immatriculation && p.immatriculation.toLowerCase().includes(q)) || (p.compagnie && p.compagnie.toLowerCase().includes(q));
     const matchStatut = statutFilter === 'ALL' || p.statut === statutFilter;
     return matchSearch && matchStatut;
-  });
-
-  const filteredSinistres = sinistres.filter(s => {
-    const q = searchTerm.toLowerCase();
-    return !searchTerm || (s.immatriculation && s.immatriculation.toLowerCase().includes(q)) || (s.lieuAccident && s.lieuAccident.toLowerCase().includes(q)) || (s.natureAccident && s.natureAccident.toLowerCase().includes(q));
   });
 
   const filteredInfractions = infractions.filter(i => {
@@ -260,7 +215,7 @@ export default function AssurancesView() {
     const diff = (new Date(p.dateFin) - new Date()) / (1000 * 3600 * 24);
     return diff > 0 && diff <= 30;
   }).length;
-  const sinistresEnCoursCount = sinistres.filter(s => s.statut === 'DECLARE' || s.statut === 'EN_EXPERTISE').length;
+  const sinistresEnCoursCount = sinistres.filter(s => SINISTRES_OUVERTS.includes(s.statut)).length;
   const infractionsEnAttenteCount = infractions.filter(i => i.statut === 'EN_ATTENTE').length;
 
   return (
@@ -278,35 +233,17 @@ export default function AssurancesView() {
           </div>
           <div>
             <h1 className="text-xl font-black text-[#0A1E3F] tracking-wide uppercase flex items-center gap-2">
-              Assurances, Sinistres & Infractions
+              Assurances
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              Polices d'assurance flotte, déclaration des accidents, contrôle d'assurance active et suivi des contraventions
+              Polices d'assurance flotte, échéances et suivi des contraventions
             </p>
           </div>
-        </div>
-        
-        <div className="flex items-center gap-3 flex-wrap">
-          <button
-            onClick={() => { resetSinistreForm(); setShowSinistreModal(true); }}
-            className="border border-amber-200 bg-amber-50 text-amber-900 font-extrabold text-xs px-4 py-2.5 rounded-xl hover:bg-amber-100 transition-all cursor-pointer flex items-center gap-2"
-          >
-            <ShieldAlert className="w-4 h-4 text-amber-600" />
-            Déclarer Sinistre
-          </button>
-          
-          <button
-            onClick={() => { resetPoliceForm(); setShowPoliceModal(true); }}
-            className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-gold flex items-center gap-2 cursor-pointer hover:brightness-105 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            Nouvelle Police
-          </button>
         </div>
       </motion.div>
 
       {/* KPI Stats Cards Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <motion.div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
           <div>
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Polices Actives</span>
@@ -328,16 +265,6 @@ export default function AssurancesView() {
         </motion.div>
 
         <motion.div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-          <div>
-            <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider block">Sinistres en Cours</span>
-            <span className="text-xl font-black text-rose-700 mt-1 block">{sinistresEnCoursCount} Dossiers</span>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center">
-            <AlertOctagon className="w-5 h-5" />
-          </div>
-        </motion.div>
-
-        <motion.div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <div>
             <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider block">PV / Infractions</span>
             <span className="text-xl font-black text-blue-900 mt-1 block">{infractionsEnAttenteCount} Non payées</span>
@@ -366,16 +293,6 @@ export default function AssurancesView() {
           </button>
 
           <button
-            onClick={() => setActiveTab('sinistres')}
-            className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
-              activeTab === 'sinistres' ? 'gold-gradient-bg text-[#0A1E3F]' : 'bg-white text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <ShieldAlert className="w-4 h-4" />
-            Sinistres & Accidents ({sinistres.length})
-          </button>
-
-          <button
             onClick={() => setActiveTab('infractions')}
             className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === 'infractions' ? 'gold-gradient-bg text-[#0A1E3F]' : 'bg-white text-slate-600 hover:bg-slate-50'
@@ -386,10 +303,19 @@ export default function AssurancesView() {
           </button>
         </div>
 
+        {activeTab === 'polices' && (
+          <button
+            onClick={() => { resetPoliceForm(); setShowPoliceModal(true); }}
+            className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-4 py-2 rounded-xl shadow-gold hover:opacity-95 transition-all cursor-pointer flex items-center gap-1.5"
+          >
+            <Plus className="w-3.5 h-3.5" /> Nouvelle Police
+          </button>
+        )}
+
         {activeTab === 'infractions' && (
           <button
             onClick={() => { resetInfractionForm(); setShowInfractionModal(true); }}
-            className="border border-[#E2E8F0] text-[#0A1E3F] font-bold text-xs px-4 py-2 rounded-xl hover:bg-[#F4F6FB] transition-all cursor-pointer flex items-center gap-1.5"
+            className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-4 py-2 rounded-xl shadow-gold hover:opacity-95 transition-all cursor-pointer flex items-center gap-1.5"
           >
             <Plus className="w-3.5 h-3.5" /> Nouvelle Infraction
           </button>
@@ -421,7 +347,7 @@ export default function AssurancesView() {
         {activeTab === 'polices' && (
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-slate-400" />
-            <select
+            <MefSelect
               value={statutFilter}
               onChange={(e) => setStatutFilter(e.target.value)}
               className="px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold outline-none cursor-pointer"
@@ -430,13 +356,13 @@ export default function AssurancesView() {
               <option value="ACTIVE">Active</option>
               <option value="EXPIREE">Expirée</option>
               <option value="SUSPENDUE">Suspendue</option>
-            </select>
+            </MefSelect>
           </div>
         )}
 
         <div className="text-xs font-bold text-slate-500">
           Affichage de <span className="text-[#0A1E3F] font-extrabold">
-            {activeTab === 'polices' ? filteredPolices.length : activeTab === 'sinistres' ? filteredSinistres.length : filteredInfractions.length}
+            {activeTab === 'polices' ? filteredPolices.length : filteredInfractions.length}
           </span> élément(s)
         </div>
       </motion.div>
@@ -558,104 +484,7 @@ export default function AssurancesView() {
         </motion.div>
       )}
 
-      {/* Tab 2: Sinistres */}
-      {activeTab === 'sinistres' && (
-        <motion.div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <div className="overflow-x-auto">
-            <table className="enterprise-table">
-              <thead>
-                <tr>
-                  <th>Véhicule</th>
-                  <th>Date & Lieu Accident</th>
-                  <th>Nature & Dommages</th>
-                  <th>Conducteur</th>
-                  <th>Statut Dossier</th>
-                  <th className="!text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredSinistres.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="py-12 text-center">
-                      <ShieldAlert className="w-8 h-8 text-slate-300 mx-auto mb-3" />
-                      <span className="text-xs font-bold text-slate-500">Aucun sinistre déclaré.</span>
-                    </td>
-                  </tr>
-                ) : (
-                  filteredSinistres.map((s) => (
-                    <tr key={s.id}>
-                      <td>
-                        <MoroccanPlate immatriculation={s.immatriculation} />
-                        <div className="text-[11px] text-slate-500 mt-1 font-medium">{s.marqueModele}</div>
-                      </td>
-
-                      <td>
-                        <div className="font-bold text-[#0A1E3F]">
-                          {s.dateAccident ? new Date(s.dateAccident).toLocaleDateString('fr-FR') : '-'}
-                        </div>
-                        <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                          <MapPin className="w-3 h-3 text-[#C59B27]" /> {s.lieuAccident || 'Non spécifié'}
-                        </div>
-                      </td>
-
-                      <td>
-                        <span className="font-extrabold text-[#0A1E3F] block">{s.natureAccident}</span>
-                        <span className="text-xs font-black text-rose-700">
-                          {s.montantDommages ? s.montantDommages.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) : '0.00'} MAD
-                        </span>
-                      </td>
-
-                      <td>
-                        <div className="text-xs font-bold text-slate-700 flex items-center gap-1">
-                          <User className="w-3.5 h-3.5 text-slate-400" /> {s.conducteurNom || 'Conducteur non assigné'}
-                        </div>
-                      </td>
-
-                      <td>
-                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-black ${
-                          s.statut === 'DECLARE' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
-                          s.statut === 'EN_EXPERTISE' ? 'bg-blue-100 text-blue-800 border border-blue-300' :
-                          'bg-emerald-100 text-emerald-800'
-                        }`}>
-                          {s.statut}
-                        </span>
-                      </td>
-
-                      <td>
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => setSelectedItemDetail({ item: s, type: 'sinistre' })}
-                            className="w-8 h-8 rounded-lg bg-[#C59B27]/10 border border-[#C59B27]/40 text-[#94700E] hover:bg-[#C59B27] hover:text-[#0A1E3F] flex items-center justify-center transition-all cursor-pointer"
-                            title="Détails du sinistre"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => { setSinistreForm(s); setShowSinistreModal(true); }}
-                            className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center cursor-pointer"
-                            title="Modifier le sinistre"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => setDeleteModal({ isOpen: true, item: s, type: 'sinistre', loading: false })}
-                            className="w-8 h-8 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-500 hover:text-white hover:border-red-500 flex items-center justify-center transition-all cursor-pointer"
-                            title="Supprimer dossier"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Tab 3: Infractions */}
+      {/* Tab 2: Infractions */}
       {activeTab === 'infractions' && (
         <motion.div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <div className="overflow-x-auto">
@@ -785,7 +614,7 @@ export default function AssurancesView() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">Véhicule concerné *</label>
-                      <select
+                      <MefSelect
                         required
                         value={policeForm.vehiculeId}
                         onChange={(e) => setPoliceForm({ ...policeForm, vehiculeId: e.target.value })}
@@ -797,7 +626,7 @@ export default function AssurancesView() {
                             {v.immatriculation} - {v.marque} {v.modele}
                           </option>
                         ))}
-                      </select>
+                      </MefSelect>
                     </div>
 
                     <div>
@@ -824,7 +653,7 @@ export default function AssurancesView() {
 
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">Compagnie d'assurance</label>
-                      <select
+                      <MefSelect
                         value={policeForm.compagnie}
                         onChange={(e) => {
                           const newCompagnie = e.target.value;
@@ -837,18 +666,18 @@ export default function AssurancesView() {
                         className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] transition-all cursor-pointer font-medium"
                       >
                         {COMPAGNIES.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
+                      </MefSelect>
                     </div>
 
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">Type de Garantie</label>
-                      <select
+                      <MefSelect
                         value={policeForm.typeGarantie}
                         onChange={(e) => setPoliceForm({ ...policeForm, typeGarantie: e.target.value })}
                         className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] transition-all cursor-pointer font-medium"
                       >
                         {GARANTIES.map(g => <option key={g} value={g}>{g.replace('_', ' ')}</option>)}
-                      </select>
+                      </MefSelect>
                     </div>
 
                     <div>
@@ -899,9 +728,9 @@ export default function AssurancesView() {
 
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">Statut de la police</label>
-                      <select value={policeForm.statut} onChange={(e) => setPoliceForm({ ...policeForm, statut: e.target.value })} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] cursor-pointer font-medium">
+                      <MefSelect value={policeForm.statut} onChange={(e) => setPoliceForm({ ...policeForm, statut: e.target.value })} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] cursor-pointer font-medium">
                         <option value="ACTIVE">Active</option><option value="EXPIREE">Expirée</option><option value="SUSPENDUE">Suspendue</option>
-                      </select>
+                      </MefSelect>
                     </div>
 
                   </div>
@@ -931,126 +760,6 @@ export default function AssurancesView() {
                   <button type="submit" className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-gold hover:brightness-105 transition-all flex items-center gap-2 cursor-pointer">
                     <ShieldCheck className="w-3.5 h-3.5" />
                     <span>Enregistrer</span>
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Modal Sinistre */}
-      <AnimatePresence>
-        {showSinistreModal && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <motion.div 
-              className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] shadow-2xl border border-slate-200/80 overflow-hidden flex flex-col"
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-            >
-              {/* Header Banner */}
-              <div className="bg-[#0A1E3F] text-white p-5 flex items-center justify-between border-b border-[#C59B27]/30 shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
-                    <ShieldAlert className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-black text-sm uppercase tracking-wider text-white">
-                      {sinistreForm.id ? 'Modifier le Sinistre' : 'Déclarer un Sinistre'}
-                    </h3>
-                    <p className="text-[11px] text-slate-300 font-normal">Déclaration immédiate & mise à jour du statut véhicule</p>
-                  </div>
-                </div>
-                <button 
-                  type="button" 
-                  onClick={() => setShowSinistreModal(false)} 
-                  className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <form onSubmit={handleSinistreSubmit} className="flex flex-col flex-1 overflow-hidden">
-                <div className="p-6 overflow-y-auto space-y-4">
-                  {!sinistreForm.id && (
-                    <div className="p-3.5 bg-amber-50 border border-amber-200/80 rounded-xl text-xs text-amber-900 font-semibold flex items-center gap-2.5">
-                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                      <span>📌 <strong>Information :</strong> La déclaration de sinistre fera basculer automatiquement le statut du véhicule à <strong>ACCIDENTÉ</strong>.</span>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Véhicule accidenté *</label>
-                      <select
-                        required
-                        value={sinistreForm.vehiculeId}
-                        onChange={(e) => setSinistreForm({ ...sinistreForm, vehiculeId: e.target.value })}
-                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] transition-all cursor-pointer font-medium"
-                      >
-                        <option value="">Sélectionner un véhicule...</option>
-                        {vehicules.map((v) => (
-                          <option key={v.id} value={v.id}>{v.immatriculation} - {v.marque} {v.modele}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Date de l'accident *</label>
-                      <input
-                        type="date"
-                        required
-                        value={sinistreForm.dateAccident}
-                        onChange={(e) => setSinistreForm({ ...sinistreForm, dateAccident: e.target.value })}
-                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] transition-all"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Statut du dossier</label>
-                      <select value={sinistreForm.statut || 'DECLARE'} onChange={(e) => setSinistreForm({ ...sinistreForm, statut: e.target.value })} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] cursor-pointer font-medium">
-                        <option value="DECLARE">Déclaré</option><option value="EN_EXPERTISE">En expertise</option><option value="INDEMNISE">Indemnisé</option><option value="CLOS">Clos</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Référence expertise</label>
-                      <input type="text" placeholder="ex: EXP-2026-009" value={sinistreForm.referenceExpertise || ''} onChange={(e) => setSinistreForm({ ...sinistreForm, referenceExpertise: e.target.value })} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27]" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Description des circonstances</label>
-                    <textarea
-                      rows="3"
-                      placeholder="Précisez les circonstances de l'accident..."
-                      value={sinistreForm.description}
-                      onChange={(e) => setSinistreForm({ ...sinistreForm, description: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27]"
-                    />
-                  </div>
-
-                  <GedDocumentsPanel
-                    entite="sinistre"
-                    entiteId={sinistreForm.id}
-                    typeDocument="CONSTAT"
-                    canUpload={canUploadGed && Boolean(sinistreForm.id)}
-                    canDelete={canDeleteGed}
-                    pendingFiles={pendingSinistreFiles}
-                    onPendingFilesChange={canUploadGed ? setPendingSinistreFiles : undefined}
-                    title="Constat, photos et rapport d'expertise"
-                  />
-                </div>
-
-                {/* Footer */}
-                <div className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center justify-end gap-3 shrink-0">
-                  <button type="button" onClick={() => setShowSinistreModal(false)} className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 text-xs font-bold transition-all cursor-pointer">
-                    Annuler
-                  </button>
-                  <button type="submit" className="gold-gradient-bg text-[#0A1E3F] font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-gold hover:brightness-105 transition-all flex items-center gap-2 cursor-pointer">
-                    <ShieldAlert className="w-3.5 h-3.5" />
-                    <span>{sinistreForm.id ? 'Enregistrer les modifications' : 'Déclarer le Sinistre'}</span>
                   </button>
                 </div>
               </form>
@@ -1096,7 +805,7 @@ export default function AssurancesView() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">Véhicule *</label>
-                      <select
+                      <MefSelect
                         required
                         value={infractionForm.vehiculeId}
                         onChange={(e) => setInfractionForm({ ...infractionForm, vehiculeId: e.target.value })}
@@ -1106,7 +815,7 @@ export default function AssurancesView() {
                         {vehicules.map((v) => (
                           <option key={v.id} value={v.id}>{v.immatriculation} - {v.marque} {v.modele}</option>
                         ))}
-                      </select>
+                      </MefSelect>
                     </div>
 
                     <div>
@@ -1150,16 +859,16 @@ export default function AssurancesView() {
 
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">Conducteur</label>
-                      <select value={infractionForm.conducteurId || ''} onChange={(e) => setInfractionForm({ ...infractionForm, conducteurId: e.target.value })} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] cursor-pointer font-medium">
+                      <MefSelect value={infractionForm.conducteurId || ''} onChange={(e) => setInfractionForm({ ...infractionForm, conducteurId: e.target.value })} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] cursor-pointer font-medium">
                         <option value="">Non renseigné</option>{conducteurs.map(c => <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>)}
-                      </select>
+                      </MefSelect>
                     </div>
 
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">Statut</label>
-                      <select value={infractionForm.statut} onChange={(e) => setInfractionForm({ ...infractionForm, statut: e.target.value })} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] cursor-pointer font-medium">
+                      <MefSelect value={infractionForm.statut} onChange={(e) => setInfractionForm({ ...infractionForm, statut: e.target.value })} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#C59B27] cursor-pointer font-medium">
                         <option value="EN_ATTENTE">En attente</option><option value="PAYEE">Payée</option><option value="CONTESTEE">Contestée</option>
-                      </select>
+                      </MefSelect>
                     </div>
 
                     <div>
@@ -1219,12 +928,10 @@ export default function AssurancesView() {
                   <div>
                     <h3 className="text-sm font-extrabold text-white tracking-wide uppercase">
                       {selectedItemDetail.type === 'police' && 'Fiche Police d\'Assurance'}
-                      {selectedItemDetail.type === 'sinistre' && 'Fiche Sinistre Déclaré'}
                       {selectedItemDetail.type === 'infraction' && 'Fiche Infraction Routière'}
                     </h3>
                     <p className="text-[11px] text-[#C59B27] font-mono">
                       {selectedItemDetail.type === 'police' && (selectedItemDetail.item.numeroPolice || 'N/A')}
-                      {selectedItemDetail.type === 'sinistre' && `Accident du ${selectedItemDetail.item.dateAccident || '-'}`}
                       {selectedItemDetail.type === 'infraction' && (selectedItemDetail.item.referenceContravention || 'Radar Fixe')}
                     </p>
                   </div>
@@ -1316,52 +1023,6 @@ export default function AssurancesView() {
                   </div>
                 )}
 
-                {selectedItemDetail.type === 'sinistre' && (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-white p-3 rounded-xl border border-slate-200">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Date Accident</span>
-                        <span className="font-bold text-[#0A1E3F] text-xs">
-                          {selectedItemDetail.item.dateAccident ? new Date(selectedItemDetail.item.dateAccident).toLocaleDateString('fr-FR') : '-'}
-                        </span>
-                      </div>
-                      <div className="bg-white p-3 rounded-xl border border-slate-200">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Lieu Accident</span>
-                        <span className="font-bold text-slate-700 text-xs">{selectedItemDetail.item.lieuAccident || 'Non spécifié'}</span>
-                      </div>
-                      <div className="bg-white p-3 rounded-xl border border-slate-200">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Nature Accident</span>
-                        <span className="font-extrabold text-[#0A1E3F] text-xs">{selectedItemDetail.item.natureAccident}</span>
-                      </div>
-                      <div className="bg-white p-3 rounded-xl border border-slate-200">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Montant Dommages</span>
-                        <span className="font-extrabold text-rose-700 text-xs">
-                          {selectedItemDetail.item.montantDommages ? selectedItemDetail.item.montantDommages.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) : '0.00'} MAD
-                        </span>
-                      </div>
-                      <div className="bg-white p-3 rounded-xl border border-slate-200 col-span-2">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Conducteur</span>
-                        <span className="font-bold text-slate-800 text-xs">{selectedItemDetail.item.conducteurNom || 'Non assigné'}</span>
-                      </div>
-                    </div>
-
-                    {selectedItemDetail.item.description && (
-                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
-                        <span className="font-bold text-slate-700 block mb-1">Description des Circonstances :</span>
-                        <p className="text-slate-600 font-medium">{selectedItemDetail.item.description}</p>
-                      </div>
-                    )}
-                    <GedDocumentsPanel
-                      entite="sinistre"
-                      entiteId={selectedItemDetail.item.id}
-                      typeDocument="CONSTAT"
-                      canUpload={canUploadGed}
-                      canDelete={canDeleteGed}
-                      title="Pièces GED du sinistre"
-                    />
-                  </div>
-                )}
-
                 {selectedItemDetail.type === 'infraction' && (
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
@@ -1400,14 +1061,13 @@ export default function AssurancesView() {
 
               {/* Modal Footer */}
               <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
-                {['police', 'sinistre', 'infraction'].includes(selectedItemDetail.type) && (
+                {['police', 'infraction'].includes(selectedItemDetail.type) && (
                   <button
                     onClick={() => {
                       const itemToEdit = selectedItemDetail.item;
                       const type = selectedItemDetail.type;
                       setSelectedItemDetail(null);
                       if (type === 'police') { setPoliceForm(itemToEdit); setShowPoliceModal(true); }
-                      else if (type === 'sinistre') { setSinistreForm(itemToEdit); setShowSinistreModal(true); }
                       else { setInfractionForm(itemToEdit); setShowInfractionModal(true); }
                     }}
                     className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-600 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer"

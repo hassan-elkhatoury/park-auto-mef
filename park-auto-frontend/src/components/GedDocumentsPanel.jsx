@@ -46,13 +46,16 @@ export default function GedDocumentsPanel({
     }
     setLoading(true);
     try {
-      setDocs(await documentService.getByEntite(entite, entiteId));
+      const list = await documentService.getByEntite(entite, entiteId);
+      setDocs(typeDocument
+        ? list.filter((d) => String(d.typeDocument || '').toUpperCase() === String(typeDocument).toUpperCase())
+        : list);
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Impossible de charger les documents GED.'));
     } finally {
       setLoading(false);
     }
-  }, [entite, entiteId]);
+  }, [entite, entiteId, typeDocument]);
 
   useEffect(() => {
     loadDocs();

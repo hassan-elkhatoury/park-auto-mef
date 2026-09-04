@@ -18,7 +18,11 @@ planning/
 docs/
 assets/
 tmp_final_render/
-
+_tmp_*
+_tmp_*/
+*.bak
+*.bak.*
+*.csv
 *.docx
 *.pdf
 *.pptx

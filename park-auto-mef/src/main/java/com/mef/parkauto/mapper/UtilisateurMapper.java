@@ -24,6 +24,7 @@ public interface UtilisateurMapper {
      * @param utilisateur l'entité utilisateur à convertir
      * @return le DTO de réponse correspondant
      */
+    @Mapping(source = "photoUrl", target = "photoUrl")
     UtilisateurResponse toResponse(Utilisateur utilisateur);
 
     /**
@@ -40,6 +41,7 @@ public interface UtilisateurMapper {
     @Mapping(target = "sel", ignore = true)
     @Mapping(target = "doitChangerMotDePasse", ignore = true)
     @Mapping(target = "role", ignore = true)
+    @Mapping(target = "photoUrl", ignore = true)
     @Mapping(target = "authorities", ignore = true)
     @Mapping(target = "dateCreation", ignore = true)
     @Mapping(target = "dateModification", ignore = true)

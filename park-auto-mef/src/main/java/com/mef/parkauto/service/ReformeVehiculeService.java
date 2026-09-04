@@ -1,5 +1,15 @@
 package com.mef.parkauto.service;
 
+import com.lowagie.text.Document;
+import com.lowagie.text.Element;
+import com.lowagie.text.Font;
+import com.lowagie.text.FontFactory;
+import com.lowagie.text.Image;
+import com.lowagie.text.Paragraph;
+import com.lowagie.text.Phrase;
+import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfWriter;
 import com.mef.parkauto.dto.ReformeVehiculeDto;
 import com.mef.parkauto.dto.ReformeVehiculeRequest;
 import com.mef.parkauto.entity.*;
@@ -11,7 +21,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.awt.Color;
+import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -252,12 +265,25 @@ public class ReformeVehiculeService {
     // Règles internes
     // ------------------------------------------------------------------
 
-    private void verifierPiecesValidation(ReformeVehicule reforme) {
-        List<DocumentGED> docs = documentGEDRepository.findByEntiteAndEntiteIdOrderByDateUploadDesc(GED_ENTITE, reforme.getId());
-        boolean pvCommissionOk = reforme.getPvCommission() != null
+    private List<DocumentGED> docsOf(ReformeVehicule reforme) {
+        if (reforme.getId() == null) return List.of();
+        return documentGEDRepository.findByEntiteAndEntiteIdOrderByDateUploadDesc(GED_ENTITE, reforme.getId());
+    }
+
+    private boolean hasPvCommission(ReformeVehicule reforme, List<DocumentGED> docs) {
+        return blankToNull(reforme.getPvCommission()) != null
                 || docs.stream().anyMatch(d -> GED_TYPE_PV_COMMISSION.equalsIgnoreCase(d.getTypeDocument()));
-        boolean pvDomainesOk = reforme.getPvDomaines() != null
+    }
+
+    private boolean hasPvDomaines(ReformeVehicule reforme, List<DocumentGED> docs) {
+        return blankToNull(reforme.getPvDomaines()) != null
                 || docs.stream().anyMatch(d -> GED_TYPE_PV_DOMAINES.equalsIgnoreCase(d.getTypeDocument()));
+    }
+
+    private void verifierPiecesValidation(ReformeVehicule reforme) {
+        List<DocumentGED> docs = docsOf(reforme);
+        boolean pvCommissionOk = hasPvCommission(reforme, docs);
+        boolean pvDomainesOk = hasPvDomaines(reforme, docs);
 
         if (!pvCommissionOk && !pvDomainesOk) {
             throw new IllegalStateException("RG07 — Le PV de la Commission de Réforme et le PV des Domaines sont obligatoires avant la validation. "
@@ -278,8 +304,7 @@ public class ReformeVehiculeService {
     private ReformeVehiculeDto mapToDto(ReformeVehicule r) {
         Vehicule v = r.getVehicule();
         Sinistre s = r.getSinistre();
-        int nbDocs = r.getId() != null
-                ? documentGEDRepository.findByEntiteAndEntiteIdOrderByDateUploadDesc(GED_ENTITE, r.getId()).size() : 0;
+        List<DocumentGED> docs = docsOf(r);
         return ReformeVehiculeDto.builder()
                 .id(r.getId())
                 .vehiculeId(v != null ? v.getId() : null)
@@ -302,7 +327,119 @@ public class ReformeVehiculeService {
                 .observation(r.getObservation())
                 .dateCreation(r.getDateCreation())
                 .transitionsPossibles(List.copyOf(TRANSITIONS.getOrDefault(r.getStatut(), Set.of())))
-                .nbDocumentsGED(nbDocs)
+                .nbDocumentsGED(docs.size())
+                .pvCommissionPresent(hasPvCommission(r, docs))
+                .pvDomainesPresent(hasPvDomaines(r, docs))
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] generatePvCommissionPdf(Long reformeId) {
+        ReformeVehicule reforme = reformeRepository.findById(reformeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Réforme non trouvée : " + reformeId));
+        Vehicule vehicule = reforme.getVehicule();
+        DateTimeFormatter df = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+        try {
+            Document document = new Document();
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            PdfWriter.getInstance(document, out);
+            document.open();
+
+            Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, Color.DARK_GRAY);
+            Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14, new Color(197, 160, 89));
+            Font labelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, Color.BLACK);
+            Font valueFont = FontFactory.getFont(FontFactory.HELVETICA, 9, Color.DARK_GRAY);
+            Font sectionFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11, new Color(15, 29, 50));
+
+            PdfPTable logos = new PdfPTable(2);
+            logos.setWidthPercentage(100);
+            try {
+                Image royaume = Image.getInstance(getClass().getResource("/static/assets/royaume_du_maroc_logo.png"));
+                royaume.scaleToFit(90, 90);
+                PdfPCell left = new PdfPCell(royaume, false);
+                left.setBorder(PdfPCell.NO_BORDER);
+                left.setHorizontalAlignment(Element.ALIGN_LEFT);
+                logos.addCell(left);
+                Image mef = Image.getInstance(getClass().getResource("/static/assets/logo.png"));
+                mef.scaleToFit(80, 80);
+                PdfPCell right = new PdfPCell(mef, false);
+                right.setBorder(PdfPCell.NO_BORDER);
+                right.setHorizontalAlignment(Element.ALIGN_RIGHT);
+                logos.addCell(right);
+            } catch (Exception ignored) {
+                logos.addCell(emptyCell());
+                logos.addCell(emptyCell());
+            }
+            document.add(logos);
+
+            Paragraph header = new Paragraph("ROYAUME DU MAROC\nMINISTÈRE DE L'ÉCONOMIE ET DES FINANCES\nPARC AUTOMOBILE MINISTÉRIEL", headerFont);
+            header.setAlignment(Element.ALIGN_CENTER);
+            document.add(header);
+            document.add(new Paragraph(" "));
+
+            Paragraph title = new Paragraph("PROCÈS-VERBAL — COMMISSION DE RÉFORME\nDossier n° REF-" + reforme.getId(), titleFont);
+            title.setAlignment(Element.ALIGN_CENTER);
+            document.add(title);
+            document.add(new Paragraph(" "));
+
+            PdfPTable table = new PdfPTable(2);
+            table.setWidthPercentage(100);
+            addRow(table, "Véhicule", vehicule != null ? vehicule.getMarque() + " " + vehicule.getModele() : "-", labelFont, valueFont);
+            addRow(table, "Immatriculation", vehicule != null ? vehicule.getImmatriculation() : "-", labelFont, valueFont);
+            addRow(table, "Direction", vehicule != null && vehicule.getDirection() != null ? vehicule.getDirection() : "-", labelFont, valueFont);
+            addRow(table, "Date de décision", reforme.getDateDecision() != null ? reforme.getDateDecision().format(df) : "-", labelFont, valueFont);
+            addRow(table, "Référence PV Commission", reforme.getPvCommission() != null ? reforme.getPvCommission() : "PV généré — dossier REF-" + reforme.getId(), labelFont, valueFont);
+            addRow(table, "Référence PV Domaines", reforme.getPvDomaines() != null ? reforme.getPvDomaines() : "Non renseigné", labelFont, valueFont);
+            addRow(table, "Statut", reforme.getStatut() != null ? reforme.getStatut().name() : "-", labelFont, valueFont);
+            addRow(table, "Prix de cession", reforme.getPrixCession() != null ? reforme.getPrixCession() + " MAD" : "-", labelFont, valueFont);
+            addRow(table, "Acquéreur", reforme.getAcquereur() != null ? reforme.getAcquereur() : "-", labelFont, valueFont);
+            addRow(table, "Motif", reforme.getMotifReforme() != null ? reforme.getMotifReforme() : "-", labelFont, valueFont);
+
+            document.add(new Paragraph("Décision de la commission", sectionFont));
+            document.add(new Paragraph(" "));
+            document.add(table);
+            document.add(new Paragraph(" "));
+            document.add(new Paragraph(
+                    "Le présent procès-verbal certifie que la Commission de réforme du Parc Automobile a examiné le véhicule ci-dessus et prononce son déclassement conformément à la procédure RG07.",
+                    valueFont));
+            document.add(new Paragraph(" "));
+            document.add(new Paragraph(" "));
+
+            PdfPTable signatures = new PdfPTable(2);
+            signatures.setWidthPercentage(100);
+            PdfPCell cellLeft = new PdfPCell(new Phrase("Le Président de la Commission\n\n\n\n\n", labelFont));
+            cellLeft.setBorder(PdfPCell.NO_BORDER);
+            cellLeft.setHorizontalAlignment(Element.ALIGN_CENTER);
+            cellLeft.setMinimumHeight(80f);
+            PdfPCell cellRight = new PdfPCell(new Phrase("Le Gestionnaire du Parc\n\n\n\n\n", labelFont));
+            cellRight.setBorder(PdfPCell.NO_BORDER);
+            cellRight.setHorizontalAlignment(Element.ALIGN_CENTER);
+            cellRight.setMinimumHeight(80f);
+            signatures.addCell(cellLeft);
+            signatures.addCell(cellRight);
+            document.add(signatures);
+
+            document.close();
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("Erreur lors de la génération du PV de commission : " + e.getMessage(), e);
+        }
+    }
+
+    private static PdfPCell emptyCell() {
+        PdfPCell cell = new PdfPCell(new Phrase(""));
+        cell.setBorder(PdfPCell.NO_BORDER);
+        return cell;
+    }
+
+    private static void addRow(PdfPTable table, String label, String value, Font labelFont, Font valueFont) {
+        PdfPCell cellLabel = new PdfPCell(new Phrase(label, labelFont));
+        cellLabel.setBackgroundColor(new Color(240, 243, 248));
+        cellLabel.setPadding(6);
+        PdfPCell cellValue = new PdfPCell(new Phrase(value != null ? value : "-", valueFont));
+        cellValue.setPadding(6);
+        table.addCell(cellLabel);
+        table.addCell(cellValue);
     }
 }

@@ -49,6 +49,14 @@ export const budgetService = {
     const res = await api.post(`/budgets/exercices/${annee}/rouvrir`);
     return res?.data?.data || res?.data;
   },
+  updateExercice: async (annee, data) => {
+    const res = await api.put(`/budgets/exercices/${annee}`, data);
+    return res?.data?.data || res?.data;
+  },
+  deleteExercice: async (annee) => {
+    const res = await api.delete(`/budgets/exercices/${annee}`);
+    return res?.data?.data || res?.data;
+  },
 
   // --- ENGAGEMENTS FINANCIERS ---
   getAllEngagements: async (annee, direction) => {

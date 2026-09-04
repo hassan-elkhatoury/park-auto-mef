@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Shield, Lock, Mail, Eye, EyeOff, ArrowRight, CheckCircle2, Landmark, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
+import { saveUserAvatar } from '../services/avatarService';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -32,11 +33,15 @@ export default function LoginView({ onLoginSuccess }) {
     try {
       const res = await api.post('/auth/login', { email, motDePasse: password });
       if (res && res.data) {
+        const utilisateur = res.data.utilisateur;
         localStorage.setItem('token', res.data.accessToken);
         localStorage.setItem('refreshToken', res.data.refreshToken);
-        localStorage.setItem('user', JSON.stringify(res.data.utilisateur));
+        localStorage.setItem('user', JSON.stringify(utilisateur));
+        if (utilisateur?.photoUrl) {
+          saveUserAvatar(utilisateur, utilisateur.photoUrl);
+        }
         toast.success('Connexion réussie — Bienvenue !');
-        onLoginSuccess(res.data.utilisateur);
+        onLoginSuccess(utilisateur);
       }
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Email ou mot de passe incorrect. Veuillez vérifier votre saisie.';

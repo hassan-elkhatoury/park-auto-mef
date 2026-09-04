@@ -4,6 +4,7 @@ import { Users, Plus, RotateCw, Search, UserPlus, X, Edit, Trash2, Shield, Check
 import toast from 'react-hot-toast';
 import api from '../services/api';
 import ConfirmModal from './ConfirmModal';
+import MefSelect from './ui/MefSelect';
 
 const roleBadgeStyles = {
   'ADMIN': 'bg-amber-100 text-amber-900 border-amber-300',
@@ -348,16 +349,16 @@ export default function UtilisateursView() {
 
         <div className="flex items-center gap-2 flex-wrap">
           <Filter className="w-4 h-4 text-slate-400" />
-          <select
+          <MefSelect
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
             className="px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold outline-none cursor-pointer"
           >
             <option value="">Tous les rôles</option>
             {roleOptions.map(r => <option key={r} value={r}>{r}</option>)}
-          </select>
+          </MefSelect>
 
-          <select
+          <MefSelect
             value={statutFilter}
             onChange={(e) => setStatutFilter(e.target.value)}
             className="px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold outline-none cursor-pointer"
@@ -365,7 +366,7 @@ export default function UtilisateursView() {
             <option value="">Tous les statuts</option>
             <option value="ACTIVE">Actif</option>
             <option value="INACTIVE">Désactivé</option>
-          </select>
+          </MefSelect>
         </div>
       </motion.div>
 
@@ -537,15 +538,15 @@ export default function UtilisateursView() {
                   </div>
                   <div>
                     <label className={labelCls}>Rôle Système *</label>
-                    <select value={formData.role || 'GESTIONNAIRE_LOCAL'} onChange={(e) => setFormData({...formData, role: e.target.value})} className={`${inputCls} cursor-pointer font-medium`}>
+                    <MefSelect value={formData.role || 'GESTIONNAIRE_LOCAL'} onChange={(e) => setFormData({...formData, role: e.target.value})} className={`${inputCls} cursor-pointer font-medium`}>
                       {roleOptions.map(r => <option key={r} value={r}>{r}</option>)}
-                    </select>
+                    </MefSelect>
                   </div>
                   <div>
                     <label className={labelCls}>Direction MEF *</label>
-                    <select value={formData.direction} onChange={(e) => setFormData({...formData, direction: e.target.value})} className={`${inputCls} cursor-pointer font-medium`}>
+                    <MefSelect value={formData.direction} onChange={(e) => setFormData({...formData, direction: e.target.value})} className={`${inputCls} cursor-pointer font-medium`}>
                       {directionOptions.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
-                    </select>
+                    </MefSelect>
                   </div>
                 </div>
                 <div>
@@ -624,15 +625,15 @@ export default function UtilisateursView() {
                   </div>
                   <div>
                     <label className={labelCls}>Rôle Système *</label>
-                    <select value={formData.role || 'GESTIONNAIRE_LOCAL'} onChange={(e) => setFormData({...formData, role: e.target.value})} className={`${inputCls} cursor-pointer font-medium`}>
+                    <MefSelect value={formData.role || 'GESTIONNAIRE_LOCAL'} onChange={(e) => setFormData({...formData, role: e.target.value})} className={`${inputCls} cursor-pointer font-medium`}>
                       {roleOptions.map(r => <option key={r} value={r}>{r}</option>)}
-                    </select>
+                    </MefSelect>
                   </div>
                   <div>
                     <label className={labelCls}>Direction MEF *</label>
-                    <select value={formData.direction} onChange={(e) => setFormData({...formData, direction: e.target.value})} className={`${inputCls} cursor-pointer font-medium`}>
+                    <MefSelect value={formData.direction} onChange={(e) => setFormData({...formData, direction: e.target.value})} className={`${inputCls} cursor-pointer font-medium`}>
                       {directionOptions.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
-                    </select>
+                    </MefSelect>
                   </div>
                 </div>
 

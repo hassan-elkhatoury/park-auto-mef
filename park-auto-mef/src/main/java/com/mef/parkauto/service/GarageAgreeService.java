@@ -123,25 +123,25 @@ public class GarageAgreeService {
     }
 
     public GarageAgreeDto mapGarageToDto(GarageAgree g) {
-        return GarageAgreeDto.builder()
-                .id(g.getId())
-                .nomGarage(g.getNomGarage())
-                .raisonSociale(g.getRaisonSociale())
-                .ville(g.getVille())
-                .adresse(g.getAdresse())
-                .telephone(g.getTelephone())
-                .email(g.getEmail())
-                .contactNom(g.getContactNom())
-                .referenceConvention(g.getReferenceConvention())
-                .agreeMEF(g.getAgreeMEF())
-                .specialites(g.getSpecialites())
-                .tarifHoraireMo(g.getTarifHoraireMo())
-                .remisePiecesPct(g.getRemisePiecesPct())
-                .noteEvaluation(g.getNoteEvaluation())
-                .observations(g.getObservations())
-                .actif(g.getActif())
-                .dateCreation(g.getDateCreation())
-                .build();
+        GarageAgreeDto dto = new GarageAgreeDto();
+        dto.setId(g.getId());
+        dto.setNomGarage(g.getNomGarage());
+        dto.setRaisonSociale(g.getRaisonSociale());
+        dto.setVille(g.getVille());
+        dto.setAdresse(g.getAdresse());
+        dto.setTelephone(g.getTelephone());
+        dto.setEmail(g.getEmail());
+        dto.setContactNom(g.getContactNom());
+        dto.setReferenceConvention(g.getReferenceConvention());
+        dto.setAgreeMEF(g.getAgreeMEF());
+        dto.setSpecialites(g.getSpecialites());
+        dto.setTarifHoraireMo(g.getTarifHoraireMo());
+        dto.setRemisePiecesPct(g.getRemisePiecesPct());
+        dto.setNoteEvaluation(g.getNoteEvaluation());
+        dto.setObservations(g.getObservations());
+        dto.setActif(g.getActif());
+        dto.setDateCreation(g.getDateCreation());
+        return dto;
     }
 
     public PieceRemplacementDto mapPieceToDto(PieceRemplacement p) {
